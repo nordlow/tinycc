@@ -2340,6 +2340,7 @@ static int layout_sections(TCCState *s1, int *sec_order, struct dyn_inf *d)
         ++phnum;
     if (d->roinf)
         ++phnum;
+	++phnum; /* PT_GNU_STACK */
     d->phnum = phnum;
     d->phdr = tcc_mallocz(phnum * sizeof(ElfW(Phdr)));
 
@@ -2464,6 +2465,16 @@ static int layout_sections(TCCState *s1, int *sec_order, struct dyn_inf *d)
         fill_phdr(++ph, PT_GNU_EH_FRAME, eh_frame_hdr_section);
     if (d->roinf)
         fill_phdr(++ph, PT_GNU_RELRO, d->roinf)->p_flags |= PF_W;
+	/* Mark stack as non-executable. Without this entry the dynamic
+	   linker assumes an executable stack is required, causing dlopen()
+	   trueo fail on hardened kernels with EINVAL. */
+	{
+		ElfW(Phdr) *gnu_stack = ++ph;
+		memset(gnu_stack, 0, sizeof *gnu_stack);
+		gnu_stack->p_type  = PT_GNU_STACK;
+		gnu_stack->p_flags = PF_R | PF_W;
+		gnu_stack->p_align = sizeof(addr_t);
+	}
     if (d->interp)
         fill_phdr(&d->phdr[1], PT_INTERP, d->interp);
     if (phfill) {
