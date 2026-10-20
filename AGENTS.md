@@ -11,12 +11,12 @@ regressions are introduced. Choose the command by what you changed:
 - **Changes to the compiler or its sources** (anything that affects the built
   `tcc` binary or runtime libraries): run
 
-      make -jN && make -jN test
+      make -j$(nproc) && make -j$(nproc) test
 
-  Running `make -jN test` alone is NOT sufficient, since it can test a
+  Running `make -j$(nproc) test` alone is NOT sufficient, since it can test a
   stale binary.
 
-- **Changes only under `tests/`**: `make -jN test` is sufficient.
+- **Changes only under `tests/`**: `make -j$(nproc) test` is sufficient.
 
 Run the applicable command after every change while iterating. Incremental
 builds are fast, so don't batch up edits before verifying.
@@ -26,7 +26,7 @@ builds are fast, so don't batch up edits before verifying.
 Before considering a task complete, do a clean reconfigure and full rebuild
 to rule out stale build artifacts and configure-time issues:
 
-    ./configure && make -jN -B && make -jN test
+    ./configure && make -j$(nproc) -B && make -j$(nproc) test
 
 This currently (on an AMD Ryzen AI 7 350 w/ Radeon 860M) takes only
 about 3 seconds (`./configure` ~41 ms, full rebuild ~1.5 s), so always
