@@ -2257,6 +2257,7 @@ struct dyn_inf {
     int notes;
     int ehfr;
     int dyna;
+    int stack;
 };
 
 /* Decide the layout of sections loaded in memory. This must be done before
@@ -2434,6 +2435,7 @@ static int layout_sections(TCCState *s1, int *sec_order, struct dyn_inf *d)
         d->ehfr = phnum++;
     if (d->relro)
         d->relro = phnum++;
+    d->stack = phnum++;
     d->phnum = phnum;
     d->phdr = tcc_mallocz(phnum * sizeof(ElfW(Phdr)));
 
@@ -2548,6 +2550,13 @@ static int layout_sections(TCCState *s1, int *sec_order, struct dyn_inf *d)
         fill_phdr(&d->phdr[d->dyna], PT_DYNAMIC, d->dynamic);
     if (d->ehfr)
         fill_phdr(&d->phdr[d->ehfr], PT_GNU_EH_FRAME, eh_frame_hdr_section);
+    if (d->stack) {
+        ElfW(Phdr) *gnu_stack = &d->phdr[d->stack];
+        memset(gnu_stack, 0, sizeof *gnu_stack);
+        gnu_stack->p_type  = PT_GNU_STACK;
+        gnu_stack->p_flags = PF_R | PF_W;
+        gnu_stack->p_align = sizeof(addr_t);
+    }
     if (d->interp)
         fill_phdr(&d->phdr[1], PT_INTERP, d->interp);
     if (phfill) {
