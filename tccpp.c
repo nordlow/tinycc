@@ -2554,9 +2554,11 @@ static void next_nomacro(void)
     case '\t':
         tok = c;
         p++;
- maybe_space:
+maybe_space:
         if (parse_flags & PARSE_FLAG_SPACES)
             goto keep_tok_flags;
+        while (*p == ' ' || *p == '\t')
+            ++p;
         while (isidnum_table[*p - CH_EOF] & IS_SPC)
             ++p;
         goto redo_no_start;
