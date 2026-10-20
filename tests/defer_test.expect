@@ -1,3 +1,9 @@
+expr main
+defer expr: 42
+block main
+defer block start
+defer block y: 100
+defer block end
 --- testing lifo order ---
 global_counter = 5 (expected 5)
 --- testing early return (true) ---

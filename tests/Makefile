@@ -340,10 +340,10 @@ cache: tcc_g
 	cachegrind ./tcc_g -o /tmp/linpack -lm bench/linpack.c
 	vg_annotate tcc.c > /tmp/linpack.cache.log
 
-defer-test: defer_comprehensive_test.c defer_comprehensive_test.expect
+defer-test: defer_test.c defer_test.expect
 	@echo ------------ $@ ------------
-	$(TCC) -run $(TOPSRC)/tests/defer_comprehensive_test.c > defer_test.out
-	@diff -u $(TOPSRC)/tests/defer_comprehensive_test.expect defer_test.out && echo "Defer Test OK"
+	$(TCC) -run $(TOPSRC)/tests/defer_test.c > defer_test.out
+	@diff -u $(TOPSRC)/tests/defer_test.expect defer_test.out && echo "Defer Test OK"
 # clean
 clean:
 	rm -f *~ *.o *.a *.bin *.i *.ref *.out *.out? *.out?b *.cc *.gcc
