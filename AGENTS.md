@@ -36,3 +36,8 @@ and whenever incremental results look suspicious.
 
 - Do not skip verification, and do not report success if any step fails.
 - Chain steps with `&&` so tests never run against a failed build.
+
+## References
+
+This document was written by Claude at
+https://claude.ai/chat/c8505b13-607c-4cb7-b180-5e3c7e8dda0f.
