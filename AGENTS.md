@@ -26,11 +26,12 @@ builds are fast, so don't batch up edits before verifying.
 Before considering a task complete, do a clean reconfigure and full rebuild
 to rule out stale build artifacts and configure-time issues:
 
-    ./configure && make -j8 -B && make -j8 test
+    ./configure && make -jN -B && make -jN test
 
-This takes only about 3 seconds (`./configure` ~41 ms, full rebuild ~1.5 s),
-so always run it as the last step for any task that changed non-test code,
-and whenever incremental results look suspicious.
+This currently (on an AMD Ryzen AI 7 350 w/ Radeon 860M) takes only
+about 3 seconds (`./configure` ~41 ms, full rebuild ~1.5 s), so always
+run it as the last step for any task that changed non-test code, and
+whenever incremental results look suspicious.
 
 ## Rules
 
