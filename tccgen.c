@@ -7043,13 +7043,28 @@ static void try_call_scope_cleanup(Sym *stop)
     for (; cls != stop; cls = cls->next) {
 	Sym *fs = cls->cleanup_func;
 	Sym *vs = cls->cleanup_sym;
-	save_lvalues();
-	vpushsym(&fs->type, fs);
-	vset(&vs->type, vs->r, vs->c);
-	vtop->sym = vs;
-        mk_pointer(&vtop->type);
-	gaddrof();
-	gfunc_call(1);
+        if (!vs) {
+            TokenString *dstr = (TokenString *)fs;
+            int saved_vtop_idx = vtop - vstack;
+            begin_macro(dstr, 0);
+            next();
+            if (tok == '{') {
+                block(0);
+            } else {
+                gexpr();
+                vpop();
+            }
+            end_macro();
+            vtop = vstack + saved_vtop_idx;
+        } else {
+            save_lvalues();
+            vpushsym(&fs->type, fs);
+            vset(&vs->type, vs->r, vs->c);
+            vtop->sym = vs;
+            mk_pointer(&vtop->type);
+            gaddrof();
+            gfunc_call(1);
+        }
     }
 }
 
@@ -7227,7 +7242,8 @@ static void block(int flags)
     int a, b, c, d, e, t;
     struct scope o;
     Sym *s;
-
+    TokenString *dstr;
+    Sym *cls;
 again:
     t = tok;
     /* If the token carries a value, next() might destroy it. Only with
@@ -7350,6 +7366,37 @@ again:
         *cur_scope->csym = gjmp(*cur_scope->csym);
         skip(';');
 
+    } else if (t == TOK_DEFER) {
+        dstr = tok_str_alloc();
+        if (tok == '{') {
+            int braces = 1;
+            tok_str_add2(dstr, tok, &tokc);
+            next();
+            while (braces > 0 && tok != TOK_EOF) {
+                if (tok == '{')
+                    braces++;
+                else if (tok == '}')
+                    braces--;
+                tok_str_add2(dstr, tok, &tokc);
+                if (braces > 0)
+                    next();
+            }
+            if (braces == 0)
+                next();
+        } else {
+            while (tok != ';' && tok != TOK_EOF) {
+                tok_str_add2(dstr, tok, &tokc);
+                next();
+            }
+            tok_str_add2(dstr, ';', NULL);
+            skip(';');
+        }
+        tok_str_add(dstr, -1);
+        cls = sym_push2(&all_cleanups, SYM_FIELD | ++cur_scope->cl.n, 0, 0);
+        cls->cleanup_sym = NULL;
+        cls->cleanup_func = (Sym *)dstr;
+        cls->next = cur_scope->cl.s;
+        cur_scope->cl.s = cls;
     } else if (t == TOK_FOR) {
         new_scope(&o);
 

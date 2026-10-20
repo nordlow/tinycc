@@ -7,6 +7,7 @@
      DEF(TOK_DO, "do")
      DEF(TOK_CONTINUE, "continue")
      DEF(TOK_BREAK, "break")
+     DEF(TOK_DEFER, "defer")
      DEF(TOK_RETURN, "return")
      DEF(TOK_GOTO, "goto")
      DEF(TOK_SWITCH, "switch")
