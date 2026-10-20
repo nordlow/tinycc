@@ -1,0 +1,11 @@
+--- testing lifo order ---
+global_counter = 5 (expected 5)
+--- testing early return (true) ---
+unwound on return
+--- testing early return (false) ---
+no early return
+unwound on return
+--- testing nested scopes ---
+inner scope defer 2
+inner scope defer 1
+outer scope defer

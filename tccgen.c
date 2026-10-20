@@ -7319,6 +7319,7 @@ again:
         else if (!nocode_wanted)
             check_func_return();
 
+
     } else if (t == TOK_RETURN) {
         b = (func_vt.t & VT_BTYPE) != VT_VOID;
         if (tok != ';') {

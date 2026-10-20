@@ -17,12 +17,12 @@ TESTS = \
  abitest \
  asm-c-connect-test \
  vla_test-run \
+ defer-test \
  tests2-dir \
  pp-dir \
  memtest \
  dlltest \
  cross-test
-
 # test4_static -- Not all relocation types are implemented yet.
 # asmtest / asmtest2 -- minor differences with gcc
 
@@ -340,6 +340,10 @@ cache: tcc_g
 	cachegrind ./tcc_g -o /tmp/linpack -lm bench/linpack.c
 	vg_annotate tcc.c > /tmp/linpack.cache.log
 
+defer-test: defer_comprehensive_test.c defer_comprehensive_test.expect
+	@echo ------------ $@ ------------
+	$(TCC) -run $(TOPSRC)/tests/defer_comprehensive_test.c > defer_test.out
+	@diff -u $(TOPSRC)/tests/defer_comprehensive_test.expect defer_test.out && echo "Defer Test OK"
 # clean
 clean:
 	rm -f *~ *.o *.a *.bin *.i *.ref *.out *.out? *.out?b *.cc *.gcc
