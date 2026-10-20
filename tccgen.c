@@ -3631,6 +3631,10 @@ static void verify_assign_cast(CType *dt)
     st = &vtop->type; /* source type */
     dbt = dt->t & VT_BTYPE;
     sbt = st->t & VT_BTYPE;
+    if (sbt == VT_STRUCT && st->ref && st->ref->a.nocopy)
+        tcc_error("rhs struct '%s' is not copyable (or aliasable)", get_tok_str(st->ref->v & ~SYM_STRUCT, NULL));
+    if (dbt == VT_STRUCT && dt->ref && dt->ref->a.nocopy)
+        tcc_error("struct '%s' is non-copyable", get_tok_str(dt->ref->v & ~SYM_STRUCT, NULL));
     if (dt->t & VT_CONSTANT)
         tcc_warning("assignment of read-only location");
     switch(dbt) {
@@ -3989,7 +3993,10 @@ redo:
         case TOK_ALWAYS_INLINE2:
             ad->f.func_alwinl = 1;
             break;
-        case TOK_SECTION1:
+        case TOK_NOCOPY1:
+        case TOK_NOCOPY2:
+            ad->a.nocopy = 1;
+            break;
         case TOK_SECTION2:
             skip('(');
 	    astr = parse_mult_str("section name")->data;
@@ -4371,6 +4378,7 @@ static void struct_layout(CType *type, AttributeDef *ad)
         c += (bit_pos + 7) >> 3;
 
     /* store size and alignment */
+    type->ref->a.nocopy = ad->a.nocopy;
     a = bt = ad->a.aligned ? 1 << (ad->a.aligned - 1) : 1;
     if (a < maxalign)
         a = maxalign;
