@@ -1038,7 +1038,7 @@ ST_FUNC int *tok_str_realloc(TokenString *s, int new_size)
     return s->str;
 }
 
-ST_FUNC void tok_str_add(TokenString *s, int t)
+ST_INLN void tok_str_add(TokenString *s, int t)
 {
     int len, *str;
 
