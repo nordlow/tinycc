@@ -1,41 +1,43 @@
 # Agent Instructions
 
-Use parallel builds (`-jN`) for all `make` invocations. `N` is the number of
-CPU cores (e.g. `-j8`, or `-j$(nproc)`).
+Use parallel builds (`-jN`) for all `make` invocations. `N` is the
+number of CPU cores (e.g. `-j8`, or `-j$(nproc)`).
 
 ## Verification (required)
 
 Whenever you modify files in this repository, you MUST verify that no
 regressions are introduced. Choose the command by what you changed:
 
-- **Changes to the compiler or its sources** (anything that affects the built
-  `tcc` binary or runtime libraries): run
+- **Changes to the compiler or its sources** (anything that affects
+  the built `tcc` binary or runtime libraries): run
 
       make -j$(nproc) && make -j$(nproc) test
 
   Running `make -j$(nproc) test` alone is NOT sufficient, since it can test a
   stale binary.
 
-- **Changes only under `tests/`** (including `tests/tests2/`):
-  `make -j$(nproc) test` is sufficient.
+- **Changes only under `tests/`** (including `tests/tests2/`): `make
+  -j$(nproc) test` is sufficient.
 
-Run the applicable command after every change while iterating. Incremental
-builds are fast, so don't batch up edits before verifying.
+Run the applicable command after every change while
+iterating. Incremental builds are fast, so don't batch up edits before
+verifying.
 
 ## Adding tests
 
-When adding a new test, prefer placing it under `tests/tests2/` instead of
-directly under `tests/`. Follow the existing conventions there: use the next
-free numeric prefix, name the source `NN_descriptive_name.c`, and add a
-matching `NN_descriptive_name.expect` file with the expected output.
+When adding a new test, prefer placing it under `tests/tests2/`
+instead of directly under `tests/`. Follow the existing conventions
+there: use the next free numeric prefix, name the source
+`NN_descriptive_name.c`, and add a matching
+`NN_descriptive_name.expect` file with the expected output.
 
-Only add a test directly under `tests/` if it cannot be expressed in the
-`tests/tests2/` framework.
+Only add a test directly under `tests/` if it cannot be expressed in
+the `tests/tests2/` framework.
 
 ## Final check (before declaring a task done)
 
-Before considering a task complete, do a clean reconfigure and full rebuild
-to rule out stale build artifacts and configure-time issues:
+Before considering a task complete, do a clean reconfigure and full
+rebuild to rule out stale build artifacts and configure-time issues:
 
     ./configure && make -j$(nproc) -B && make -j$(nproc) test
 
@@ -46,7 +48,8 @@ whenever incremental results look suspicious.
 
 ## Rules
 
-- Do not skip verification, and do not report success if any step fails.
+- Do not skip verification, and do not report success if any step
+  fails.
 - Chain steps with `&&` so tests never run against a failed build.
 
 ## References
