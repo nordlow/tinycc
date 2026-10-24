@@ -52,6 +52,23 @@ whenever incremental results look suspicious.
   fails.
 - Chain steps with `&&` so tests never run against a failed build.
 
+## Profiling & PGO Optimization
+
+When evaluating performance or hot spots in the compiler, build `tcc` using Clang with maximum preferred optimizations and Profile-Guided Optimization (PGO):
+
+1. **Instrumented Build:**
+   ```bash
+   make clean && CC=clang CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure && make -j$(nproc) -B && make -j$(nproc) test
+   ```
+2. **Profile Merging:**
+   ```bash
+   llvm-profdata merge -output=tcc.profdata $(find . -name "*.profraw")
+   ```
+3. **PGO-Optimized Build:**
+   ```bash
+   make clean && CC=clang CFLAGS="-O3 -march=native -fprofile-use=$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$(pwd)/tcc.profdata" ./configure && make -j$(nproc) -B && make -j$(nproc) test
+   ```
+
 ## References
 
 This document was written by Claude at
