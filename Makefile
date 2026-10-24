@@ -340,17 +340,26 @@ run-if = $(if $(shell $(call WHICH,$1)),$S $1 $2,@echo "(skipping $@ - no $1)")
 S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
 
-# Profile-Guided Optimization (PGO) build target
+PGO_CC ?= $(or $(CC),clang)
 pgo:
 	$(MAKE) clean
-	CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
+ifeq ($(PGO_CC),clang)
+	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
 	$(MAKE) -j$(nproc) -B
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
 	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
 	$(MAKE) clean
-	CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
+	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
 	$(MAKE) -j$(nproc) -B
-	@echo "PGO build complete!"
+else
+	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
+	$(MAKE) -j$(nproc) -B
+	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
+	$(MAKE) clean
+	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" ./configure
+	$(MAKE) -j$(nproc) -B
+endif
+	@echo "PGO build complete using $(PGO_CC)!"
 
 # --------------------------------------------------------------------------
 # documentation and man page
