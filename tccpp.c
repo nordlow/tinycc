@@ -746,22 +746,25 @@ static int skip_spaces(void)
 /* single line C++ comments */
 static uint8_t *parse_line_comment(uint8_t *p)
 {
+    size_t rem;
+    uint8_t *p_nl, *p_bs, *stop;
+    int c, ch;
     for(;;) {
-        size_t rem = file->buf_end - (p + 1);
+        rem = file->buf_end - (p + 1);
         if (rem == 0)
             break;
-        uint8_t *p_nl = (uint8_t *)memchr(p + 1, '\n', rem);
-        uint8_t *p_bs = (uint8_t *)memchr(p + 1, '\\', rem);
-        uint8_t *stop = p + 1 + rem;
+        p_nl = (uint8_t *)memchr(p + 1, '\n', rem);
+        p_bs = (uint8_t *)memchr(p + 1, '\\', rem);
+        stop = p + 1 + rem;
         if (p_nl && p_nl < stop) stop = p_nl;
         if (p_bs && p_bs < stop) stop = p_bs;
 
         p = stop - 1;
-        int c = *++p;
+        c = *++p;
         if (c == '\n')
             break;
         if (c == '\\') {
-            int ch = handle_bs(&p);
+            ch = handle_bs(&p);
             if (ch == CH_EOF)
                 break;
         }
@@ -812,19 +815,22 @@ static uint8_t *parse_comment(uint8_t *p)
 static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
 {
     int c;
+    size_t rem;
+    uint8_t *p_sep, *p_bs, *p_nl, *next_special;
+    size_t len;
     for(;;) {
-        size_t rem = file->buf_end - (p + 1);
+        rem = file->buf_end - (p + 1);
         if (rem > 0) {
-            uint8_t *p_sep = (uint8_t *)memchr(p + 1, sep, rem);
-            uint8_t *p_bs  = (uint8_t *)memchr(p + 1, '\\', rem);
-            uint8_t *p_nl  = (uint8_t *)memchr(p + 1, '\n', rem);
-            uint8_t *next_special = p + 1 + rem;
+            p_sep = (uint8_t *)memchr(p + 1, sep, rem);
+            p_bs  = (uint8_t *)memchr(p + 1, '\\', rem);
+            p_nl  = (uint8_t *)memchr(p + 1, '\n', rem);
+            next_special = p + 1 + rem;
             if (p_sep && p_sep < next_special) next_special = p_sep;
             if (p_bs  && p_bs  < next_special) next_special = p_bs;
             if (p_nl  && p_nl  < next_special) next_special = p_nl;
 
             if (next_special > p + 1) {
-                size_t len = next_special - (p + 1);
+                len = next_special - (p + 1);
                 if (str)
                     cstr_cat(str, (char *)(p + 1), len);
                 p = next_special - 1;
