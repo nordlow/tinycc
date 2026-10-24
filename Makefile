@@ -340,7 +340,7 @@ run-if = $(if $(shell $(call WHICH,$1)),$S $1 $2,@echo "(skipping $@ - no $1)")
 S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
 
-PGO_CC ?= $(or $(CC),clang)
+PGO_CC = $(or $(CC),clang)
 pgo:
 	$(MAKE) clean
 ifeq ($(PGO_CC),clang)
