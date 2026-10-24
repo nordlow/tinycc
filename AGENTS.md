@@ -60,7 +60,7 @@ When evaluating performance or hot spots in the compiler, build `tcc` using Clan
 make pgo
 ```
 
-This automatically handles instrumented building, training runs, profile merging, and final PGO-optimized production build.
+This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and final PGO-optimized production build.
 
 ## Profiling Strategy (`perf` & Valgrind Cachegrind)
 
