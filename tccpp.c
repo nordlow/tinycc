@@ -2557,10 +2557,12 @@ static void next_nomacro(void)
 maybe_space:
         if (parse_flags & PARSE_FLAG_SPACES)
             goto keep_tok_flags;
-        while (*p == ' ' || *p == '\t')
-            ++p;
-        while (isidnum_table[*p - CH_EOF] & IS_SPC)
-            ++p;
+        while (1) {
+            if (*p == ' ') p++;
+            else if (*p == '\t') p++;
+            else if (isidnum_table[*p - CH_EOF] & IS_SPC) p++;
+            else break;
+        }
         goto redo_no_start;
     case '\f':
     case '\v':
@@ -2674,8 +2676,12 @@ maybe_newline:
         p1 = p;
         h = TOK_HASH_INIT;
         h = TOK_HASH_FUNC(h, c);
-        while (c = *++p, isidnum_table[c - CH_EOF] & (IS_ID|IS_NUM))
+        while (1) {
+            c = *++p;
+            if (!(isidnum_table[c - CH_EOF] & (IS_ID|IS_NUM)))
+                break;
             h = TOK_HASH_FUNC(h, c);
+        }
         len = p - p1;
         if (c != '\\') {
             TokenSym **pts;
