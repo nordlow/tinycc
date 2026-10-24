@@ -63,6 +63,10 @@ CC=gcc make pgo
 
 This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and final PGO-optimized production build.
 
+*Note (2026-10-24):* On AMD Ryzen AI 7 350, Linux x64, Clang PGO (`CC=clang make pgo`, ~5.13M lines/sec) outperforms GCC PGO (`CC=gcc make pgo`, ~4.62M lines/sec) by ~11% due to LLVM's aggressive profile-guided inlining and optimizer passes.
+
+
+
 ## Profiling Strategy (`perf` & Valgrind Cachegrind)
 
 When analyzing and optimizing performance hot spots:
