@@ -345,7 +345,7 @@ pgo:
 	$(MAKE) clean
 	CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
 	$(MAKE) -j$(nproc) -B
-	for i in {1..100}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
+	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
 	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
 	$(MAKE) clean
 	CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
