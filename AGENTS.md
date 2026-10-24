@@ -57,9 +57,11 @@ whenever incremental results look suspicious.
 When evaluating performance or hot spots in the compiler, build `tcc` using Clang or GCC with maximum preferred optimizations and Profile-Guided Optimization (PGO) via the automated Makefile target:
 
 ```bash
-CC=clang make pgo
-CC=gcc make pgo
+make pgo PGO_CC=clang
+make pgo PGO_CC=gcc
 ```
+
+*(Note: GNU Make assigns a default built-in value to `CC` (`cc`/`gcc`), so passing `PGO_CC=...` explicitly is required to override the compiler selection).*
 
 This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and final PGO-optimized production build.
 
