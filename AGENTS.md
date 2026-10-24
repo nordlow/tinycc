@@ -54,10 +54,11 @@ whenever incremental results look suspicious.
 
 ## Profiling & PGO Optimization
 
-When evaluating performance or hot spots in the compiler, build `tcc` using Clang with maximum preferred optimizations and Profile-Guided Optimization (PGO) via the automated Makefile target:
+When evaluating performance or hot spots in the compiler, build `tcc` using Clang or GCC with maximum preferred optimizations and Profile-Guided Optimization (PGO) via the automated Makefile target:
 
 ```bash
-make pgo
+CC=clang make pgo
+CC=gcc make pgo
 ```
 
 This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and final PGO-optimized production build.
