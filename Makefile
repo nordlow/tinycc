@@ -340,26 +340,33 @@ run-if = $(if $(shell $(call WHICH,$1)),$S $1 $2,@echo "(skipping $@ - no $1)")
 S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
 
-PGO_CC = $(or $(CC),clang)
-pgo:
-	$(MAKE) clean
-ifeq ($(PGO_CC),clang)
-	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
-	$(MAKE) -j$(nproc) -B
-	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
-	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
-	$(MAKE) clean
-	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
-	$(MAKE) -j$(nproc) -B
-else
-	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
-	$(MAKE) -j$(nproc) -B
-	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
-	$(MAKE) clean
-	CC=$(PGO_CC) CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" ./configure
-	$(MAKE) -j$(nproc) -B
+# Profile-Guided Optimization (PGO) build target
+# Usage: CC=clang make pgo or CC=gcc make pgo (or PGO_CC=clang|gcc)
+PGO_CC ?= clang
+ifdef CC
+PGO_CC := $(CC)
 endif
-	@echo "PGO build complete using $(PGO_CC)!"
+pgo:
+	@if [ "$(or $(CC),$(PGO_CC))" = "clang" ]; then \
+		echo "Building PGO with Clang..."; \
+		$(MAKE) CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" configure; \
+		$(MAKE) -j$(nproc) -B CC=clang; \
+		for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done; \
+		llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw"); \
+		$(MAKE) clean; \
+		$(MAKE) CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" configure; \
+		$(MAKE) -j$(nproc) -B CC=clang; \
+	else \
+		echo "Building PGO with GCC..."; \
+		$(MAKE) CC=gcc CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" configure; \
+		$(MAKE) -j$(nproc) -B CC=gcc; \
+		for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done; \
+		$(MAKE) clean; \
+		$(MAKE) CC=gcc CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" configure; \
+		$(MAKE) -j$(nproc) -B CC=gcc; \
+	fi
+	@echo "PGO build complete!"
+
 
 # --------------------------------------------------------------------------
 # documentation and man page
