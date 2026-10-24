@@ -5406,6 +5406,9 @@ static void gfunc_param_typed(Sym *func, Sym *arg)
     int func_type;
     CType type;
 
+    if ((vtop->type.t & VT_BTYPE) == VT_STRUCT && vtop->type.ref && vtop->type.ref->a.nocopy)
+        tcc_error("struct '%s' is non-copyable", get_tok_str(vtop->type.ref->v & ~SYM_STRUCT, NULL));
+
     func_type = func->f.func_type;
     if (func_type == FUNC_OLD ||
         (func_type == FUNC_ELLIPSIS && arg == NULL)) {
