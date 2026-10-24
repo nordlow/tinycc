@@ -69,7 +69,27 @@ When evaluating performance or hot spots in the compiler, build `tcc` using Clan
    make clean && CC=clang CFLAGS="-O3 -march=native -fprofile-use=$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$(pwd)/tcc.profdata" ./configure && make -j$(nproc) -B && make -j$(nproc) test
    ```
 
-## References
+## Profiling Strategy (`perf` & Valgrind Cachegrind)
+
+When analyzing and optimizing performance hot spots:
+
+1. **Instruction-Level Tracing (Valgrind Cachegrind):**
+   ```bash
+   valgrind --tool=cachegrind ./tcc -B. -Iinclude -I. tcc.c -o /dev/null
+   cg_annotate cachegrind.out.<pid>
+   ```
+   *Rule:* Measure instruction reference (`Ir`) counts before and after changes. Discard optimizations that increase total `I refs`.
+
+2. **Hardware Performance Sampling (`perf`):**
+   ```bash
+   perf record -o perf.data -- ./tcc -B. -Iinclude -I. tcc.c -o /dev/null
+   perf report -i perf.data --stdio -n --no-children
+   ```
+
+3. **Validation Loop:**
+   - Run `make -j$(nproc) && make -j$(nproc) test` after every change.
+   - Run `./configure && make -j$(nproc) -B && make -j$(nproc) test` before final commit.
+
 
 This document was written by Claude at
 https://claude.ai/chat/c8505b13-607c-4cb7-b180-5e3c7e8dda0f.
