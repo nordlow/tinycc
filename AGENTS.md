@@ -54,20 +54,13 @@ whenever incremental results look suspicious.
 
 ## Profiling & PGO Optimization
 
-When evaluating performance or hot spots in the compiler, build `tcc` using Clang with maximum preferred optimizations and Profile-Guided Optimization (PGO):
+When evaluating performance or hot spots in the compiler, build `tcc` using Clang with maximum preferred optimizations and Profile-Guided Optimization (PGO) via the automated Makefile target:
 
-1. **Instrumented Build:**
-   ```bash
-   make clean && CC=clang CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure && make -j$(nproc) -B && make -j$(nproc) test
-   ```
-2. **Profile Merging:**
-   ```bash
-   llvm-profdata merge -output=tcc.profdata $(find . -name "*.profraw")
-   ```
-3. **PGO-Optimized Build:**
-   ```bash
-   make clean && CC=clang CFLAGS="-O3 -march=native -fprofile-use=$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$(pwd)/tcc.profdata" ./configure && make -j$(nproc) -B && make -j$(nproc) test
-   ```
+```bash
+make pgo
+```
+
+This automatically handles instrumented building, training runs, profile merging, and final PGO-optimized production build.
 
 ## Profiling Strategy (`perf` & Valgrind Cachegrind)
 
