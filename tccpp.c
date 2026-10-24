@@ -3503,40 +3503,40 @@ static int macro_subst(
 ST_FUNC void next(void)
 {
     int t;
-    while (macro_ptr) {
-redo:
-        t = *macro_ptr;
-        if (TOK_HAS_VALUE(t)) {
-            tok_get(&tok, &macro_ptr, &tokc);
-            if (t == TOK_LINENUM) {
-                file->line_num = tokc.i;
-                goto redo;
+    if (__builtin_expect(macro_ptr != NULL, 0)) {
+        while (macro_ptr) {
+        redo:
+            t = *macro_ptr;
+            if (TOK_HAS_VALUE(t)) {
+                tok_get(&tok, &macro_ptr, &tokc);
+                if (t == TOK_LINENUM) {
+                    file->line_num = tokc.i;
+                    goto redo;
+                }
+                goto convert;
+            } else if (t == 0) {
+                end_macro();
+                continue;
+            } else if (t == TOK_EOF) {
+                /* do nothing */
+            } else {
+                ++macro_ptr;
+                t &= ~SYM_FIELD;
+                if (t == '\\') {
+                    if (!(parse_flags & PARSE_FLAG_ACCEPT_STRAYS))
+                        tcc_error("stray '\\' in program");
+                }
             }
-            goto convert;
-        } else if (t == 0) {
-            /* end of macro or unget token string */
-            end_macro();
-            continue;
-        } else if (t == TOK_EOF) {
-            /* do nothing */
-        } else {
-            ++macro_ptr;
-            t &= ~SYM_FIELD; /* remove 'nosubst' marker */
-            if (t == '\\') {
-                if (!(parse_flags & PARSE_FLAG_ACCEPT_STRAYS))
-                    tcc_error("stray '\\' in program");
-            }
+            tok = t;
+            return;
         }
-        tok = t;
-        return;
     }
 
     next_nomacro();
     t = tok;
-    if (t >= TOK_IDENT && (parse_flags & PARSE_FLAG_PREPROCESS)) {
-        /* if reading from file, try to substitute macros */
+    if (__builtin_expect(t >= TOK_IDENT && (parse_flags & PARSE_FLAG_PREPROCESS), 1)) {
         Sym *s = define_find(t);
-        if (s) {
+        if (__builtin_expect(s != NULL, 0)) {
             Sym *nested_list = NULL;
             macro_subst_tok(&tokstr_buf, &nested_list, s);
             tok_str_add(&tokstr_buf, 0);
@@ -3547,7 +3547,6 @@ redo:
     }
 
 convert:
-    /* convert preprocessor tokens into C tokens */
     if (t == TOK_PPNUM) {
         if  (parse_flags & PARSE_FLAG_TOK_NUM)
             parse_number(tokc.str.data);
