@@ -339,6 +339,19 @@ WHICH = sh -c 'command -v $1'
 run-if = $(if $(shell $(call WHICH,$1)),$S $1 $2,@echo "(skipping $@ - no $1)")
 S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
+
+# Profile-Guided Optimization (PGO) build target
+pgo:
+	$(MAKE) clean
+	CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
+	$(MAKE) -j$(nproc) -B
+	for i in 1 2 3 4 5; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
+	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
+	$(MAKE) clean
+	CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
+	$(MAKE) -j$(nproc) -B
+	@echo "PGO build complete!"
+
 # --------------------------------------------------------------------------
 # documentation and man page
 tcc-doc.html: tcc-doc.texi
