@@ -343,29 +343,33 @@ S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 # Profile-Guided Optimization (PGO) build target
 # Usage: CC=clang make pgo or CC=gcc make pgo (or PGO_CC=clang|gcc)
 PGO_CC ?= clang
-ifdef CC
-PGO_CC := $(CC)
-endif
 pgo:
-	@if [ "$(or $(CC),$(PGO_CC))" = "clang" ]; then \
-		echo "Building PGO with Clang..."; \
-		$(MAKE) CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" configure; \
-		$(MAKE) -j$(nproc) -B CC=clang; \
-		for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done; \
-		llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw"); \
-		$(MAKE) clean; \
-		$(MAKE) CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" configure; \
-		$(MAKE) -j$(nproc) -B CC=clang; \
-	else \
-		echo "Building PGO with GCC..."; \
-		$(MAKE) CC=gcc CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" configure; \
-		$(MAKE) -j$(nproc) -B CC=gcc; \
-		for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done; \
-		$(MAKE) clean; \
-		$(MAKE) CC=gcc CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" configure; \
-		$(MAKE) -j$(nproc) -B CC=gcc; \
-	fi
-	@echo "PGO build complete!"
+	$(MAKE) clean
+ifeq ($(PGO_CC),clang)
+	@echo "=== Phase 1: Building PGO instrumented binary (Clang) ==="
+	CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
+	$(MAKE) -j$(nproc) -B CC=clang
+	@echo "=== Phase 2: Running training workload ==="
+	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
+	@echo "=== Phase 3: Merging profile data ==="
+	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
+	$(MAKE) clean
+	@echo "=== Phase 4: Building PGO optimized binary (Clang) ==="
+	CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
+	$(MAKE) -j$(nproc) -B CC=clang
+else
+	@echo "=== Phase 1: Building PGO instrumented binary (GCC) ==="
+	CC=gcc CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
+	$(MAKE) -j$(nproc) -B CC=gcc
+	@echo "=== Phase 2: Running training workload ==="
+	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
+	$(MAKE) clean
+	@echo "=== Phase 3: Building PGO optimized binary (GCC) ==="
+	CC=gcc CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" ./configure
+	$(MAKE) -j$(nproc) -B CC=gcc
+endif
+	@echo "PGO build complete using $(PGO_CC)!"
+
 
 
 # --------------------------------------------------------------------------
