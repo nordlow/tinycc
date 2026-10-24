@@ -812,6 +812,23 @@ static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
 {
     int c;
     for(;;) {
+        size_t rem = file->buf_end - (p + 1);
+        if (rem > 0) {
+            uint8_t *p_sep = (uint8_t *)memchr(p + 1, sep, rem);
+            uint8_t *p_bs  = (uint8_t *)memchr(p + 1, '\\', rem);
+            uint8_t *p_nl  = (uint8_t *)memchr(p + 1, '\n', rem);
+            uint8_t *next_special = p + 1 + rem;
+            if (p_sep && p_sep < next_special) next_special = p_sep;
+            if (p_bs  && p_bs  < next_special) next_special = p_bs;
+            if (p_nl  && p_nl  < next_special) next_special = p_nl;
+
+            if (next_special > p + 1) {
+                size_t len = next_special - (p + 1);
+                if (str)
+                    cstr_cat(str, (char *)(p + 1), len);
+                p = next_special - 1;
+            }
+        }
         c = *++p;
     redo:
         if (c == sep) {
