@@ -2558,10 +2558,11 @@ maybe_space:
         if (parse_flags & PARSE_FLAG_SPACES)
             goto keep_tok_flags;
         while (1) {
-            if (*p == ' ') p++;
-            else if (*p == '\t') p++;
-            else if (isidnum_table[*p - CH_EOF] & IS_SPC) p++;
-            else break;
+            int cc = *p;
+            if (cc == ' ' || cc == '\t' || cc == '\r' || cc == '\f' || cc == '\v')
+                p++;
+            else
+                break;
         }
         goto redo_no_start;
     case '\f':
