@@ -746,24 +746,25 @@ static int skip_spaces(void)
 /* single line C++ comments */
 static uint8_t *parse_line_comment(uint8_t *p)
 {
-    int c;
     for(;;) {
-        for (;;) {
-            c = *++p;
-    redo:
-            if (c == '\n' || c == '\\')
-                break;
-            c = *++p;
-            if (c == '\n' || c == '\\')
-                break;
-        }
+        size_t rem = file->buf_end - (p + 1);
+        if (rem == 0)
+            break;
+        uint8_t *p_nl = (uint8_t *)memchr(p + 1, '\n', rem);
+        uint8_t *p_bs = (uint8_t *)memchr(p + 1, '\\', rem);
+        uint8_t *stop = p + 1 + rem;
+        if (p_nl && p_nl < stop) stop = p_nl;
+        if (p_bs && p_bs < stop) stop = p_bs;
+
+        p = stop - 1;
+        int c = *++p;
         if (c == '\n')
             break;
-        c = handle_bs(&p);
-        if (c == CH_EOF)
-            break;
-        if (c != '\\')
-            goto redo;
+        if (c == '\\') {
+            int ch = handle_bs(&p);
+            if (ch == CH_EOF)
+                break;
+        }
     }
     return p;
 }
