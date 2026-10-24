@@ -1,0 +1,1 @@
+303_nocopy_init_test.c:7: error: rhs struct 'UniqueRes' is not copyable (or aliasable)

@@ -1,0 +1,1 @@
+302_nocopy_param_test.c:10: error: struct 'UniqueRes' is non-copyable
