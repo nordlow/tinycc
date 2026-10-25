@@ -2799,8 +2799,7 @@ maybe_newline:
                 p++;
                 tok = TOK_DOTS;
             } else {
-                *--p = '.'; /* may underflow into file->unget[] */
-                tok = '.';
+                tok = TOK_TWODOTS;
             }
         } else {
             tok = '.';

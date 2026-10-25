@@ -5206,6 +5206,49 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
         int array_qualifiers = 0;
         /* array definition */
         next();
+        if (tok == TOK_TWODOTS) {
+            next();
+            skip(']');
+            /* parse next post type */
+            post_type(type, ad, storage, (td & ~(TYPE_DIRECT|TYPE_ABSTRACT)) | TYPE_NEST);
+
+            /* Slice type: C[..] -> struct { T *ptr; size_t length; } */
+            {
+                Sym *s, *f1, *f2;
+                CType ptr_type, len_type, struct_type;
+                AttributeDef ad1;
+
+                ptr_type = *type;
+                mk_pointer(&ptr_type);
+
+                len_type.t = VT_SIZE_T;
+                len_type.ref = NULL;
+
+                struct_type.t = VT_STRUCT;
+                struct_type.ref = NULL;
+                s = sym_push(SYM_STRUCT | (anon_sym++), &struct_type, 0, 0);
+                s->r = 0;
+                s->type.ref = s;
+
+                f1 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
+                f1->next = NULL;
+                s->next = f1;
+
+                f2 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
+                f2->next = NULL;
+                f1->next = f2;
+
+                memset(&ad1, 0, sizeof(ad1));
+                check_fields(&s->type, 1);
+                check_fields(&s->type, 0);
+                struct_layout(&s->type, &ad1);
+
+                type->t = VT_STRUCT;
+                type->ref = s;
+            }
+            nocode_wanted = saved_nocode_wanted;
+            return 1;
+        }
         n = -1;
         t1 = 0;
         if (td & TYPE_PARAM) while (1) {
