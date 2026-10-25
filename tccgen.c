@@ -3555,6 +3555,9 @@ ST_FUNC int type_size(CType *type, int *a)
     } else if (bt == VT_QLONG || bt == VT_QFLOAT) {
         *a = 8;
         return 16;
+    } else if (bt == VT_SLICE) {
+        *a = PTR_SIZE;
+        return 2 * PTR_SIZE;
     } else {
         /* char, void, function, _Bool */
         *a = 1;
@@ -4184,9 +4187,33 @@ skip_param:
 
 static Sym * find_field_opt (CType *type, int v, int *cumofs)
 {
+    int bt = type->t & VT_BTYPE;
     Sym *s;
     int v1 = v | SYM_FIELD;
-    if ((type->t & VT_BTYPE) != VT_STRUCT)
+    int tok_ptr, tok_len;
+    static Sym f_ptr;
+    static Sym f_len;
+
+    if (bt == VT_SLICE) {
+        tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
+        tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
+        if (v1 == tok_ptr) {
+            *cumofs = 0;
+            f_ptr.type = type->ref ? type->ref->type : int_type;
+            mk_pointer(&f_ptr.type);
+            f_ptr.c = 0;
+            return &f_ptr;
+        } else if (v1 == tok_len) {
+            *cumofs = PTR_SIZE;
+            f_len.type.t = VT_SIZE_T;
+            f_len.type.ref = NULL;
+            f_len.c = PTR_SIZE;
+            return &f_len;
+        }
+        return NULL;
+    }
+
+    if (bt != VT_STRUCT)
         return NULL;
     s = type->ref;
     if (!s || s->c < 0)
@@ -4210,10 +4237,35 @@ static Sym * find_field_opt (CType *type, int v, int *cumofs)
 
 static Sym * find_field (CType *type, int v, int *cumofs)
 {
+    int bt = type->t & VT_BTYPE;
     Sym *s = type->ref;
     int v1 = v | SYM_FIELD;
+    int tok_ptr, tok_len;
+    static Sym f_ptr;
+    static Sym f_len;
+
+    if (bt == VT_SLICE) {
+        tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
+        tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
+        if (v1 == tok_ptr) {
+            *cumofs = 0;
+            f_ptr.type = type->ref ? type->ref->type : int_type;
+            mk_pointer(&f_ptr.type);
+            f_ptr.c = 0;
+            return &f_ptr;
+        } else if (v1 == tok_len) {
+            *cumofs = PTR_SIZE;
+            f_len.type.t = VT_SIZE_T;
+            f_len.type.ref = NULL;
+            f_len.c = PTR_SIZE;
+            return &f_len;
+        }
+        if (!(v & SYM_FIELD))
+            tcc_error("field not found: %s", get_tok_str(v, NULL));
+        return NULL;
+    }
     if (!(v & SYM_FIELD)) { /* top-level call */
-        if ((type->t & VT_BTYPE) != VT_STRUCT)
+        if (bt != VT_STRUCT)
             expect("struct or union");
         if (v < TOK_UIDENT)
             expect("field name");
