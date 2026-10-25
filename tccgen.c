@@ -9107,6 +9107,52 @@ static void pe_check_linkage(CType *type, AttributeDef *ad)
 }
 #endif
 
+/* Register 'type' as a typedef named 'v'.  Both C 'typedef' and D-style
+   'alias' declarations use this representation.  */
+static void declare_typedef(int v, CType *type, AttributeDef *ad)
+{
+    Sym *sym;
+
+    /* save typedefed type  */
+    /* XXX: test storage specifiers ? */
+    sym = sym_find(v);
+    if (sym && sym->sym_scope == local_scope) {
+        if (!is_compatible_types(&sym->type, type)
+            || !(sym->type.t & VT_TYPEDEF))
+            tcc_error("incompatible redefinition of '%s'",
+                get_tok_str(v, NULL));
+        sym->type = *type;
+    } else {
+        sym = sym_push(v, type, 0, 0);
+    }
+    sym->a = ad->a;
+    if ((type->t & VT_BTYPE) == VT_FUNC)
+      merge_funcattr(&sym->type.ref->f, &ad->f);
+    if (debug_modes)
+        tcc_debug_typedef (tcc_state, sym);
+}
+
+/* D-style type alias:  alias Name = Type;  */
+static void do_d_alias(void)
+{
+    int v, dummy;
+    CType type;
+    AttributeDef ad;
+
+    next();
+    if (tok < TOK_UIDENT)
+        expect("identifier");
+    v = tok;
+    next();
+    skip('=');
+    if (!parse_btype(&type, &ad, 0))
+        expect("type");
+    type_decl(&type, &ad, &dummy, TYPE_ABSTRACT);
+    type.t |= VT_TYPEDEF;
+    declare_typedef(v, &type, &ad);
+    skip(';');
+}
+
 /* 'l' is VT_LOCAL or VT_CONST to define default storage type
    or VT_CMP if parsing old style parameter list
    or VT_JMP if parsing c99 for decl: for (int i = 0, ...) */
@@ -9123,6 +9169,12 @@ static int decl(int l)
         oldint = 0;
         if (check_d_static_assert())
             continue;
+        if (tok == TOK_ALIAS1) {
+            if (l != VT_CONST && l != VT_LOCAL)
+                tcc_error("alias declaration is only allowed at file or block scope");
+            do_d_alias();
+            continue;
+        }
         if (!parse_btype(&btype, &adbase, l == VT_LOCAL)) {
             if (l == VT_JMP)
                 return 0;
@@ -9279,23 +9331,7 @@ static int decl(int l)
 		    convert_parameter_type(&type);
 		    sym->type = type;
 		} else if (type.t & VT_TYPEDEF) {
-                    /* save typedefed type  */
-                    /* XXX: test storage specifiers ? */
-                    sym = sym_find(v);
-                    if (sym && sym->sym_scope == local_scope) {
-                        if (!is_compatible_types(&sym->type, &type)
-                            || !(sym->type.t & VT_TYPEDEF))
-                            tcc_error("incompatible redefinition of '%s'",
-                                get_tok_str(v, NULL));
-                        sym->type = type;
-                    } else {
-                        sym = sym_push(v, &type, 0, 0);
-                    }
-                    sym->a = ad.a;
-                    if ((type.t & VT_BTYPE) == VT_FUNC)
-                      merge_funcattr(&sym->type.ref->f, &ad.f);
-                    if (debug_modes)
-                        tcc_debug_typedef (tcc_state, sym);
+                    declare_typedef(v, &type, &ad);
 		} else if ((type.t & VT_BTYPE) == VT_VOID
 			   && !(type.t & VT_EXTERN)) {
 		    tcc_error("declaration of void object");
