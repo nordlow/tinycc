@@ -1,0 +1,3 @@
+s.length = 3
+s.ptr[1] = 200
+func len = 3, ptr[0] = 100

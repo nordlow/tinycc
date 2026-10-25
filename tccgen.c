@@ -2905,7 +2905,16 @@ static int compare_types(CType *type1, CType *type2, int unqualified)
             return compare_types(type1, type2, 1);
         return is_compatible_types(type1, type2);
     } else if (bt1 == VT_STRUCT) {
-        return (type1->ref == type2->ref);
+        Sym *s1 = type1->ref, *s2 = type2->ref;
+        if (s1 == s2)
+            return 1;
+        if (s1 && s2 && s1->next && s1->next->next && !s1->next->next->next &&
+            s2 && s2->next && s2->next->next && !s2->next->next->next) {
+            CType *pt1 = pointed_type(&s1->next->type);
+            CType *pt2 = pointed_type(&s2->next->type);
+            return compare_types(pt1, pt2, unqualified);
+        }
+        return (s1 == s2);
     } else if (bt1 == VT_FUNC) {
         return is_compatible_func(type1, type2);
     } else {
@@ -5206,7 +5215,7 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
         int array_qualifiers = 0;
         /* array definition */
         next();
-        if (tok == TOK_TWODOTS) {
+        if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
             next();
             skip(']');
             /* parse next post type */
