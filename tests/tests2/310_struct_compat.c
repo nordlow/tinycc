@@ -14,7 +14,7 @@ int main(void)
     struct A a = { 1, 2 };
     struct A b = a;
     int arr[3] = { 10, 20, 30 };
-    IntSlice s = { arr, 3 };
+    IntSlice s = { .length = 3, .ptr = arr };
     OtherIntSlice t;
     t = s;
 

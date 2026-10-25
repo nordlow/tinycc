@@ -160,6 +160,7 @@ static void skip_or_save_block(TokenString **str);
 static void gv_dup(void);
 static int get_temp_local_var(int size,int align,int *r2);
 static void cast_error(CType *st, CType *dt);
+static int is_slice_type(CType *type);
 static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
@@ -2734,6 +2735,15 @@ static void type_to_str(char *buf, int buf_size,
         pstrcat(buf, buf_size, tstr);
         break;
     case VT_STRUCT:
+        if (is_slice_type(type) && type->ref->next && type->ref->next->next) {
+            CType *elem = &type->ref->next->next->type.ref->type;
+            if (varstr && '*' == *varstr)
+                snprintf(buf1, sizeof(buf1), "(%s)[..]", varstr);
+            else
+                snprintf(buf1, sizeof(buf1), "%s[..]", varstr ? varstr : "");
+            type_to_str(buf, buf_size, elem, buf1);
+            goto no_var;
+        }
         tstr = "struct ";
         if (IS_UNION(t))
             tstr = "union ";
@@ -2911,11 +2921,11 @@ static int compare_types(CType *type1, CType *type2, int unqualified)
         /* Slice types are represented as anonymous structs.  Compare their
            element types instead of requiring the same struct symbol.  */
         if (s1 && s2 && s1->a.is_slice && s2->a.is_slice
-            && s1->next && s2->next
-            && (s1->next->type.t & VT_BTYPE) == VT_PTR
-            && (s2->next->type.t & VT_BTYPE) == VT_PTR) {
-            CType *pt1 = pointed_type(&s1->next->type);
-            CType *pt2 = pointed_type(&s2->next->type);
+            && s1->next && s1->next->next && s2->next && s2->next->next
+            && (s1->next->next->type.t & VT_BTYPE) == VT_PTR
+            && (s2->next->next->type.t & VT_BTYPE) == VT_PTR) {
+            CType *pt1 = pointed_type(&s1->next->next->type);
+            CType *pt2 = pointed_type(&s2->next->next->type);
             return compare_types(pt1, pt2, unqualified);
         }
         return 0;
@@ -3590,6 +3600,13 @@ static inline CType *pointed_type(CType *type)
     return &type->ref->type;
 }
 
+/* return true if 'type' is a slice type (T[..]) */
+static int is_slice_type(CType *type)
+{
+    return (type->t & VT_BTYPE) == VT_STRUCT
+        && type->ref && type->ref->a.is_slice;
+}
+
 static void check_restrict_type(CType *type)
 {
     while ((type->t & VT_BTYPE) == VT_PTR) {
@@ -3637,6 +3654,55 @@ static int is_compatible_unqualified_types(CType *type1, CType *type2)
 static void cast_error(CType *st, CType *dt)
 {
     type_incompatibility_error(st, dt, "cannot convert '%s' to '%s'");
+}
+
+/* Convert the array expression on top of the value stack into a slice
+   value of type 'dt'.  Return non-zero if a conversion was performed.  */
+static int convert_array_to_slice(CType *dt)
+{
+    CType st, len_type, ptr_type;
+    Sym *s;
+    int size, align, r2, l, elem_size;
+
+    st = vtop->type;
+    if (!(st.t & (VT_ARRAY | VT_VLA)) || !is_slice_type(dt))
+        return 0;
+
+    s = dt->ref;
+    ptr_type = s->next->next->type;
+    if (!is_compatible_unqualified_types(&st.ref->type,
+                                         pointed_type(&ptr_type)))
+        cast_error(&st, dt);
+
+    size = type_size(dt, &align);
+    l = get_temp_local_var(size, align, &r2);
+
+    /* .length */
+    if (st.t & VT_VLA) {
+        elem_size = type_size(&st.ref->type, &align);
+        vset(&int_type, VT_LOCAL | VT_LVAL, st.ref->c);
+        if (elem_size != 1) {
+            vpushi(elem_size);
+            gen_op('/');
+        }
+    } else {
+        vpushs(st.ref->c);
+    }
+    len_type = s->next->type;
+    vset(&len_type, VT_LOCAL | VT_LVAL, l);
+    vswap();
+    vstore();
+    vpop();
+
+    /* .ptr */
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, l + PTR_SIZE);
+    vswap();
+    vstore();
+    vpop();
+
+    vset(dt, VT_LOCAL | VT_LVAL, l);
+    vtop->r2 = r2;
+    return 1;
 }
 
 /* verify type compatibility to store vtop in 'dt' type */
@@ -3730,6 +3796,7 @@ static void verify_assign_cast(CType *dt)
 
 static void gen_assign_cast(CType *dt)
 {
+    convert_array_to_slice(dt);
     verify_assign_cast(dt);
     gen_cast(dt);
 }
@@ -3738,6 +3805,8 @@ static void gen_assign_cast(CType *dt)
 ST_FUNC void vstore(void)
 {
     int sbt, dbt, ft, r, size, align, bit_size, bit_pos, delayed_cast;
+
+    convert_array_to_slice(&vtop[-1].type);
 
     ft = vtop[-1].type.t;
     sbt = vtop->type.t & VT_BTYPE;
@@ -4202,16 +4271,16 @@ static Sym * find_field_opt (CType *type, int v, int *cumofs)
         tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
         tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
         if (v1 == tok_ptr) {
-            *cumofs = 0;
+            *cumofs = PTR_SIZE;
             f_ptr.type = type->ref ? type->ref->type : int_type;
             mk_pointer(&f_ptr.type);
-            f_ptr.c = 0;
+            f_ptr.c = PTR_SIZE;
             return &f_ptr;
         } else if (v1 == tok_len) {
-            *cumofs = PTR_SIZE;
+            *cumofs = 0;
             f_len.type.t = VT_SIZE_T;
             f_len.type.ref = NULL;
-            f_len.c = PTR_SIZE;
+            f_len.c = 0;
             return &f_len;
         }
         return NULL;
@@ -4252,16 +4321,16 @@ static Sym * find_field (CType *type, int v, int *cumofs)
         tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
         tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
         if (v1 == tok_ptr) {
-            *cumofs = 0;
+            *cumofs = PTR_SIZE;
             f_ptr.type = type->ref ? type->ref->type : int_type;
             mk_pointer(&f_ptr.type);
-            f_ptr.c = 0;
+            f_ptr.c = PTR_SIZE;
             return &f_ptr;
         } else if (v1 == tok_len) {
-            *cumofs = PTR_SIZE;
+            *cumofs = 0;
             f_len.type.t = VT_SIZE_T;
             f_len.type.ref = NULL;
-            f_len.c = PTR_SIZE;
+            f_len.c = 0;
             return &f_len;
         }
         if (!(v & SYM_FIELD))
@@ -5277,7 +5346,7 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
             /* parse next post type */
             post_type(type, ad, storage, (td & ~(TYPE_DIRECT|TYPE_ABSTRACT)) | TYPE_NEST);
 
-            /* Slice type: C[..] -> struct { T *ptr; size_t length; } */
+            /* Slice type: C[..] -> struct { size_t length; T *ptr; } */
             {
                 Sym *s, *f1, *f2;
                 CType ptr_type, len_type, struct_type;
@@ -5295,11 +5364,11 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
                 s->r = 0;
                 s->type.ref = s;
 
-                f1 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
+                f1 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
                 f1->next = NULL;
                 s->next = f1;
 
-                f2 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
+                f2 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
                 f2->next = NULL;
                 f1->next = f2;
 
@@ -8361,6 +8430,34 @@ static void init_putv(init_params *p, CType *type, unsigned long c)
     }
 }
 
+/* Initialize a slice object at 'c' from the array expression on top of
+   the value stack.  */
+static void init_slice_from_array(init_params *p, CType *type, unsigned long c)
+{
+    CType st = vtop->type;
+    Sym *s = type->ref;
+    CType *ptr_type = &s->next->next->type;
+    int elem_size, align;
+
+    if (!is_compatible_unqualified_types(&st.ref->type,
+                                         pointed_type(ptr_type)))
+        cast_error(&st, type);
+
+    if (st.t & VT_VLA) {
+        elem_size = type_size(&st.ref->type, &align);
+        vset(&int_type, VT_LOCAL | VT_LVAL, st.ref->c);
+        if (elem_size != 1) {
+            vpushi(elem_size);
+            gen_op('/');
+        }
+    } else {
+        vpushs(st.ref->c);
+    }
+    init_putv(p, &s->next->type, c);
+
+    init_putv(p, ptr_type, c + PTR_SIZE);
+}
+
 /* 't' contains the type and storage info. 'c' is the offset of the
    object in section 'sec'. If 'sec' is NULL, it means stack based
    allocation. 'flags & DIF_FIRST' is true if array '{' must be read (multi
@@ -8396,6 +8493,18 @@ static void decl_initializer(init_params *p, CType *type, unsigned long c, int f
 	parse_init_elem(!p->sec ? EXPR_ANY : EXPR_CONST);
         nocode_wanted = ncw_prev;
         flags |= DIF_HAVE_ELEM;
+    }
+
+    if ((flags & DIF_HAVE_ELEM) && is_slice_type(type)) {
+        if (vtop->type.t & (VT_ARRAY | VT_VLA)) {
+            if (flags & DIF_SIZE_ONLY)
+                vpop();
+            else
+                init_slice_from_array(p, type, c);
+            return;
+        }
+        if (!is_compatible_unqualified_types(type, &vtop->type))
+            cast_error(&vtop->type, type);
     }
 
     if (type->t & VT_ARRAY) {

@@ -26,7 +26,7 @@ int main(void)
     alias Local = long;
     Local l = 9;
     int arr[2] = { 10, 20 };
-    IntSlice sl = { arr, 2 };
+    IntSlice sl = { .length = 2, .ptr = arr };
     Fn f = add1;
 
     printf("%d %d %d %d %ld\n", i, *p, a[2], s.x, (long)l);

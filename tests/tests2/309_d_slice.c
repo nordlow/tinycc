@@ -6,7 +6,7 @@ void print_slice(int s[...]) {
 
 int main() {
     int arr[3] = {100, 200, 300};
-    int s[..] = {arr, 3};
+    int s[..] = { .length = 3, .ptr = arr };
 
     printf("s.length = %ld\n", (long)s.length);
     printf("s.ptr[1] = %d\n", s.ptr[1]);

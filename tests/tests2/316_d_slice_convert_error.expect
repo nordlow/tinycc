@@ -1,0 +1,1 @@
+316_d_slice_convert_error.c:6: error: cannot convert 'long [2]' to 'int [..]'
