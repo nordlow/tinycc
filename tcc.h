@@ -508,7 +508,7 @@ struct SymAttr {
     addrtaken   : 1,
     nodebug     : 1,
     nocopy      : 1,
-    xxxx        : 1; /* not used */
+    is_slice    : 1; /* struct generated for a T[..] slice type */
 };
 
 /* function attributes or temporary attributes for parsing */

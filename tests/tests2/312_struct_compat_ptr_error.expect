@@ -1,0 +1,1 @@
+312_struct_compat_ptr_error.c:8: error: cannot convert 'struct Q' to 'struct P'

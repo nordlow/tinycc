@@ -1,0 +1,1 @@
+311_struct_compat_error.c:8: error: cannot convert 'struct B' to 'struct A'

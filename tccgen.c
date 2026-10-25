@@ -2908,13 +2908,17 @@ static int compare_types(CType *type1, CType *type2, int unqualified)
         Sym *s1 = type1->ref, *s2 = type2->ref;
         if (s1 == s2)
             return 1;
-        if (s1 && s2 && s1->next && s1->next->next && !s1->next->next->next &&
-            s2 && s2->next && s2->next->next && !s2->next->next->next) {
+        /* Slice types are represented as anonymous structs.  Compare their
+           element types instead of requiring the same struct symbol.  */
+        if (s1 && s2 && s1->a.is_slice && s2->a.is_slice
+            && s1->next && s2->next
+            && (s1->next->type.t & VT_BTYPE) == VT_PTR
+            && (s2->next->type.t & VT_BTYPE) == VT_PTR) {
             CType *pt1 = pointed_type(&s1->next->type);
             CType *pt2 = pointed_type(&s2->next->type);
             return compare_types(pt1, pt2, unqualified);
         }
-        return (s1 == s2);
+        return 0;
     } else if (bt1 == VT_FUNC) {
         return is_compatible_func(type1, type2);
     } else {
@@ -5303,6 +5307,7 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
                 check_fields(&s->type, 1);
                 check_fields(&s->type, 0);
                 struct_layout(&s->type, &ad1);
+                s->a.is_slice = 1;
 
                 type->t = VT_STRUCT;
                 type->ref = s;
