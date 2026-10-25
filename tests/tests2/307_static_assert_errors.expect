@@ -1,0 +1,11 @@
+[test_d_static_assert_msg]
+307_static_assert_errors.c:2: error: custom d static assert message
+
+[test_d_static_assert_nomsg]
+307_static_assert_errors.c:5: error: _Static_assert fail
+
+[test_d_static_assert_struct_msg]
+307_static_assert_errors.c:8: error: struct d static assert msg
+
+[test_d_static_assert_struct_nomsg]
+307_static_assert_errors.c:11: error: _Static_assert fail

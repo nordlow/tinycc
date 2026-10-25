@@ -161,6 +161,7 @@ static void gv_dup(void);
 static int get_temp_local_var(int size,int align,int *r2);
 static void cast_error(CType *st, CType *dt);
 static void end_switch(void);
+static int check_d_static_assert(void);
 static void do_Static_assert(void);
 
 /* ------------------------------------------------------------------------- */
@@ -4643,6 +4644,8 @@ do_decl:
             c = 0;
             flexible = 0;
             while (tok != '}') {
+                if (check_d_static_assert())
+                    continue;
                 if (!parse_btype(&btype, &ad1, 0)) {
                     if (tok == TOK_STATIC_ASSERT) {
                         do_Static_assert();
@@ -8941,6 +8944,20 @@ static void free_inline_functions(TCCState *s)
     dynarray_reset(&s->inline_fns, &s->nb_inline_fns);
 }
 
+static int check_d_static_assert(void)
+{
+    if (tok == TOK_STATIC) {
+        int saved_tok = tok;
+        next();
+        if (tok >= TOK_IDENT && strcmp(get_tok_str(tok, &tokc), "assert") == 0) {
+            do_Static_assert();
+            return 1;
+        }
+        unget_tok(saved_tok);
+    }
+    return 0;
+}
+
 static void do_Static_assert(void)
 {
     int c;
@@ -8995,6 +9012,8 @@ static int decl(int l)
     while (1) {
 
         oldint = 0;
+        if (check_d_static_assert())
+            continue;
         if (!parse_btype(&btype, &adbase, l == VT_LOCAL)) {
             if (l == VT_JMP)
                 return 0;

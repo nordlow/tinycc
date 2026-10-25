@@ -99,7 +99,7 @@ endif
 60_errors_and_warnings.test : FLAGS += -dt
 96_nodata_wanted.test : FLAGS += -dt
 139_arm64_errors.test : FLAGS += -dt
-
+307_static_assert_errors.test : FLAGS += -dt
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
