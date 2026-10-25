@@ -4172,6 +4172,32 @@ skip_param:
     goto redo;
 }
 
+static Sym * find_field_opt (CType *type, int v, int *cumofs)
+{
+    Sym *s;
+    int v1 = v | SYM_FIELD;
+    if ((type->t & VT_BTYPE) != VT_STRUCT)
+        return NULL;
+    s = type->ref;
+    if (!s || s->c < 0)
+        return NULL;
+    while ((s = s->next) != NULL) {
+        if (s->v == v1) {
+            *cumofs = s->c;
+            return s;
+        }
+        if ((s->type.t & VT_BTYPE) == VT_STRUCT
+          && s->v >= (SYM_FIRST_ANOM | SYM_FIELD)) {
+            Sym *ret = find_field_opt (&s->type, v1, cumofs);
+            if (ret) {
+                *cumofs += s->c;
+                return ret;
+            }
+        }
+    }
+    return NULL;
+}
+
 static Sym * find_field (CType *type, int v, int *cumofs)
 {
     Sym *s = type->ref;
@@ -6239,7 +6265,113 @@ special_math_val:
             test_lvalue();
             /* expect pointer on structure */
             next();
-	    s = find_field(&vtop->type, tok, &cumofs);
+            s = NULL;
+            if ((vtop->type.t & VT_BTYPE) == VT_STRUCT) {
+                s = find_field_opt(&vtop->type, tok, &cumofs);
+            }
+            if (!s) {
+                Sym *fs = sym_find(tok);
+                if (fs && (fs->type.t & VT_BTYPE) == VT_FUNC) {
+                    vpushsym(&fs->type, fs);
+                    vswap();
+                    next();
+                    if (tok != '(')
+                        expect("(' after UFCS function call");
+                    {
+                        SValue ret;
+                        Sym *sa;
+                        int nb_args, ret_nregs, ret_align, regsize, variadic;
+                        TokenString *p, *p2;
+
+                        s = vtop[-1].type.ref;
+                        vtop[-1].r &= ~VT_LVAL;
+                        next();
+                        sa = s->next ? s->next->next : NULL;
+                        nb_args = 1;
+                        ret.r2 = VT_CONST;
+                        if ((s->type.t & VT_BTYPE) == VT_STRUCT) {
+                            variadic = (s->f.func_type == FUNC_ELLIPSIS);
+                            ret_nregs = gfunc_sret(&s->type, variadic, &ret.type,
+                                                   &ret_align, &regsize);
+                            if (ret_nregs <= 0) {
+                                int size, align;
+                                size = type_size(&s->type, &align);
+                                loc = (loc - size) & -align;
+                                ret.type = s->type;
+                                ret.r = VT_LOCAL | VT_LVAL;
+                                vseti(VT_LOCAL, loc);
+                                ret.c = vtop->c;
+                            }
+                        } else {
+                            ret_nregs = 1;
+                            ret.type = s->type;
+                        }
+
+                        if (ret_nregs > 0) {
+                            ret.c.i = 0;
+                            PUT_R_RET(&ret, ret.type.t);
+                        }
+
+                        p = NULL;
+                        if (tok != ')') {
+                            int r = tcc_state->reverse_funcargs;
+                            for(;;) {
+                                if (r) {
+                                    skip_or_save_block(&p2);
+                                    p2->prev = p, p = p2;
+                                } else {
+                                    expr_eq();
+                                    gfunc_param_typed(s, sa);
+                                }
+                                nb_args++;
+                                if (sa)
+                                    sa = sa->next;
+                                if (tok == ')')
+                                    break;
+                                skip(',');
+                            }
+                        }
+                        if (sa)
+                            tcc_error("too few arguments to function");
+
+                        if (p) {
+                            int n;
+                            for (n = 0; p; p = p2, ++n) {
+                                p2 = p, sa = s->next ? s->next->next : NULL;
+                                do {
+                                    if (sa) sa = sa->next;
+                                    p2 = p2->prev;
+                                } while (p2 && sa);
+                                p2 = p->prev;
+                                begin_macro(p, 1), next();
+                                expr_eq();
+                                gfunc_param_typed(s, sa);
+                                end_macro();
+                            }
+                            vrev(n);
+                        }
+
+                        next();
+                        vcheck_cmp();
+                        gfunc_call(nb_args);
+
+                        if (ret_nregs < 0) {
+                            vsetc(&ret.type, ret.r, &ret.c);
+#ifdef TCC_TARGET_RISCV64
+                            arch_transfer_ret_regs(1);
+#endif
+                        } else {
+                            vsetc(&ret.type, ret.r, &ret.c);
+                            PUT_R_RET(vtop, ret.type.t);
+                        }
+                        goto skip_normal_next;
+                    }
+                } else if ((vtop->type.t & VT_BTYPE) == VT_STRUCT) {
+                    s = find_field(&vtop->type, tok, &cumofs);
+                } else {
+                    expect("struct or union");
+                }
+            }
             /* add field offset to pointer */
             gaddrof();
             vtop->type = char_pointer_type; /* change type to 'char *' */
@@ -6259,6 +6391,7 @@ special_math_val:
 #endif
             }
             next();
+            skip_normal_next: ;
         } else if (tok == '[') {
             next();
             gexpr();
