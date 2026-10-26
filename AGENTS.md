@@ -1,8 +1,5 @@
 # Agent Instructions
 
-Use parallel builds (`-jN`) for all `make` invocations. `N` is the
-number of CPU cores (e.g. `-j8`, or `-j$(nproc)`).
-
 ## Verification (required)
 
 Whenever you modify files in this repository, you MUST verify that no
@@ -34,14 +31,28 @@ verifying.
 
 ## Adding tests
 
-When adding a new test, prefer placing it under `tests/tests2/`
-instead of directly under `tests/`. Follow the existing conventions
-there: use the next free numeric prefix, name the source
-`NN_descriptive_name.c`, and add a matching
-`NN_descriptive_name.expect` file with the expected output.
-
-Only add a test directly under `tests/` if it cannot be expressed in
-the `tests/tests2/` framework.
+- **Comprehensive Coverage:** Write extensive tests that try to cover
+  all aspects of features added (including edge cases, error
+  conditions, and valid usage).
+- When adding a new test, prefer placing it under `tests/tests2/`
+  instead of directly under `tests/`. Follow the existing conventions
+  there: use the next free numeric prefix, name the source
+  `NN_descriptive_name.c`, and add a matching
+  `NN_descriptive_name.expect` file with the expected output.
+- Only add a test directly under `tests/` if it cannot be expressed in
+  the `tests/tests2/` framework.
+- **Preserving Tests:** Never remove existing tests unless explicitly
+  approved via a query you propose that proves the test is wrong.
+####### Ancestor
+- **Comprehensive Coverage:** Write extensive tests that try to cover all aspects of features added (including edge cases, error conditions, and valid usage).
+- When adding a new test, prefer placing it under `tests/tests2/`
+  instead of directly under `tests/`. Follow the existing conventions
+  there: use the next free numeric prefix, name the source
+  `NN_descriptive_name.c`, and add a matching
+  `NN_descriptive_name.expect` file with the expected output.
+- Only add a test directly under `tests/` if it cannot be expressed in
+  the `tests/tests2/` framework.
+- **Preserving Tests:** Never remove existing tests unless explicitly approved via a query you propose that proves the test is wrong.
 
 ## Final check (before declaring a task done)
 
@@ -63,20 +74,33 @@ whenever incremental results look suspicious.
 
 ## Profiling & PGO Optimization
 
-When evaluating performance or hot spots in the compiler, build `tcc` using Clang or GCC with maximum preferred optimizations and Profile-Guided Optimization (PGO) via the automated Makefile target:
+When evaluating performance or hot spots in the compiler, build `tcc`
+using Clang or GCC with maximum preferred optimizations and
+Profile-Guided Optimization (PGO) via the automated Makefile target:
 
 ```bash
 make pgo PGO_CC=clang
 make pgo PGO_CC=gcc
 ```
 
-*(Note: GNU Make assigns a default built-in value to `CC` (`cc`/`gcc`), so passing `PGO_CC=...` explicitly is required to override the compiler selection).*
+*(Note: GNU Make assigns a default built-in value to `CC`
+ (`cc`/`gcc`), so passing `PGO_CC=...` explicitly is required to
+ override the compiler selection).*
 
-This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and the final PGO-optimized production build. It then runs `make pgo-bench`, which reports the self-compile throughput in Mlines/s and the number of executed instructions from Valgrind cachegrind (`I refs`). `PGO_MARCH` defaults to `native`; on x86, `-mno-avx512f` is added so that Valgrind can decode the generated code. Run `make pgo-bench` on its own to benchmark an already-built `tcc`.
+This automatically handles instrumented building, training runs
+(defaulting to an optimal sweet spot of **25 iterations**), profile
+merging, and the final PGO-optimized production build. It then runs
+`make pgo-bench`, which reports the self-compile throughput in
+Mlines/s and the number of executed instructions from Valgrind
+cachegrind (`I refs`). `PGO_MARCH` defaults to `native`; on x86,
+`-mno-avx512f` is added so that Valgrind can decode the generated
+code. Run `make pgo-bench` on its own to benchmark an already-built
+`tcc`.
 
-*Note (2026-10-24):* On AMD Ryzen AI 7 350, Linux x64, Clang PGO (`CC=clang make pgo`, ~5.13M lines/sec) outperforms GCC PGO (`CC=gcc make pgo`, ~4.62M lines/sec) by ~11% due to LLVM's aggressive profile-guided inlining and optimizer passes.
-
-
+*Note (2026-10-24):* On AMD Ryzen AI 7 350, Linux x64, Clang PGO
+ (`CC=clang make pgo`, ~5.13M lines/sec) outperforms GCC PGO (`CC=gcc
+ make pgo`, ~4.62M lines/sec) by ~11% due to LLVM's aggressive
+ profile-guided inlining and optimizer passes.
 
 ## Profiling Strategy (`perf` & Valgrind Cachegrind)
 
@@ -87,7 +111,9 @@ When analyzing and optimizing performance hot spots:
    valgrind --tool=cachegrind ./tcc -B. -Iinclude -I. tcc.c -o /dev/null
    cg_annotate cachegrind.out.<pid>
    ```
-   *Rule:* Measure instruction reference (`Ir`) counts before and after changes. Discard optimizations that increase total `I refs`.
+
+   *Rule:* Measure instruction reference (`Ir`) counts before and after
+   changes. Discard optimizations that increase total `I refs`.
 
 2. **Hardware Performance Sampling (`perf`):**
    ```bash
@@ -97,10 +123,12 @@ When analyzing and optimizing performance hot spots:
 
 ## Key Session Takeaways (2026-10-24)
 
-- **Frontend SIMD Parsing:** Replacing byte-by-byte loops in `parse_pp_string` and `parse_line_comment` with glibc's SIMD-optimized `memchr` speeds up string and comment lexing.
-- **PGO Sweet Spot:** **25 training iterations** provides the optimal balance between profile weight fidelity and build speed in `make pgo`.
-- **Compiler Performance:** Clang PGO (`~5.43M lines/sec`) outperforms GCC PGO (`~4.86M lines/sec`) by ~11% due to LLVM's advanced profile-guided inlining passes.
-
-
-This document was written by Claude at
-https://claude.ai/chat/c8505b13-607c-4cb7-b180-5e3c7e8dda0f.
+- **Frontend SIMD Parsing:** Replacing byte-by-byte loops in
+  `parse_pp_string` and `parse_line_comment` with glibc's
+  SIMD-optimized `memchr` speeds up string and comment lexing.
+- **PGO Sweet Spot:** **25 training iterations** provides the optimal
+  balance between profile weight fidelity and build speed in `make
+  pgo`.
+- **Compiler Performance:** Clang PGO (`~5.43M lines/sec`) outperforms
+  GCC PGO (`~4.86M lines/sec`) by ~11% due to LLVM's advanced
+  profile-guided inlining passes.
