@@ -100,10 +100,16 @@
      DEF(TOK___HAS_INCLUDE, "__has_include")
      DEF(TOK___HAS_INCLUDE_NEXT, "__has_include_next")
 
+/* D slice and array properties */
+     DEF(TOK_ptr, "ptr")
+     DEF(TOK_length, "length")
+     DEF(TOK_dup, "dup")
+     DEF(TOK_idup, "idup")
+     DEF(TOK_resize, "resize")
+
 /* special identifiers */
      DEF(TOK___FUNC__, "__func__")
 
-/* special floating point values */
      DEF(TOK___NAN__, "__nan__")
      DEF(TOK___SNAN__, "__snan__")
      DEF(TOK___INF__, "__inf__")

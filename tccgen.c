@@ -4316,8 +4316,8 @@ static Sym * find_field_opt (CType *type, int v, int *cumofs)
     static Sym f_len;
 
     if (bt == VT_SLICE) {
-        tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
-        tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
+        tok_ptr = TOK_ptr | SYM_FIELD;
+        tok_len = TOK_length | SYM_FIELD;
         if (v1 == tok_ptr) {
             *cumofs = PTR_SIZE;
             f_ptr.type = type->ref ? type->ref->type : int_type;
@@ -4366,8 +4366,8 @@ static Sym * find_field (CType *type, int v, int *cumofs)
     static Sym f_len;
 
     if (bt == VT_SLICE) {
-        tok_ptr = tok_alloc("ptr", 3)->tok | SYM_FIELD;
-        tok_len = tok_alloc("length", 6)->tok | SYM_FIELD;
+        tok_ptr = TOK_ptr | SYM_FIELD;
+        tok_len = TOK_length | SYM_FIELD;
         if (v1 == tok_ptr) {
             *cumofs = PTR_SIZE;
             f_ptr.type = type->ref ? type->ref->type : int_type;
@@ -5312,11 +5312,11 @@ static Sym *make_slice_type(CType *elem)
     s->r = 0;
     s->type.ref = s;
 
-    f1 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
+    f1 = sym_push(TOK_length | SYM_FIELD, &len_type, 0, 0);
     f1->next = NULL;
     s->next = f1;
 
-    f2 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
+    f2 = sym_push(TOK_ptr | SYM_FIELD, &ptr_type, 0, 0);
     f2->next = NULL;
     f1->next = f2;
 
@@ -6803,10 +6803,10 @@ special_math_val:
                               || (vtop->type.t & (VT_ARRAY | VT_VLA)))) {
                 CType elem, slice_type;
                 int esize, ealign, is_arr;
-                int is_len = tok == tok_alloc("length", 6)->tok;
-                int is_dup = tok == tok_alloc("dup", 3)->tok;
-                int is_idup = tok == tok_alloc("idup", 4)->tok;
-                int is_resize = tok == tok_alloc("resize", 6)->tok;
+                int is_len = tok == TOK_length;
+                int is_dup = tok == TOK_dup;
+                int is_idup = tok == TOK_idup;
+                int is_resize = tok == TOK_resize;
 
                 is_arr = vtop->type.t & (VT_ARRAY | VT_VLA);
                 if (is_arr) {
