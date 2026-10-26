@@ -6805,19 +6805,26 @@ special_math_val:
                 int esize, ealign, is_arr;
                 int is_len = tok == tok_alloc("length", 6)->tok;
                 int is_dup = tok == tok_alloc("dup", 3)->tok;
+                int is_idup = tok == tok_alloc("idup", 4)->tok;
                 int is_resize = tok == tok_alloc("resize", 6)->tok;
 
                 is_arr = vtop->type.t & (VT_ARRAY | VT_VLA);
                 if (is_arr) {
-                    if (!is_dup)
+                    if (!is_dup && !is_idup)
                         tcc_error("'.%s' requires a D slice",
                                   is_len ? "length" : "resize");
                     elem = vtop->type.ref->type;
+                    if (is_idup)
+                        elem.t |= VT_CONSTANT;
                     slice_type.t = VT_STRUCT;
                     slice_type.ref = make_slice_type(&elem);
                 } else {
                     elem = *pointed_type(&vtop->type.ref->next->next->type);
                     slice_type = vtop->type;
+                    if (is_idup) {
+                        elem.t |= VT_CONSTANT;
+                        slice_type.ref = make_slice_type(&elem);
+                    }
                 }
                 esize = type_size(&elem, &ealign);
                 if (is_len) {
@@ -6839,7 +6846,7 @@ special_math_val:
                     skip(')');
                     gfunc_call(3);
                     continue;
-                } else if (is_dup) {
+                } else if (is_dup || is_idup) {
                     int size, align, l, r2;
                     next();
                     if (is_arr)

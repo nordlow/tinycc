@@ -68,11 +68,15 @@ int main(void)
     putchar('\n');
 
     u.resize(0);
+    typedef const int[..] ConstInts;
+    ConstInts idup_base = base[..].idup;
+    printf("idup: %d %d\n", (int)idup_base.length, idup_base[0]);
+
+    u.resize(0);
     s.resize(0);
     t.resize(0);
     free(b.ptr);
     free(c.ptr);
     free(d.ptr);
-    free(e.ptr);
-    return 0;
+    free((void *)idup_base.ptr);
 }
