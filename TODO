@@ -149,37 +149,6 @@ or generated headers once inferred.
      require two passes or deferred emission for functions called
      before definition; resolved by emitting declarations at
      end-of-file or via stub generation.
-
-## Proposal: Uncovered Line Warnings via Test Coverage Runtime
-
-Extend `-ftest-coverage` with a flag such as `-Wuncovered` (or
-`-fwarn-uncovered-lines`, `-ftest-coverage-warnings`) that causes the
-compiled binary to emit runtime warnings to `stderr` for any source
-code lines with zero execution count (`count == 0`) upon process exit.
-
-### How it Works
-
-1. **Flag Plumbing (`libtcc.c`, `tcc.h`):**
-   - Add `unsigned char warn_uncovered;` to `TCCState`.
-   - Register `-Wuncovered` (or `-fwarn-uncovered-lines`) in `options_W`
-     / `options_f[]` (and document in `tcc.c` help output).
-   - Encode the warning flag value into the runtime coverage data blob
-     passed to `__store_test_coverage()`.
-
-2. **Runtime Warning Emission (`lib/tcov.c`):**
-   - In `__store_test_coverage()`, when iterating over sorted files,
-     functions, and lines to generate the `.c.gcov` text report, check
-     if `count == 0` for each line range.
-   - When `count == 0` and `warn_uncovered` is active, print a standard
-     compiler warning to `stderr`: `fprintf(stderr, "%s:%u: warning:
-     uncovered line\n", nfile->filename, curline);`
-
-3. **Effort & Impact:**
-   - **Effort:** ~1-2 hours.
-   - **Impact:** Enables lightweight, CI-friendly test coverage threshold
-     checks and uncovered line reporting directly from instrumented
-     binaries without requiring external `gcov` post-processing.
-
 # Bugs
 
 - i386 fastcall is mostly wrong.

@@ -107,14 +107,15 @@ static int sort_line (const void *p, const void *q)
 }
 
 /* sort to let inline functions work */
-static tcov_file *sort_test_coverage (unsigned char *p)
+static tcov_file *sort_test_coverage (unsigned char *p, unsigned char *pwarn_uncovered)
 {
     int i, j, k;
     unsigned char *start = p;
     tcov_file *file = NULL;
     tcov_file *nfile;
 
-    p += 4;
+    *pwarn_uncovered = p[4];
+    p += 5;
     while (*p) {
         char *filename = (char *)p;
 	size_t len = strlen (filename);
@@ -277,6 +278,7 @@ void __store_test_coverage (unsigned char * p)
     unsigned int blocks;
     unsigned int blocks_run;
     unsigned int runs;
+    unsigned char warn_uncovered;
     char *cov_filename = (char *)p + get_value (p, 4);
     FILE *fp;
     char *q;
@@ -289,7 +291,7 @@ void __store_test_coverage (unsigned char * p)
 	fprintf (stderr, "Cannot create coverage file: %s\n", cov_filename);
 	return;
     }
-    file = sort_test_coverage (p);
+    file = sort_test_coverage (p, &warn_uncovered);
     merge_test_coverage (file, fp, &runs);
     fseek (fp, 0, SEEK_SET);
     fprintf (fp, "        -:    0:Runs:%u\n", runs);
@@ -395,9 +397,12 @@ void __store_test_coverage (unsigned char * p)
 		     fprintf (fp, "        -:%5u:%s", curline++, str);
 		while (curline < lline &&
 		       fgets(str, sizeof(str), src)) {
-		    if (count == 0)
+		    if (count == 0) {
 		        fprintf (fp, "    #####:%5u:%s",
 				 curline, str);
+			if (warn_uncovered)
+			    fprintf (stderr, "%s:%u: warning: uncovered line\n", nfile->filename, curline);
+		    }
 		    else if (has_zero)
 		        fprintf (fp, "%8llu*:%5u:%s", 
 				 count, curline, str);

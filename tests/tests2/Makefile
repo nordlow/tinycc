@@ -124,6 +124,9 @@ endif
 339_d_immutable_error.test : FLAGS += -dt
 340_debug_dumps.test : FLAGS += -fdump-types -fdump-decls -fdump-vstack -dt
 340_debug_dumps.test : GEN = $(GEN-TCC)
+341_test_coverage_warn.test : FLAGS += -ftest-coverage -Wuncovered
+341_test_coverage_warn.test : NORUN = true
+341_test_coverage_warn.test : FILTER = 2>&1 | sed -e 's,.*/,,g'
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields

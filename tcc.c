@@ -117,6 +117,7 @@ static const char help2[] =
     "  unsupported                   warn about ignored options, pragmas, etc.\n"
     "  implicit-function-declaration warn for missing prototype (*)\n"
     "  discarded-qualifiers          warn when const is dropped (*)\n"
+    "  uncovered                     warn about uncovered lines with -ftest-coverage\n"
     "-f[no-]... flags:\n"
     "  unsigned-char                 default char is unsigned\n"
     "  signed-char                   default char is signed\n"
