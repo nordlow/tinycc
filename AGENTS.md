@@ -31,7 +31,9 @@ verifying.
 
 ## Debugging Hangs (commands that never finish)
 
-Source from https://aistudio.google.com/prompts/18siGlB75gCZzoguM1UWnd0MUwkGp1dnf.
+Source from
+https://aistudio.google.com/prompts/18siGlB75gCZzoguM1UWnd0MUwkGp1dnf
+and https://claude.ai/chat/264fa269-d936-4483-a2bf-0655dea22bfc.
 
 **Rule 0: never run a potentially hanging command unbounded.** Always
 use `timeout`, redirect stdin, and capture output:
