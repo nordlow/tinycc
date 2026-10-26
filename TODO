@@ -227,7 +227,7 @@ or generated headers once inferred.
   scope block opening member access without qualification.
 - **`version` and `debug` Blocks**: Declarative conditional compilation
   blocks (`version(X)`, `debug`) integrated into the grammar.
-- **Additional Array Properties**: `.ptr`, `.reverse`, `.sort`, `.idup`,
+- **Additional Array Properties**: `.ptr`, `.reverse`, `.dup`, `.idup`,
   `.init`, `.stringof`.
 - **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...` and
   delegate literals.
