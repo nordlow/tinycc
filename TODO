@@ -152,13 +152,13 @@ or generated headers once inferred.
 
 ## Proposal: Uncovered Line Warnings via Test Coverage Runtime
 
-Extend `-ftest-coverage` with a flag such as `-fwarn-no-coverage` (or `-fwarn-uncovered`) that causes the compiled binary to emit runtime warnings to `stderr` for any source code lines with zero execution count (`count == 0`) upon process exit.
+Extend `-ftest-coverage` with a flag such as `-Wuncovered` (or `-fwarn-uncovered-lines`, `-ftest-coverage-warnings`) that causes the compiled binary to emit runtime warnings to `stderr` for any source code lines with zero execution count (`count == 0`) upon process exit.
 
 ### How it Works
 
 1. **Flag Plumbing (`libtcc.c`, `tcc.h`):**
    - Add `unsigned char warn_uncovered;` to `TCCState`.
-   - Register `-fwarn-uncovered` in `options_f[]` (and document in `tcc.c` help output).
+   - Register `-Wuncovered` (or `-fwarn-uncovered-lines`) in `options_W` / `options_f[]` (and document in `tcc.c` help output).
    - Encode the warning flag value into the runtime coverage data blob passed to `__store_test_coverage()`.
 
 2. **Runtime Warning Emission (`lib/tcov.c`):**
