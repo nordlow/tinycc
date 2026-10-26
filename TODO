@@ -49,6 +49,71 @@ TCC would infer:
   return a slice of it. They would "just work" with `immutable` and
   `const` for free.
 
+For reference see
+https://aistudio.google.com/prompts/191Hd2mWffHJ8B9OYybf6h2vFp9DH2LrK
+
+## Proposal: D-style `immutable` qualifier
+
+`immutable` is accepted on instances and currently maps to `const`
+(see `TOK_IMMUTABLE` in `parse_btype()`), which gives immutable
+scalars, aggregates, members and arrays: `verify_assign_cast()` rejects
+writes, and member access propagates qualifiers from the aggregate to
+the field.
+
+Caveats: `immutable int *p` follows C placement rules (qualifies the
+pointee, not the pointer), unlike D's transitive whole-type rule, and
+nothing prevents writes through aliases:
+
+```c
+int *q = (int *)&immutable_obj;
+*q = 1; /* still accepted */
+```
+
+**Transitive immutability:** add a deep `VT_IMMUTABLE` bit
+and teach the following about it:
+
+- `compare_types()` and `verify_assign_cast()`: walk the whole
+  pointee/aggregate chain instead of only one pointer level.
+- `type_qualifiers()` and `parse_btype_qualify()`.
+- Member access qualifier propagation, so fields of immutable
+  aggregates become immutable transitively.
+- `decl_initializer()` paths, which bypass some assignment checks.
+- Pointer conversions: mutable to immutable is allowed, immutable to
+  mutable is rejected except for an explicit cast.
+
+Type-level D syntax such as `immutable(int *)` additionally needs
+parenthesized type constructors, which `parse_btype()` does not
+support for `const` either.
+
+**Full D semantics (not planned):** immutable implies that no
+mutable alias exists anywhere, transitive slice element types,
+`shared`) is a real type-and-effect system and would take weeks.
+
+## Proposal: inout-style qualifier inference
+
+D's `inout(T *) f(inout(T) *x)` is qualifier polymorphism.  TCC has no
+generics and no AST, but the useful case is local to the call site:
+
+- Store an `inout_arg` index in `struct FuncAttr` (the `f` bitfield of
+  the function `Sym`), set by an attribute such as `@inout(1)` or
+  `__attribute__((inout(1)))`.
+- In the call handling in `unary()`, if `inout_arg` is set, qualify the
+  result's pointee with the union of the declared qualifiers and the
+  qualifier bits of argument N's pointee.  This is the "properties of
+  the return infer the properties of `x`" rule, resolved statically per
+  call.
+- The argument side is already diagnosed: passing `const int *` where
+  `int *` is expected triggers "assignment discards qualifiers" in
+  `verify_assign_cast()`.
+- The definition side is the hard half.  A pragmatic version checks
+  only direct `return x;` statements syntactically; a full
+  flow-sensitive check of the body is out of scope.
+
+This complements the Signature Elision Rules proposal above: elision is
+the zero-annotation fallback, the attribute is the explicit form.
+Effort: about one day for plumbing plus one day for the syntactic
+return check, much less after the attribute-table refactoring below.
+
 # Bugs
 
 - i386 fastcall is mostly wrong.
@@ -105,6 +170,17 @@ TCC would infer:
 - C99: add complex types (gcc 3.2 testsuite issue).
 - Postfix compound literals (see `20010124-1.c`).
 - Interactive mode / integrated debugger.
+- `@attribute` syntax: `@name` / `@name(args)` for builtin and
+  user-defined attributes, e.g. `struct T @nocopy {}`.  User-defined
+  attributes parse and are ignored initially.  Reuse
+  `parse_attribute()` and also accept the syntax after struct, union
+  and enum tags, next to the existing attribute positions.
+- Track ownership of D slices (heap-allocated vs view of an array or
+  string literal) so that `a.length = n` can reallocate safely.  Today
+  `.length` is a plain header field and reallocation is the explicit
+  `.resize(n)`.
+- D: `int[] a = {1, 2, 3}, b = {4, 5};` (several array declarators with
+  initializers) is not supported.
 
 # Optimizations
 
@@ -113,6 +189,51 @@ TCC would infer:
 - Memory allocation optimizations (i.e. even faster compilation).
 - Optimize `VT_LOCAL` + const.
 - Better local variables handling (needed for other targets).
+
+# Refactorings for development speed
+
+Ordered by (productivity gain) / (risk x effort):
+
+- **Attribute table** (about one day, low risk).  `parse_attribute()`
+  is a large switch over `TOK_*` pairs; every attribute needs two
+  tokens, a case, and `AttributeDef`/`SymAttr` bits.  Replace it with a
+  table of `{ name, flags, handler }` shared by
+  `__attribute__((...))` and the pending `@name(...)` syntax.  This
+  makes `immutable`, `inout`, `nocopy` and future attributes cheap.
+- **Extract the type system into `tcctype.c`** (about 2-3 days,
+  mechanical).  Move `type_size`, `compare_types`, `is_compatible_*`,
+  `verify_assign_cast`, `type_qualifiers`, `parse_btype_qualify` and
+  `make_slice_type` out of the 10k-line `tccgen.c`, and add a small
+  unit-test binary that links only that object.  Qualifier and
+  type-inference work then becomes testable without compiling a whole
+  program.
+- **Delete the dead parser** (about half a day).  `#define
+  precedence_parser` in `tccgen.c` compiles out the old
+  recursive-descent expression parser; it is still there as a trap for
+  anyone editing the wrong `expr_*` function.
+- **Error recovery** (about 2-3 days).  `tcc_error()` longjmps and
+  aborts on the first error.  Resynchronize at `;`/`}` and report
+  several diagnostics per run.
+- **Split `tccgen.c` into modules** (about one week, higher risk):
+  `decl` / `expr` / `stmt` / `func` / `attrs`.  Do this after the
+  attribute table and the type-system extraction.
+- **Debug dumps** (about one day).  `-fdump-types`, `-fdump-decls` and
+  `-fdump-vstack` behind a flag.  No architecture change, but it makes
+  every parser/codegen bug faster to localize.
+- **Differential fuzzing** (about 1-2 days).  Compare TCC against GCC
+  on generated snippets; the `tests/tests2` suite is already good but
+  only covers hand-written cases.
+- **Split the overloaded `Sym`** (large).  It doubles as struct field,
+  variable, type, enum value, slice header and temp-local bookkeeping.
+  Splitting it by kind is right long-term but is a multi-week,
+  all-or-nothing change.
+- **Pseudo backend for tests** (medium).  A bytecode or null backend to
+  exercise parsing and typing without a target; useful for cross-target
+  and type-system work.
+- **Full AST/IR** (weeks, high risk, not planned near-term).  It would
+  unlock optimizations and flow analyses, but would invalidate the
+  single-pass design that makes TCC fast and small.  Prefer the debug
+  dumps above instead.
 
 # Not critical
 
