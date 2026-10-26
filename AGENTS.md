@@ -50,10 +50,10 @@ SIGKILL. For long-running steps, start them in the background and poll
     tail -50 config.log
 
 Always retry with `-j1` first: if the hang disappears, suspect a
-jobserver or ordering race rather than a program bug. Repeated
-"Must remake makefile" lines, or `Clock skew detected`, point to a
-makefile that rebuilds itself forever (`find . -newermt '+1 hour'`,
-`touch` the offending file).
+jobserver or ordering race rather than a program bug. Repeated "Must
+remake makefile" lines, or `Clock skew detected`, point to a makefile
+that rebuilds itself forever (`find . -newermt '+1 hour'`, `touch` the
+offending file).
 
 Also try `</dev/null`: if that fixes it, something was waiting on stdin
 (tests that read stdin, a configure prompt, `$(shell ...)` without input).
@@ -98,6 +98,7 @@ Interpretation of the **last** syscall (`tail trace.txt`):
 ### Step 4: Find the exact code with gdb
 
 Build with symbols and no optimization for debugging:
+
 `./configure --extra-cflags="-g -O0" && make -j$(nproc) -B`.
 
     gdb -p $PID -batch -ex 'thread apply all bt full'   # snapshot of a live hang
@@ -115,9 +116,11 @@ Poor man's sampler (no interactive session needed):
     for i in 1 2 3 4 5; do gdb -p $PID -batch -ex bt 2>/dev/null | grep '^#' | head -5; echo ---; sleep 0.5; done
 
 If attach fails with "ptrace: Operation not permitted":
-`sudo sysctl kernel.yama.ptrace_scope=0` or run via `sudo`.
-Grab a core for offline analysis: `gcore $PID`, or `kill -ABRT $PID`
-with `ulimit -c unlimited`, then `gdb ./tcc core`.
+
+`sudo sysctl kernel.yama.ptrace_scope=0`
+
+or run via `sudo`. Grab a core for offline analysis: `gcore $PID`, or
+`kill -ABRT $PID` with `ulimit -c unlimited`, then `gdb ./tcc core`.
 
 ### Step 5: Statistical profile of a spinning process
 
@@ -134,8 +137,8 @@ shows up as exploding instruction counts:
     callgrind_control -b          # backtrace of the running program
     callgrind_control -d          # dump profile so far
 
-Attach gdb to a program running under valgrind (valgrind is slow but
-gives memory-error context at the moment of the hang):
+Attach `gdb` to a program running under `valgrind` (`valgrind` is slow
+but gives memory-error context at the moment of the hang):
 
     valgrind --vgdb=yes --vgdb-error=0 ./tcc ...    # in terminal 1
     gdb ./tcc -ex 'target remote | vgdb'            # in terminal 2
@@ -157,8 +160,9 @@ instead of looping):
     # threads/deadlocks: -fsanitize=thread (separate build, not combinable with ASan)
 
 A hang that appears only at `-O2` and not at `-O0` is a strong hint of
-UB (signed overflow, uninitialized variable, strict aliasing). Compare:
-`make CFLAGS='-O0 -g'` vs the default, and try `-fwrapv -fno-strict-aliasing`.
+UB (signed overflow, uninitialized variable, strict
+aliasing). Compare: `make CFLAGS='-O0 -g'` vs the default, and try
+`-fwrapv -fno-strict-aliasing`.
 
 ### Step 7: Narrow to a minimal reproducer
 
@@ -198,11 +202,14 @@ Example: `tools/hangdiag 120 make -j$(nproc) test`
 ### Reporting
 
 When you find a hang, report: the stage and command, process state
-(`R`/`S`/`D`), the last syscall or the repeating backtrace, the minimal
-reproducer, and the fix. After fixing, run the full verification
-sequence above (including `./configure && make -j$(nproc) -B && make -j$(nproc) test`),
-and add a regression test under `tests/tests2/` where the hang was caused by the compiler.
-Never "fix" a hang by only raising a timeout.
+(`R`/`S`/`D`), the last syscall or the repeating backtrace, the
+minimal reproducer, and the fix. After fixing, run the full
+verification sequence above (including
+
+`./configure && make -j$(nproc) -B && make -j$(nproc) test`),
+
+and add a regression test under `tests/tests2/` where the hang was
+caused by the compiler.  Never "fix" a hang by only raising a timeout.
 ## Adding tests
 
 - **Comprehensive Coverage:** Write extensive tests that try to cover
