@@ -1,0 +1,17 @@
+[test_incomplete_element]
+327_d_typedecl_error.c:2: error: declaration of an array of incomplete type elements
+
+[test_negative_size]
+327_d_typedecl_error.c:5: error: invalid array size
+
+[test_too_many_initializers]
+327_d_typedecl_error.c:8: error: too many initializers
+
+[test_function_returning_array]
+327_d_typedecl_error.c:11: error: function returning an array
+
+[test_missing_declarator]
+327_d_typedecl_error.c:14: error: identifier expected
+
+[test_parameter_suffix]
+327_d_typedecl_error.c:17: error: array suffix after the parameter type; use a typedef instead

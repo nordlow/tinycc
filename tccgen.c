@@ -170,6 +170,7 @@ static void gv_dup(void);
 static int get_temp_local_var(int size,int align,int *r2);
 static void cast_error(CType *st, CType *dt);
 static int is_slice_type(CType *type);
+static void d_array_suffix(CType *type, int storage);
 static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
@@ -4820,6 +4821,9 @@ do_decl:
 		    skip(';');
 		    continue;
 		}
+                /* D-style array suffixes apply to every member */
+                while (tok == '[')
+                    d_array_suffix(&btype, 0);
                 while (1) {
 		    if (flexible)
 		        tcc_error("flexible array member '%s' not at the end of struct",
@@ -5421,6 +5425,10 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
                     if ((pt.t & VT_BTYPE) == VT_VOID && tok == ')')
                         break;
                     type_decl(&pt, &ad1, &n, TYPE_DIRECT | TYPE_ABSTRACT | TYPE_PARAM);
+                    if (n == 0 && tok >= TOK_UIDENT
+                        && ((pt.t & (VT_ARRAY | VT_VLA)) || is_slice_type(&pt)))
+                        tcc_error("array suffix after the parameter type; "
+                                  "use a typedef instead");
                     if ((pt.t & VT_BTYPE) == VT_VOID)
                         tcc_error("parameter declared as void");
                     if (n == 0 || (td & TYPE_PARAM))
@@ -5466,6 +5474,8 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
             skip(']'); /* only handle simple "[]" */
             mk_pointer(type);
         }
+        if (type->t & (VT_ARRAY | VT_VLA))
+            tcc_error("function returning an array");
         ad->f.func_args = arg_size;
         ad->f.func_type = l;
         sr->type = *type, s = sr;
@@ -5611,6 +5621,86 @@ check:
     return 1;
 }
 
+/* Parse one D-style array suffix that follows the type name, as in
+   'int[3] a' or 'int[..] s'.  The suffix is applied to the type parsed
+   so far, so that 'int[3][4] m' declares an array of 4 arrays of 3
+   ints.  */
+static void d_array_suffix(CType *type, int storage)
+{
+    int n, t1, align, saved_nocode_wanted;
+    Sym *s;
+
+    type->t &= ~VT_STORAGE;
+    saved_nocode_wanted = nocode_wanted;
+    next();
+    if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
+        next();
+        skip(']');
+        /* Slice type: C[..] -> struct { size_t length; T *ptr; } */
+        type->ref = make_slice_type(type);
+        type->t = VT_STRUCT | storage;
+        nocode_wanted = saved_nocode_wanted;
+        return;
+    }
+    n = -1;
+    t1 = 0;
+    if (tok != ']') {
+        if (!local_stack || (storage & VT_STATIC))
+            vpushi(expr_const());
+        else {
+            /* VLAs (which can only happen with local_stack && !VT_STATIC)
+               length must always be evaluated, even under nocode_wanted,
+               so that its size slot is initialized (e.g. under sizeof
+               or typeof).  */
+            nocode_wanted = 0;
+            gexpr();
+        }
+        if ((vtop->r & (VT_VALMASK | VT_LVAL | VT_SYM)) == VT_CONST) {
+            n = vtop->c.i;
+            if (n < 0)
+                tcc_error("invalid array size");
+        } else {
+            if (!is_integer_btype(vtop->type.t & VT_BTYPE))
+                tcc_error("size of variable length array should be an integer");
+            n = 0;
+            t1 = VT_VLA;
+        }
+    }
+    skip(']');
+
+    if ((type->t & VT_BTYPE) == VT_FUNC)
+        tcc_error("declaration of an array of functions");
+    if ((type->t & VT_BTYPE) == VT_VOID
+        || type_size(type, &align) < 0)
+        tcc_error("declaration of an array of incomplete type elements");
+
+    t1 |= type->t & VT_VLA;
+
+    if (t1 & VT_VLA) {
+        if (n < 0)
+            tcc_error("need explicit inner array size in VLAs");
+        loc -= type_size(&int_type, &align);
+        loc &= -align;
+        n = loc;
+
+        vpush_type_size(type, &align);
+        gen_op('*');
+        vset(&int_type, VT_LOCAL|VT_LVAL, n);
+        vswap();
+        vstore();
+    }
+    if (n != -1)
+        vpop();
+    nocode_wanted = saved_nocode_wanted;
+
+    /* we push an anonymous symbol which will contain the array
+       element type */
+    s = sym_push(SYM_FIELD, type, 0, n);
+    type->t = (t1 ? VT_VLA : VT_ARRAY) | VT_PTR;
+    type->ref = s;
+    type->t |= storage;
+}
+
 /* Parse a type declarator (except basic type), and return the type
    in 'type'. 'td' is a bitmask indicating which kind of type decl is
    expected. 'type' should contain the basic type. 'ad' is the
@@ -5628,7 +5718,14 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
     type->t &= ~VT_STORAGE;
     post = ret = type;
 
-    while (tok == '*') {
+    while (tok == '*' || (tok == '[' && (td & TYPE_DIRECT) && !(td & TYPE_PARAM))) {
+        if (tok == '[') {
+            /* D-style array suffix before the declarator name.  Parameter
+               declarators are excluded, as there '[' starts a C array
+               declarator.  */
+            d_array_suffix(type, storage);
+            continue;
+        }
         qualifiers = 0;
     redo:
         next();
@@ -9657,6 +9754,8 @@ static void do_d_alias(void)
     skip('=');
     if (!parse_btype(&type, &ad, 0))
         expect("type");
+    while (tok == '[')
+        d_array_suffix(&type, 0);
     type_decl(&type, &ad, &dummy, TYPE_ABSTRACT);
     type.t |= VT_TYPEDEF;
     declare_typedef(v, &type, &ad);
@@ -9715,6 +9814,11 @@ static int decl(int l)
                 break;
             }
         }
+
+        /* D-style array suffixes apply to every declarator of the
+           declaration, as in D */
+        while (tok == '[')
+            d_array_suffix(&btype, btype.t & VT_STORAGE);
 
         if (tok == ';') {
             if ((btype.t & VT_BTYPE) == VT_STRUCT

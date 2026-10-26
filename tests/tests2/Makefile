@@ -107,6 +107,9 @@ endif
 322_d_foreach_bcheck.test : FLAGS += -b
 324_d_dollar_error.test : FLAGS += -dt
 325_d_dollar_bcheck.test : FLAGS += -b
+326_d_typedecl.test : GEN = $(GEN-TCC)
+327_d_typedecl_error.test : FLAGS += -dt
+328_d_typedecl_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
