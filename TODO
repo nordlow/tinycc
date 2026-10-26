@@ -2,154 +2,155 @@
 
 # TODO list
 
-## The Practical Solution: Signature Elision Rules (The "Rust" Approach)
+## Proposal: Signature Elision Rules (the "Rust" approach)
 
-There is a way to get zero annotations in function bodies while still
-working in TinyCC and across header files: Convention-based Elision.
+The goal is to avoid annotations in function bodies while still working
+in TinyCC and across header files, using **convention-based elision**.
 
-Instead of inspecting the body, the compiler infers the qualifier
-mapping strictly from the shape of the function signature: The Rule:
+Instead of inspecting the function body, the compiler infers the
+qualifier mapping purely from the shape of the signature.
 
-    "If a function returns a pointer and has exactly one pointer
-    parameter, the return qualifier is automatically tied to that
-    parameter."
+**The rule:**
 
-Purity also plays a role here.
+> If a function returns a pointer and has exactly one pointer
+> parameter, the return qualifier is automatically tied to that
+> parameter.
 
-Look at common C functions under this rule: code C
+Purity may also play a role here.
 
-You write standard C:
+### Example
+
+Standard C declarations:
 
 ```c
-char* strchr(const char* s, int c);
-void* memcpy(void* dest, const void* src, size_t n);
+char *strchr(const char *s, int c);
+void *memcpy(void *dest, const void *src, size_t n);
 ```
 
-TCC automatically infers:
+TCC would infer:
 
-- `strchr`: only 1 pointer parameter (`s`). Return qualifier
-  automatically inherits from `s`.
-- `memcpy`: pointer parameters. Ambiguous, so it falls back to
-  standard C behavior.
+- `strchr`: has only one pointer parameter (`s`), so the return
+  qualifier is inherited from `s`.
+- `memcpy`: has several pointer parameters. The mapping is ambiguous,
+  so it falls back to standard C behavior.
 
-Why this works brilliantly in TCC: Works across headers: TCC only
-needs the function declaration in .h files. It doesn't need to see the
-body.
+### Why this works well in TCC
 
-Trivially easy to implement in TCC: In `tccgen.c`, when parsing a
-function prototype, count pointer arguments.
-
-If `pointer_arg_count == 1` and return_type is a pointer, set a single
-bit in the function's symbol entry: `VT_INFER_RETURN_QUAL`.
-
-At call sites: if `VT_INFER_RETURN_QUAL` is set, copy the qualifier of
-that single argument to `vtop->type`.
-
-Zero new keywords, zero sigils: 90% of utility functions (`strchr`,
-`trim`, `find`, `next_node`) naturally take only one main input
-pointer and return a slice of it. They would "just work" with
-`immutable` and `const` for free.
+- **Works across headers:** TCC only needs the function declaration
+  from the `.h` file, not the body.
+- **Easy to implement:** in `tccgen.c`, when parsing a function
+  prototype, count the pointer parameters. If `pointer_arg_count == 1`
+  and the return type is a pointer, set a single bit in the function's
+  symbol entry: `VT_INFER_RETURN_QUAL`.
+  At call sites, if `VT_INFER_RETURN_QUAL` is set, copy the qualifier
+  of that single argument to `vtop->type`.
+- **Zero new keywords, zero sigils:** most utility functions (`strchr`,
+  `trim`, `find`, `next_node`) take a single main input pointer and
+  return a slice of it. They would "just work" with `immutable` and
+  `const` for free.
 
 # Bugs
 
-- i386 fastcall is mostly wrong
+- i386 fastcall is mostly wrong.
 - `FPU st(0)` is left unclean (kwisatz haderach). Incompatible with
-  optimized gcc/msc code
-- see transparent union pb in /urs/include/sys/socket.h
-- precise behaviour of typeof with arrays ? (__put_user macro)
-  but should suffice for most cases)
-- handle `? x, y : z` in unsized variable initialization (`,` is
-  considered incorrectly as separator in preparser)
-- transform functions to function pointers in function parameters
-  (net/ipv4/ip_output.c)
-- fix function pointer type display
-- check section alignment in C
-- fix invalid cast in comparison `if (v == (int8_t)v)`
-- finish varargs.h support (gcc 3.2 testsuite issue)
-- fix static functions declared inside block
-- fix multiple unions init
-- make libtcc fully reentrant (except for the compilation stage itself).
-- struct/union/enum definitions in nested scopes (see also Debian bug #770657)
-- __STDC_IEC_559__: float f(void) { static float x = 0.0 / 0.0; return x; }
-- memory may be leaked after errors (longjmp).
+  optimized gcc/msc code.
+- See transparent union problem in `/usr/include/sys/socket.h`.
+- Precise behavior of `typeof` with arrays? (`__put_user` macro; should
+  suffice for most cases.)
+- Handle `? x, y : z` in unsized variable initialization (`,` is
+  incorrectly considered a separator in the preparser).
+- Transform functions to function pointers in function parameters
+  (`net/ipv4/ip_output.c`).
+- Fix function pointer type display.
+- Check section alignment in C.
+- Fix invalid cast in comparison `if (v == (int8_t)v)`.
+- Finish `varargs.h` support (gcc 3.2 testsuite issue).
+- Fix static functions declared inside a block.
+- Fix multiple union initializations.
+- Make libtcc fully reentrant (except for the compilation stage itself).
+- Support struct/union/enum definitions in nested scopes (see also
+  Debian bug #770657).
+- `__STDC_IEC_559__`: `float f(void) { static float x = 0.0 / 0.0; return x; }`
+- Memory may be leaked after errors (`longjmp`).
 
 # Portability
 
-- it is assumed that int is 32-bit and sizeof(int) == 4
-- int is used when host or target size_t would make more sense
+- It is assumed that `int` is 32-bit and `sizeof(int) == 4`.
+- `int` is used where host or target `size_t` would make more sense.
 - TCC handles target floating-point (fp) values using the host's fp
-  arithmetic, which is simple and fast but may lead to exceptions
-  and inaccuracy and wrong representations when cross-compiling
+  arithmetic. This is simple and fast, but may lead to exceptions,
+  inaccuracy and wrong representations when cross-compiling.
 
 # Linking
 
-- static linking (-static) does sort of work
-	works with musl libc
-	glibc requires libc.so even when statically linked (very bad, but not
-	up to tcc)
+- Static linking (`-static`) works to some extent:
+  - It works with musl libc.
+  - glibc requires `libc.so` even when statically linked (very bad,
+    but not up to tcc).
 
 # Bound checking
 
-- fix bound exit on RedHat 7.3
+- Fix bound exit on RedHat 7.3.
 - `setjmp` is not supported properly in bound checking.
-- fix bound check code with '&' on local variables (currently done
+- Fix bound check code with `&` on local variables (currently done
   only for local arrays).
-- bound checking and float/long long/struct copy code. bound
-  checking and symbol + offset optimization
+- Bound checking and float/long long/struct copy code; bound checking
+  and symbol + offset optimization.
 
 # Missing features
 
-- disable-asm and disable-bcheck options
-- `__builtin_expect()`
-- atexit (Nigel Horne)
-- C99: add complex types (gcc 3.2 testsuite issue)
-- postfix compound literals (see 20010124-1.c)
-- interactive mode / integrated debugger
+- `--disable-asm` and `--disable-bcheck` options.
+- `__builtin_expect()`.
+- `atexit` (Nigel Horne).
+- C99: add complex types (gcc 3.2 testsuite issue).
+- Postfix compound literals (see `20010124-1.c`).
+- Interactive mode / integrated debugger.
 
 # Optimizations
 
-- suppress specific anonymous symbol handling
-- more parse optimizations (=even faster compilation)
-- memory alloc optimizations (=even faster compilation)
-- optimize VT_LOCAL + const
-- better local variables handling (needed for other targets)
+- Suppress specific anonymous symbol handling.
+- More parse optimizations (i.e. even faster compilation).
+- Memory allocation optimizations (i.e. even faster compilation).
+- Optimize `VT_LOCAL` + const.
+- Better local variables handling (needed for other targets).
 
 # Not critical
 
-- C99: fix multiple compound literals inits in blocks (ISOC99
-  normative example - only relevant when using gotos! -> must add
-  boolean variable to tell if compound literal was already
-  initialized).
-- add PowerPC generator and improve codegen for RISC (need
-  to suppress VT_LOCAL and use a base register instead).
-- fix preprocessor symbol redefinition
-- add portable byte code generator and interpreter for other
+- C99: fix multiple compound literal initializations in blocks (ISO C99
+  normative example; only relevant when using gotos). This requires a
+  boolean variable telling whether the compound literal was already
+  initialized.
+- Add a PowerPC generator and improve codegen for RISC (need to
+  suppress `VT_LOCAL` and use a base register instead).
+- Fix preprocessor symbol redefinition.
+- Add a portable bytecode generator and interpreter for other
   unsupported architectures.
-- C++: variable declaration in for, minimal 'class' support.
-- win32: __intxx. use resolve for bchecked malloc et al.
-  check exception code (exception filter func).
-- handle `void (__attribute__() *ptr)()`
+- C++: variable declaration in `for`, minimal `class` support.
+- win32: `__intxx`. Use resolve for bchecked `malloc` et al.
+  Check exception code (exception filter function).
+- Handle `void (__attribute__() *ptr)()`.
 - VLAs are implemented in a way that is not compatible with signals:
-  http://lists.gnu.org/archive/html/tinycc-devel/2015-11/msg00018.html
+  <http://lists.gnu.org/archive/html/tinycc-devel/2015-11/msg00018.html>
 
 # Fixed (probably)
 
-- bug with defines:
-```c
-    #define spin_lock(lock) do { } while (0)
-    #define wq_spin_lock spin_lock
-    #define TEST() wq_spin_lock(a)
-```
-- `typedefs` can be structure fields
-- see bugfixes.diff + improvement.diff from Daniel Glockner
-- long long constant evaluation
-- add `alloca()`
-- gcc '-E' option.
-- `#include_next` support for `/usr/include/limits` ?
-- function pointers/lvalues in `? :` (linux kernel net/core/dev.c)
-- win32: add `__stdcall`, check `GetModuleHandle` for dlls.
-- macro substitution with nested definitions (ShangHongzhang)
-- with "-run" and libtcc, a PLT is now built.
-- '-E' option was improved
-- packed attribute is now supported
+- Bug with defines:
+
+  ```c
+  #define spin_lock(lock) do { } while (0)
+  #define wq_spin_lock spin_lock
+  #define TEST() wq_spin_lock(a)
+  ```
+
+- `typedef`s can be structure fields.
+- See `bugfixes.diff` + `improvement.diff` from Daniel Glockner.
+- `long long` constant evaluation.
+- Add `alloca()`.
+- gcc `-E` option (since improved).
+- `#include_next` support for `/usr/include/limits`?
+- Function pointers/lvalues in `? :` (Linux kernel `net/core/dev.c`).
+- win32: add `__stdcall`, check `GetModuleHandle` for DLLs.
+- Macro substitution with nested definitions (ShangHongzhang).
+- With `-run` and libtcc, a PLT is now built.
+- Packed attribute is now supported.
 - ARM and ARM64 code generators have been added.
