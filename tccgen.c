@@ -8086,6 +8086,92 @@ static void do_foreach(int reverse)
     skip(';');
 
     gexpr();
+
+    if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
+        CType start_type, end_type;
+        int start_addr, end_addr;
+
+        if (nvars != 1)
+            tcc_error("range 'foreach' requires a single loop variable");
+
+        start_type = vtop->type;
+        size = type_size(&start_type, &align);
+        loc = (loc - size) & -align;
+        start_addr = loc;
+        vset(&start_type, VT_LOCAL | VT_LVAL, start_addr);
+        vswap();
+        vstore();
+        vpop();
+
+        next(); /* consume '..' */
+
+        gexpr();
+        skip(')');
+
+        end_type = vtop->type;
+        size = type_size(&end_type, &align);
+        loc = (loc - size) & -align;
+        end_addr = loc;
+        vset(&end_type, VT_LOCAL | VT_LVAL, end_addr);
+        vswap();
+        vstore();
+        vpop();
+
+        if (!explicit[0])
+            vtypes[0] = start_type;
+
+        memset(&ad, 0, sizeof(ad));
+        decl_initializer_alloc(&vtypes[0], &ad, VT_LOCAL | VT_LVAL, 0,
+                               names[0], 0);
+        vaddr[0] = sym_find(names[0])->c;
+
+        /* i = reverse ? end - 1 : start */
+        vset(&vtypes[0], VT_LOCAL | VT_LVAL, vaddr[0]);
+        if (reverse) {
+            vset(&end_type, VT_LOCAL | VT_LVAL, end_addr);
+            vpushi(1);
+            gen_op('-');
+            gen_assign_cast(&vtypes[0]);
+        } else {
+            vset(&start_type, VT_LOCAL | VT_LVAL, start_addr);
+            gen_assign_cast(&vtypes[0]);
+        }
+        vstore();
+        vpop();
+
+        a = b = 0;
+        c = gind();
+        /* condition: forward: i < end; reverse: i >= start */
+        vset(&vtypes[0], VT_LOCAL | VT_LVAL, vaddr[0]);
+        if (reverse) {
+            vset(&start_type, VT_LOCAL | VT_LVAL, start_addr);
+            gen_op(TOK_GE);
+        } else {
+            vset(&end_type, VT_LOCAL | VT_LVAL, end_addr);
+            gen_op(TOK_LT);
+        }
+        a = gvtst(1, 0);
+        e = gjmp(0);
+        d = gind();
+
+        /* increment: ++i, or --i when iterating in reverse */
+        vset(&vtypes[0], VT_LOCAL | VT_LVAL, vaddr[0]);
+        vset(&vtypes[0], VT_LOCAL | VT_LVAL, vaddr[0]);
+        vpushi(1);
+        gen_op(reverse ? '-' : '+');
+        vstore();
+        vpop();
+        gjmp_addr(c);
+        gsym(e);
+
+        lblock(&a, &b);
+        gjmp_addr(d);
+        gsym_addr(b, d);
+        gsym(a);
+        prev_scope(&o, 0);
+        return;
+    }
+
     skip(')');
 
     agg_type = vtop->type;
