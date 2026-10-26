@@ -1,0 +1,17 @@
+[test_length_array]
+333_d_darray_error.c:4: error: '.length' requires a D slice
+
+[test_resize_array]
+333_d_darray_error.c:7: error: '.resize' requires a D slice
+
+[test_append_nonslice]
+333_d_darray_error.c:10: error: left operand of '~=' must be a D slice
+
+[test_concat_nonslice]
+333_d_darray_error.c:13: error: cannot concatenate these operands
+
+[test_concat_mismatch]
+333_d_darray_error.c:16: error: cannot convert 'char [..]' to 'int [..]'
+
+[test_dup_scalar]
+333_d_darray_error.c:19: error: struct or union expected

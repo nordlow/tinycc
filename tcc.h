@@ -1170,8 +1170,9 @@ struct filespec {
 #define TOK_A_XOR   0xb7
 #define TOK_A_SHL   0xb8
 #define TOK_A_SAR   0xb9
+#define TOK_A_CAT   0xba /* '~=' append to a D-style slice */
 
-#define TOK_ASSIGN(t) (t >= TOK_A_ADD && t <= TOK_A_SAR)
+#define TOK_ASSIGN(t) (t >= TOK_A_ADD && t <= TOK_A_CAT)
 #define TOK_ASSIGN_OP(t) ("+-*/%&|^<>"[t - TOK_A_ADD])
 
 /* tokens that carry values (in additional token string space / tokc) --> */

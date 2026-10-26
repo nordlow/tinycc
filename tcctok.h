@@ -345,6 +345,12 @@
      DEF(TOK___getf2, "__getf2")
 #endif
 
+/* D-style dynamic array support, implemented in libtcc1 */
+     DEF(TOK___darray_resize, "__darray_resize")
+     DEF(TOK___darray_append, "__darray_append")
+     DEF(TOK___darray_dup, "__darray_dup")
+     DEF(TOK___darray_concat, "__darray_concat")
+
 /* bound checking symbols */
 #ifdef CONFIG_TCC_BCHECK
      DEF(TOK___bound_ptr_add, "__bound_ptr_add")

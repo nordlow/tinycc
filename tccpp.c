@@ -594,6 +594,8 @@ ST_FUNC const char *get_tok_str(int v, CValue *cv)
         return strcpy(p, "<<=");
     case TOK_A_SAR:
         return strcpy(p, ">>=");
+    case TOK_A_CAT:
+        return strcpy(p, "~=");
     case TOK_EOF:
         return strcpy(p, "<eof>");
     case 0: /* anonymous nameless symbols */
@@ -2942,6 +2944,15 @@ maybe_newline:
         break;
         
         /* simple tokens */
+    case '~':
+        PEEKC(c, p);
+        if (c == '=') {
+            p++;
+            tok = TOK_A_CAT;
+        } else {
+            tok = '~';
+        }
+        break;
     case '@': /* only used in assembler */
 #ifdef TCC_TARGET_ARM /* comment on arm asm */
         if (parse_flags & PARSE_FLAG_ASM_FILE) {
@@ -2959,7 +2970,6 @@ maybe_newline:
     case ';':
     case ':':
     case '?':
-    case '~':
     parse_simple:
         tok = c;
         p++;

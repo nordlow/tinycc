@@ -113,6 +113,9 @@ endif
 329_d_string_slice.test : GEN = $(GEN-TCC)
 330_d_string_slice_error.test : FLAGS += -dt
 331_d_string_slice_bcheck.test : FLAGS += -b
+332_d_darray.test : GEN = $(GEN-TCC)
+333_d_darray_error.test : FLAGS += -dt
+334_d_darray_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 

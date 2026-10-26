@@ -621,3 +621,86 @@ long long __fixxfdi (long double a1)
     return s ? ret : -ret;
 }
 #endif /* !ARM */
+
+/* D-style dynamic array (slice) support.  A slice is a header holding
+   the element count followed by a pointer to the elements.  The
+   runtime only knows about memory obtained through these functions;
+   slices that view an array must be duplicated before they are
+   modified.  */
+
+struct darray_header {
+    __SIZE_TYPE__ length;
+    void *ptr;
+};
+
+extern void *malloc(__SIZE_TYPE__);
+extern void *realloc(void *, __SIZE_TYPE__);
+extern void free(void *);
+extern void *memcpy(void *, const void *, __SIZE_TYPE__);
+
+static void darray_set_length(struct darray_header *a,
+                              __SIZE_TYPE__ elemsize,
+                              __SIZE_TYPE__ newlen)
+{
+    void *np;
+
+    if (newlen == 0) {
+        free(a->ptr);
+        a->ptr = 0;
+        a->length = 0;
+        return;
+    }
+    if (a->ptr)
+        np = realloc(a->ptr, newlen * elemsize);
+    else
+        np = malloc(newlen * elemsize);
+    if (!np)
+        return;
+    a->ptr = np;
+    a->length = newlen;
+}
+
+void __darray_resize(void *p, __SIZE_TYPE__ elemsize, __SIZE_TYPE__ newlen)
+{
+    darray_set_length(p, elemsize, newlen);
+}
+
+void __darray_append(void *p, const void *elem, __SIZE_TYPE__ elemsize)
+{
+    struct darray_header *a = p;
+    __SIZE_TYPE__ n = a->length;
+
+    darray_set_length(a, elemsize, n + 1);
+    if (a->length == n + 1)
+        memcpy((char *)a->ptr + n * elemsize, elem, elemsize);
+}
+
+void __darray_dup(void *dst, const void *src, __SIZE_TYPE__ elemsize)
+{
+    const struct darray_header *s = src;
+    struct darray_header *d = dst;
+
+    d->length = 0;
+    d->ptr = 0;
+    darray_set_length(d, elemsize, s->length);
+    if (d->length == s->length && s->length)
+        memcpy(d->ptr, s->ptr, s->length * elemsize);
+}
+
+void __darray_concat(void *dst, const void *asrc, const void *bsrc,
+                     __SIZE_TYPE__ elemsize)
+{
+    const struct darray_header *a = asrc, *b = bsrc;
+    struct darray_header *d = dst;
+    __SIZE_TYPE__ na = a->length, nb = b->length;
+
+    d->length = 0;
+    d->ptr = 0;
+    darray_set_length(d, elemsize, na + nb);
+    if (d->length != na + nb)
+        return;
+    if (na)
+        memcpy(d->ptr, a->ptr, na * elemsize);
+    if (nb)
+        memcpy((char *)d->ptr + na * elemsize, b->ptr, nb * elemsize);
+}

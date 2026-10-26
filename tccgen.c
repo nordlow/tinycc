@@ -5393,6 +5393,76 @@ static void copy_slice_value(void)
     vset(&type, VT_LOCAL | VT_LVAL, l);
 }
 
+/* Emit the runtime call for 'a ~= x', with the slice value on top of
+   the value stack.  The token '~=' is the current one.  */
+static void gen_slice_append(void)
+{
+    CType elem, *lt = &vtop->type;
+    int esize, ealign, l, r2;
+
+    if (!is_slice_type(lt))
+        tcc_error("left operand of '~=' must be a D slice");
+    elem = *pointed_type(&lt->ref->next->next->type);
+    esize = type_size(&elem, &ealign);
+    l = get_temp_local_var(esize, ealign, &r2);
+
+    next();
+    vpush_helper_func(TOK___darray_append);
+    vpushv(vtop - 1);
+    gaddrof();
+    vtop->type = char_pointer_type;
+    expr_eq();
+    vset(&elem, VT_LOCAL | VT_LVAL, l);
+    vswap();
+    vstore();
+    vpop();
+    vset(&char_pointer_type, VT_LOCAL, l);
+    vpushs(esize);
+    gfunc_call(3);
+}
+
+/* Emit the runtime call for 'a ~ b', with both operands on the value
+   stack, and replace them with a new slice.  */
+static void gen_slice_concat(void)
+{
+    CType elem, slice_type, *lt = &vtop[-1].type;
+    int esize, ealign, size, align, r2, l, la, lb;
+
+    if (is_slice_type(lt))
+        elem = *pointed_type(&lt->ref->next->next->type);
+    else if (lt->t & (VT_ARRAY | VT_VLA))
+        elem = lt->ref->type;
+    else
+        tcc_error("operands of '~' must be D slices or arrays");
+
+    slice_type.t = VT_STRUCT;
+    slice_type.ref = make_slice_type(&elem);
+    esize = type_size(&elem, &ealign);
+    size = type_size(&slice_type, &align);
+
+    if (is_slice_type(&vtop->type)) {
+        CType *re = pointed_type(&vtop->type.ref->next->next->type);
+        if (!is_compatible_unqualified_types(re, &elem))
+            cast_error(&vtop->type, &slice_type);
+    } else if (!convert_array_to_slice(&slice_type)) {
+        tcc_error("cannot concatenate these operands");
+    }
+
+    l = get_temp_local_var(size, align, &r2);
+    lb = copy_slice_to_temp(&slice_type);
+    convert_array_to_slice(&slice_type);
+    la = copy_slice_to_temp(&slice_type);
+
+    vpush_helper_func(TOK___darray_concat);
+    vset(&char_pointer_type, VT_LOCAL, l);
+    vset(&char_pointer_type, VT_LOCAL, la);
+    vset(&char_pointer_type, VT_LOCAL, lb);
+    vpushs(esize);
+    gfunc_call(4);
+    vset(&slice_type, VT_LOCAL | VT_LVAL, l);
+    vtop->r2 = r2;
+}
+
 static int post_type(CType *type, AttributeDef *ad, int storage, int td)
 {
     int n, l, t1, arg_size, align;
@@ -6710,13 +6780,74 @@ special_math_val:
             next();
         } else if (tok == '.' || tok == TOK_ARROW) {
             int qualifiers, cumofs;
+            int is_arrow = tok == TOK_ARROW;
             /* field */ 
-            if (tok == TOK_ARROW) 
+            if (is_arrow)
                 indir();
             qualifiers = vtop->type.t & VT_QUAL;
-            test_lvalue();
             /* expect pointer on structure */
             next();
+            if (!is_arrow && (is_slice_type(&vtop->type)
+                              || (vtop->type.t & (VT_ARRAY | VT_VLA)))) {
+                CType elem, slice_type;
+                int esize, ealign, is_arr;
+                int is_len = tok == tok_alloc("length", 6)->tok;
+                int is_dup = tok == tok_alloc("dup", 3)->tok;
+                int is_resize = tok == tok_alloc("resize", 6)->tok;
+
+                is_arr = vtop->type.t & (VT_ARRAY | VT_VLA);
+                if (is_arr) {
+                    if (!is_dup)
+                        tcc_error("'.%s' requires a D slice",
+                                  is_len ? "length" : "resize");
+                    elem = vtop->type.ref->type;
+                    slice_type.t = VT_STRUCT;
+                    slice_type.ref = make_slice_type(&elem);
+                } else {
+                    elem = *pointed_type(&vtop->type.ref->next->next->type);
+                    slice_type = vtop->type;
+                }
+                esize = type_size(&elem, &ealign);
+                if (is_len) {
+                    /* '.length' is the plain header field; use
+                       '.resize(n)' to reallocate the elements.  */
+                    next();
+                    vtop->type.t = VT_SIZE_T;
+                    vtop->type.ref = NULL;
+                    continue;
+                } else if (is_resize) {
+                    next();
+                    vpush_helper_func(TOK___darray_resize);
+                    vpushv(vtop - 1);
+                    gaddrof();
+                    vtop->type = char_pointer_type;
+                    vpushs(esize);
+                    skip('(');
+                    expr_eq();
+                    skip(')');
+                    gfunc_call(3);
+                    continue;
+                } else if (is_dup) {
+                    int size, align, l, r2;
+                    next();
+                    if (is_arr)
+                        convert_array_to_slice(&slice_type);
+                    size = type_size(&slice_type, &align);
+                    l = get_temp_local_var(size, align, &r2);
+                    vpush_helper_func(TOK___darray_dup);
+                    vset(&char_pointer_type, VT_LOCAL, l);
+                    vpushv(vtop - 2);
+                    gaddrof();
+                    vtop->type = char_pointer_type;
+                    vpushs(esize);
+                    gfunc_call(3);
+                    vpop();
+                    vset(&slice_type, VT_LOCAL | VT_LVAL, l);
+                    vtop->r2 = r2;
+                    continue;
+                }
+            }
+            test_lvalue();
             s = NULL;
             if ((vtop->type.t & VT_BTYPE) == VT_STRUCT) {
                 s = find_field_opt(&vtop->type, tok, &cumofs);
@@ -7224,7 +7355,7 @@ static int precedence(int tok)
 	case TOK_EQ: case TOK_NE: return 6;
  relat: case TOK_ULT: case TOK_UGE: return 7;
 	case TOK_SHL: case TOK_SAR: return 8;
-	case '+': case '-': return 9;
+	case '+': case '-': case '~': return 9;
 	case '*': case '/': case '%': return 10;
 	default:
 	    if (tok >= TOK_ULE && tok <= TOK_GT)
@@ -7254,7 +7385,10 @@ static void expr_infix(int p)
             unary();
             if (precedence(tok) > p2)
               expr_infix(p2 + 1);
-            gen_op(t);
+            if (t == '~')
+                gen_slice_concat();
+            else
+                gen_op(t);
         }
         t = tok;
     }
@@ -7452,6 +7586,10 @@ static void expr_eq(void)
     expr_cond();
     if ((t = tok) == '=' || TOK_ASSIGN(t)) {
         test_lvalue();
+        if (t == TOK_A_CAT) {
+            gen_slice_append();
+            return;
+        }
         next();
         if (t == '=') {
             expr_eq();
@@ -9041,8 +9179,18 @@ static void decl_initializer(init_params *p, CType *type, unsigned long c, int f
         nocode_wanted = ncw_prev;
         if (flags & DIF_SIZE_ONLY)
             vpop();
-        else
+        else if (vtop->type.t & (VT_ARRAY | VT_VLA))
             init_slice_from_array(p, type, c);
+        else {
+            /* The literal was only part of a larger expression that
+               already evaluated to a slice.  */
+            if (!is_compatible_unqualified_types(type, &vtop->type))
+                cast_error(&vtop->type, type);
+            vset(type, VT_LOCAL | VT_LVAL, c);
+            vswap();
+            vstore();
+            vpop();
+        }
         return;
     }
 
