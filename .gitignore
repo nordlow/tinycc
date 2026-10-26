@@ -69,3 +69,7 @@ tests/hello
 tests/tests2/fred.txt
 libtcc.dylib
 .omp/tmp/
+
+# Serena MCP
+.serena/.gitignore
+.serena/project.yml
