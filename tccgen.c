@@ -176,8 +176,7 @@ static void d_array_suffix(CType *type, int storage);
 static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
-
-/* ------------------------------------------------------------------------- */
+static int check_d_manifest_constant(int l);
 /* Automagical code suppression */
 
 /* Clear 'nocode_wanted' at forward label if it was used */
@@ -9960,6 +9959,68 @@ static void free_inline_functions(TCCState *s)
     dynarray_reset(&s->inline_fns, &s->nb_inline_fns);
 }
 
+static int check_d_manifest_constant(int l)
+{
+    int saved_tok;
+    int id;
+    int64_t val;
+    CType type;
+    Sym *ss;
+    CType btype;
+    AttributeDef adbase;
+
+    if (tok != TOK_ENUM)
+        return 0;
+
+    saved_tok = tok;
+    next(); /* consume TOK_ENUM */
+    if (tok == '{') {
+        unget_tok(saved_tok);
+        return 0;
+    }
+    if (tok >= TOK_UIDENT) {
+        id = tok;
+        next();
+        if (tok == '=') {
+            next(); /* consume '=' */
+            expr_const1();
+            val = vtop->c.i;
+            type.t = VT_INT | VT_STATIC | VT_ENUM_VAL;
+            type.ref = NULL;
+            ss = sym_push(id, &type, VT_CONST, 0);
+            ss->enum_val = val;
+            vpop();
+            skip(';');
+            return 1;
+        }
+        unget_tok(id);
+        unget_tok(saved_tok);
+    } else {
+        memset(&adbase, 0, sizeof(adbase));
+        if (parse_btype(&btype, &adbase, l == VT_LOCAL)) {
+            if (tok >= TOK_UIDENT) {
+                int id2 = tok;
+                next();
+                if (tok == '=') {
+                    next(); /* consume '=' */
+                    expr_const1();
+                    val = vtop->c.i;
+                    btype.t = (btype.t & ~VT_STORAGE) | VT_STATIC | VT_ENUM_VAL;
+                    ss = sym_push(id2, &btype, VT_CONST, 0);
+                    ss->enum_val = val;
+                    vpop();
+                    skip(';');
+                    return 1;
+                }
+                tcc_error("expected '=' in manifest constant declaration");
+            }
+        }
+        unget_tok(saved_tok);
+    }
+    return 0;
+}
+
+
 static int check_d_static_assert(void)
 {
     if (tok == TOK_STATIC) {
@@ -10109,6 +10170,8 @@ static int decl(int l)
 
         oldint = 0;
         if (check_d_static_assert())
+            continue;
+        if (check_d_manifest_constant(l))
             continue;
         if (tok == TOK_UNITTEST) {
             if (l != VT_CONST)
