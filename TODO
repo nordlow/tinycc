@@ -217,6 +217,31 @@ or generated headers once inferred.
 - D: `int[] a = {1, 2, 3}, b = {4, 5};` (several array declarators with
   initializers) is not supported.
 
+## Missing D Language Features
+
+- **Built-in Associative Arrays (`V[K]`)**: Syntax and runtime support
+  for hash maps, `.keys`, `.values`, `.remove()`, and the `in` operator.
+- **`in` Operator**: Membership test for arrays and associative arrays
+  returning a pointer to the element or boolean.
+- **`with` Statement**: `with (expression) { ... }` or `with (symbol) { ... }`
+  scope block opening member access without qualification.
+- **`version` and `debug` Blocks**: Declarative conditional compilation
+  blocks (`version(X)`, `debug`) integrated into the grammar.
+- **Additional Array Properties**: `.ptr`, `.reverse`, `.sort`, `.idup`,
+  `.init`, `.stringof`.
+- **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...` and
+  delegate literals.
+- **`scope` Guards**: `scope(success)` and `scope(failure)` complementing
+  the existing `scope(exit)` (`defer`).
+- **`typeof` and Metaprogramming**: `typeof(expr)`, `typeof(return)`,
+  `typeid`, and `__traits`.
+- **`ref` Function Parameters & Returns**: Reference parameters and
+  returns without explicit pointer syntax.
+- **`inout` Qualifier**: Qualifier polymorphism for functions preserving
+  mutability.
+- **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
+- **Manifest Constants (`enum x = 42;`)**: Manifest constants without
+  storage (type-safe `#define`).
 # Optimizations
 
 - Suppress specific anonymous symbol handling.
