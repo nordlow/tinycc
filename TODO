@@ -116,21 +116,40 @@ return check, much less after the attribute-table refactoring below.
 
 ## Proposal: Single-Pass Effect System with Source-Code Emission
 
-Extend TCC's single-pass parser to infer function effects (purity, immutability, mutation, allocation, error/exception throws) on the fly and emit annotated declarations and definitions back into source files or generated headers once inferred.
+Extend TCC's single-pass parser to infer function effects (purity,
+immutability, mutation, allocation, error/exception throws) on the fly
+and emit annotated declarations and definitions back into source files
+or generated headers once inferred.
 
 ### How it Works in a Single-Pass Design
 
 1. **On-the-Fly Effect Inference (`tccgen.c`):**
-   - As expressions and statements inside a function body are parsed linearly, accumulate local effects into the function's `Sym` / `FuncAttr` bitmask (e.g., `EFFECT_PURE`, `EFFECT_READS`, `EFFECT_WRITES`, `EFFECT_ALLOC`).
-   - For parameters and return types, combine signature elision and inout/immutability inference rules.
+   - As expressions and statements inside a function body are parsed
+     linearly, accumulate local effects into the function's `Sym` /
+     `FuncAttr` bitmask (e.g., `EFFECT_PURE`, `EFFECT_READS`,
+     `EFFECT_WRITES`, `EFFECT_ALLOC`).
+   - For parameters and return types, combine signature elision and
+     inout/immutability inference rules.
 
 2. **Source/Header Emission Hook:**
-   - At the closing brace `}` of a function definition, symbol resolution and type/effect inference are fully complete for that scope.
-   - Using TCC's buffered source file pointers and line tracking (`BufferedFile`), output an updated declaration or definition containing the inferred effect annotations (e.g., `__attribute__((pure))` or `@pure`, inferred `const` / `immutable` qualifiers) to a generated output stream (`-fwrite-effects`) or in-place file patch.
+   - At the closing brace `}` of a function definition, symbol resolution
+     and type/effect inference are fully complete for that scope.
+   - Using TCC's buffered source file pointers and line tracking
+     (`BufferedFile`), output an updated declaration or definition
+     containing the inferred effect annotations (e.g.,
+     `__attribute__((pure))` or `@pure`, inferred `const` /
+     `immutable` qualifiers) to a generated output stream
+     (`-fwrite-effects`) or in-place file patch.
 
 3. **Tradeoffs & Scope:**
-   - **Advantage:** Preserves TCC's linear $O(N)$ single-pass speed while providing automated annotation of legacy C codebases without manual overhead.
-   - **Limitation:** Forward references without prior declarations require two passes or deferred emission for functions called before definition; resolved by emitting declarations at end-of-file or via stub generation.
+   - **Advantage:** Preserves TCC's linear $O(N)$ single-pass speed while
+     providing automated annotation of legacy C codebases without
+     manual overhead.
+   - **Limitation:** Forward references without prior declarations
+     require two passes or deferred emission for functions called
+     before definition; resolved by emitting declarations at
+     end-of-file or via stub generation.
+
 # Bugs
 
 - i386 fastcall is mostly wrong.
