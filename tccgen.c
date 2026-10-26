@@ -9963,6 +9963,38 @@ static void do_d_alias(void)
     skip(';');
 }
 
+/* D-style 'unittest { ... }' block.  With -unittest it becomes a
+   constructor function that runs before main.  The current token must
+   be the opening '{'.  */
+static int nb_unittest;
+
+static void do_unittest(void)
+{
+    CType type;
+    Sym *sym, *sr;
+    AttributeDef ad;
+    char name[64];
+
+    memset(&ad, 0, sizeof ad);
+    snprintf(name, sizeof name, "__unittest_%d", nb_unittest++);
+
+    /* build the type of 'static void __unittest_N(void)' */
+    type.t = VT_VOID;
+    type.ref = NULL;
+    sr = sym_push(SYM_FIELD, &type, 0, 0);
+    sr->f.func_type = FUNC_NEW;
+    sr->f.func_call = FUNC_CDECL;
+    sr->f.func_args = 0;
+    sr->f.func_ctor = 1;
+    sr->next = NULL;
+    type.t = VT_FUNC | VT_STATIC;
+    type.ref = sr;
+
+    sym = external_sym(tok_alloc(name, strlen(name))->tok, &type, 0, &ad);
+    cur_text_section = text_section;
+    gen_function(sym);
+}
+
 /* 'l' is VT_LOCAL or VT_CONST to define default storage type
    or VT_CMP if parsing old style parameter list
    or VT_JMP if parsing c99 for decl: for (int i = 0, ...) */
@@ -9979,6 +10011,18 @@ static int decl(int l)
         oldint = 0;
         if (check_d_static_assert())
             continue;
+        if (tok == TOK_UNITTEST) {
+            if (l != VT_CONST)
+                tcc_error("unittest block is only allowed at file scope");
+            next();
+            if (tok != '{')
+                expect("'{'");
+            if (tcc_state->do_unittest)
+                do_unittest();
+            else
+                skip_or_save_block(NULL);
+            continue;
+        }
         if (tok == TOK_ALIAS1) {
             if (l != VT_CONST && l != VT_LOCAL)
                 tcc_error("alias declaration is only allowed at file or block scope");

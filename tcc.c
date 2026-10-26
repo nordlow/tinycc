@@ -107,6 +107,7 @@ static const char help2[] =
     "  -print-search-dirs            print search paths\n"
     "  -rstdin file                  with -run: use 'file' as custom stdin\n"
     "  -dt                           with -run/-E: auto-define 'test_...' macros\n"
+    "  -unittest                     compile and run D-style unittest blocks\n"
     "Ignored options:\n"
     "  -arch -C --param -pedantic -pipe -s -traditional\n"
     "-W[no-]... warnings:\n"

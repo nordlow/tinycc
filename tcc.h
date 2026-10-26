@@ -774,6 +774,7 @@ struct TCCState {
 
     unsigned char option_r; /* option -r */
     unsigned char do_bench; /* option -bench */
+    unsigned char do_unittest; /* option -unittest */
     unsigned char just_deps; /* option -M  */
     unsigned char gen_deps; /* option -MD  */
     unsigned char include_sys_deps; /* option -MD  */

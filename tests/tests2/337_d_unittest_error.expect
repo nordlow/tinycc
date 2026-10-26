@@ -1,0 +1,5 @@
+[test_block_scope]
+337_d_unittest_error.c:2: error: unittest block is only allowed at file scope
+
+[test_missing_block]
+337_d_unittest_error.c:5: error: '{' expected

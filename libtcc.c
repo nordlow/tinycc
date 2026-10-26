@@ -1556,6 +1556,7 @@ enum {
     TCC_OPTION_B,
     TCC_OPTION_l,
     TCC_OPTION_bench,
+    TCC_OPTION_unittest,
     TCC_OPTION_bt,
     TCC_OPTION_b,
     TCC_OPTION_g,
@@ -1625,6 +1626,7 @@ static const TCCOption tcc_options[] = {
     { "B", TCC_OPTION_B, TCC_OPTION_HAS_ARG },
     { "l", TCC_OPTION_l, TCC_OPTION_HAS_ARG },
     { "bench", TCC_OPTION_bench, 0 },
+    { "unittest", TCC_OPTION_unittest, 0 },
 #ifdef CONFIG_TCC_BACKTRACE
     { "bt", TCC_OPTION_bt, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
 #endif
@@ -1933,6 +1935,9 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
             break;
         case TCC_OPTION_bench:
             s->do_bench = 1;
+            break;
+        case TCC_OPTION_unittest:
+            s->do_unittest = 1;
             break;
 #ifdef CONFIG_TCC_BACKTRACE
         case TCC_OPTION_bt:
