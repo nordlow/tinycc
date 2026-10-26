@@ -1,0 +1,19 @@
+[test_scalar]
+339_d_immutable_error.c:12: warning: assignment of read-only location
+2
+
+[test_member]
+339_d_immutable_error.c:21: warning: assignment of read-only location
+3
+
+[test_aggregate_member]
+339_d_immutable_error.c:30: warning: assignment of read-only location
+3
+
+[test_array_element]
+339_d_immutable_error.c:39: warning: assignment of read-only location
+3
+
+[test_pointer_target]
+339_d_immutable_error.c:49: warning: assignment of read-only location
+2

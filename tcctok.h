@@ -11,6 +11,7 @@
      DEF(TOK_FOREACH, "foreach")
      DEF(TOK_FOREACH_REVERSE, "foreach_reverse")
      DEF(TOK_UNITTEST, "unittest")
+     DEF(TOK_IMMUTABLE, "immutable")
      DEF(TOK_RETURN, "return")
      DEF(TOK_GOTO, "goto")
      DEF(TOK_SWITCH, "switch")

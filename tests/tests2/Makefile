@@ -120,6 +120,8 @@ endif
 335_d_unittest.test : GEN = $(GEN-TCC)
 336_d_unittest_off.test : GEN = $(GEN-TCC)
 337_d_unittest_error.test : FLAGS += -dt
+338_d_immutable.test : GEN = $(GEN-TCC)
+339_d_immutable_error.test : FLAGS += -dt
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 

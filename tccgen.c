@@ -5102,6 +5102,13 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             t = type->t;
             next();
             break;
+        case TOK_IMMUTABLE:
+            /* D-style immutable qualifier, currently mapped to const */
+            type->t = t;
+            parse_btype_qualify(type, VT_CONSTANT);
+            t = type->t;
+            next();
+            break;
         case TOK_VOLATILE1:
         case TOK_VOLATILE2:
         case TOK_VOLATILE3:
@@ -5823,6 +5830,7 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
         case TOK_CONST1:
         case TOK_CONST2:
         case TOK_CONST3:
+        case TOK_IMMUTABLE:
             qualifiers |= VT_CONSTANT;
             goto redo;
         case TOK_VOLATILE1:
