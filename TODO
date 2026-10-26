@@ -240,8 +240,10 @@ or generated headers once inferred.
 - **`inout` Qualifier**: Qualifier polymorphism for functions preserving
   mutability.
 - **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
-- **Manifest Constants (`enum x = 42;`)**: Manifest constants without
-  storage (type-safe `#define`).
+- **Manifest Constants**: Scalar manifest constants (`enum x = 42;`,
+  `enum int x = 42;`) without storage are **already covered**.
+  Aggregate/struct manifest constants (`enum S = { ... };`) are
+  **still missing**.
 
 # Optimizations
 
