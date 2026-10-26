@@ -32,6 +32,7 @@ ifeq ($(CONFIG_bcheck),no)
  SKIP += 117_builtins.test
  SKIP += 126_bound_global.test
  SKIP += 132_bound_test.test
+ SKIP += 319_d_slice_expr_bcheck.test
 endif
 ifeq ($(CONFIG_dll),no)
  SKIP += 113_btdll.test # no shared lib support yet
@@ -100,6 +101,8 @@ endif
 96_nodata_wanted.test : FLAGS += -dt
 139_arm64_errors.test : FLAGS += -dt
 307_static_assert_errors.test : FLAGS += -dt
+318_d_slice_expr_error.test : FLAGS += -dt
+319_d_slice_expr_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 

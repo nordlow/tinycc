@@ -5235,6 +5235,108 @@ static int asm_label_instr(void)
     return v;
 }
 
+/* Create the anonymous struct type used to represent a T[..] slice.  */
+static Sym *make_slice_type(CType *elem)
+{
+    Sym *s, *f1, *f2;
+    CType ptr_type, len_type, struct_type;
+    AttributeDef ad1;
+
+    ptr_type = *elem;
+    mk_pointer(&ptr_type);
+
+    len_type.t = VT_SIZE_T;
+    len_type.ref = NULL;
+
+    struct_type.t = VT_STRUCT;
+    struct_type.ref = NULL;
+    s = sym_push(SYM_STRUCT | (anon_sym++), &struct_type, 0, 0);
+    s->r = 0;
+    s->type.ref = s;
+
+    f1 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
+    f1->next = NULL;
+    s->next = f1;
+
+    f2 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
+    f2->next = NULL;
+    f1->next = f2;
+
+    memset(&ad1, 0, sizeof(ad1));
+    check_fields(&s->type, 1);
+    check_fields(&s->type, 0);
+    struct_layout(&s->type, &ad1);
+    s->a.is_slice = 1;
+    return s;
+}
+
+/* Build a slice value of element type 'elem' from a pointer and a
+   length on the value stack.  The length is on top of the pointer.  */
+static void gen_slice_value(CType *elem)
+{
+    CType slice_type, len_type, ptr_type;
+    Sym *s;
+    int size, align, l;
+
+    slice_type.t = VT_STRUCT;
+    slice_type.ref = make_slice_type(elem);
+    s = slice_type.ref;
+    len_type = s->next->type;
+    ptr_type = s->next->next->type;
+
+    /* Allocate the temporary struct like a compound literal does, so
+       that it is not reused while its address is still needed (e.g.
+       for a field access under -b).  */
+    size = type_size(&slice_type, &align);
+    loc = (loc - size) & -align;
+    l = loc;
+
+    /* .length */
+    vset(&len_type, VT_LOCAL | VT_LVAL, l);
+    vswap();
+    vstore();
+    vpop();
+
+    /* .ptr */
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, l + PTR_SIZE);
+    vswap();
+    vstore();
+    vpop();
+
+    vset(&slice_type, VT_LOCAL | VT_LVAL, l);
+}
+
+/* Replace the slice value on top of the stack with its .ptr member.  */
+static void slice_to_ptr(void)
+{
+    CType ptr_type = *pointed_type(&vtop->type.ref->next->next->type);
+
+    mk_pointer(&ptr_type);
+    gaddrof();
+    vtop->type = char_pointer_type;
+    vpushi(PTR_SIZE);
+    gen_op('+');
+    vtop->type = ptr_type;
+    vtop->r |= VT_LVAL;
+    gv(RC_INT);
+}
+
+/* Copy the slice value on top of the stack into a temporary local.  */
+static void copy_slice_value(void)
+{
+    CType type = vtop->type;
+    int size, align, l;
+
+    size = type_size(&type, &align);
+    loc = (loc - size) & -align;
+    l = loc;
+    vset(&type, VT_LOCAL | VT_LVAL, l);
+    vswap();
+    vstore();
+    vpop();
+    vset(&type, VT_LOCAL | VT_LVAL, l);
+}
+
 static int post_type(CType *type, AttributeDef *ad, int storage, int td)
 {
     int n, l, t1, arg_size, align;
@@ -5347,40 +5449,8 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
             post_type(type, ad, storage, (td & ~(TYPE_DIRECT|TYPE_ABSTRACT)) | TYPE_NEST);
 
             /* Slice type: C[..] -> struct { size_t length; T *ptr; } */
-            {
-                Sym *s, *f1, *f2;
-                CType ptr_type, len_type, struct_type;
-                AttributeDef ad1;
-
-                ptr_type = *type;
-                mk_pointer(&ptr_type);
-
-                len_type.t = VT_SIZE_T;
-                len_type.ref = NULL;
-
-                struct_type.t = VT_STRUCT;
-                struct_type.ref = NULL;
-                s = sym_push(SYM_STRUCT | (anon_sym++), &struct_type, 0, 0);
-                s->r = 0;
-                s->type.ref = s;
-
-                f1 = sym_push(tok_alloc("length", 6)->tok | SYM_FIELD, &len_type, 0, 0);
-                f1->next = NULL;
-                s->next = f1;
-
-                f2 = sym_push(tok_alloc("ptr", 3)->tok | SYM_FIELD, &ptr_type, 0, 0);
-                f2->next = NULL;
-                f1->next = f2;
-
-                memset(&ad1, 0, sizeof(ad1));
-                check_fields(&s->type, 1);
-                check_fields(&s->type, 0);
-                struct_layout(&s->type, &ad1);
-                s->a.is_slice = 1;
-
-                type->t = VT_STRUCT;
-                type->ref = s;
-            }
+            type->ref = make_slice_type(type);
+            type->t = VT_STRUCT;
             nocode_wanted = saved_nocode_wanted;
             return 1;
         }
@@ -6574,11 +6644,63 @@ special_math_val:
             next();
             skip_normal_next: ;
         } else if (tok == '[') {
+            CType base_type, elem_type;
+            int base_is_slice;
+
             next();
+            base_type = vtop->type;
+            base_is_slice = is_slice_type(&base_type);
+
+            if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
+                /* full slice: a[..] */
+                if (nocode_wanted & DATA_ONLY_WANTED)
+                    tcc_error("slice expression is not computable at load time");
+                next();
+                skip(']');
+                if (base_is_slice) {
+                    copy_slice_value();
+                } else if (base_type.t & (VT_ARRAY | VT_VLA)) {
+                    CType slice_type;
+                    slice_type.t = VT_STRUCT;
+                    slice_type.ref = make_slice_type(&base_type.ref->type);
+                    convert_array_to_slice(&slice_type);
+                } else {
+                    tcc_error("cannot slice a pointer without bounds");
+                }
+                continue;
+            }
+
+            if (base_is_slice) {
+                elem_type = *pointed_type(&base_type.ref->next->next->type);
+                slice_to_ptr();
+            } else if (base_type.t & (VT_ARRAY | VT_VLA)) {
+                elem_type = base_type.ref->type;
+            } else if ((base_type.t & VT_BTYPE) == VT_PTR) {
+                elem_type = *pointed_type(&base_type);
+            } else {
+                elem_type = base_type;
+            }
+
             gexpr();
-            gen_op('+');
-            indir();
-            skip(']');
+            if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
+                /* range slice: a[lo..hi] */
+                if (nocode_wanted & DATA_ONLY_WANTED)
+                    tcc_error("slice expression is not computable at load time");
+                next();
+                gexpr();
+                skip(']');
+                /* [base, lo, hi] -> [base + lo, hi - lo] */
+                vpushv(vtop - 1);   /* lo */
+                gen_op('-');        /* hi - lo */
+                vrott(3);           /* [len, base, lo] */
+                gen_op('+');        /* [len, base + lo] */
+                vswap();            /* [ptr, len] */
+                gen_slice_value(&elem_type);
+            } else {
+                gen_op('+');
+                indir();
+                skip(']');
+            }
         } else if (tok == '(') {
             SValue ret;
             Sym *sa;

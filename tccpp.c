@@ -2763,6 +2763,10 @@ maybe_newline:
         cstr_reset(&tokcstr);
         for(;;) {
             cstr_ccat(&tokcstr, t);
+            /* stop before '..' so that D-style slice ranges like 1..3
+               are not swallowed by the pp-number */
+            if (c == '.' && p[1] == '.')
+                break;
             if (!((isidnum_table[c - CH_EOF] & (IS_ID|IS_NUM))
                   || c == '.'
                   || ((c == '+' || c == '-')
