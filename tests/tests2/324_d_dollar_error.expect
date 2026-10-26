@@ -1,0 +1,8 @@
+[test_pointer_subscript]
+324_d_dollar_error.c:2: error: '$' requires an array or slice
+
+[test_scalar_subscript]
+324_d_dollar_error.c:5: error: '$' requires an array or slice
+
+[test_outside_subscript]
+324_d_dollar_error.c:8: error: '$' undeclared

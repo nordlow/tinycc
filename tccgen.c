@@ -110,6 +110,15 @@ static struct temp_local_variable {
 } arr_temp_local_vars[MAX_TEMP_LOCAL_VARIABLE_NUMBER];
 static int nb_temp_local_vars;
 
+/* '$' inside a subscript expression denotes the length of the
+   subscripted array or slice.  */
+struct dollar_ctx {
+    CType type;
+    SValue sv;
+};
+static struct dollar_ctx dollar_ctx_stack[16];
+static int nb_dollar_ctx;
+
 static struct scope {
     struct scope *prev;
     struct { int loc, locorig, num; } vla;
@@ -382,6 +391,7 @@ ST_FUNC void tccgen_init(TCCState *s1)
 {
     vtop = vstack - 1;
     memset(vtop, 0, sizeof *vtop);
+    nb_dollar_ctx = 0;
 
     /* define some often used types */
     int_type.t = VT_INT;
@@ -5961,6 +5971,40 @@ static void parse_atomic(int atok)
     }
 }
 
+/* '$' inside a subscript expression denotes the length of the
+   subscripted array or slice.  */
+static void gen_dollar(void)
+{
+    struct dollar_ctx *ctx;
+    CType len_type;
+    int align, elem_size;
+
+    if (!nb_dollar_ctx)
+        tcc_error("'$' is only allowed in a subscript expression");
+    ctx = &dollar_ctx_stack[nb_dollar_ctx - 1];
+    if (is_slice_type(&ctx->type)) {
+        /* .length is the first member of the slice header */
+        len_type = ctx->type.ref->next->type;
+        vpushv(&ctx->sv);
+        gaddrof();
+        vtop->type = len_type;
+        vtop->r |= VT_LVAL;
+    } else if (ctx->type.t & VT_ARRAY) {
+        vpush64(VT_SIZE_T, ctx->type.ref->c);
+    } else if (ctx->type.t & VT_VLA) {
+        /* the total byte size is stored in the array reference */
+        elem_size = type_size(&ctx->type.ref->type, &align);
+        vset(&int_type, VT_LOCAL | VT_LVAL, ctx->type.ref->c);
+        if (elem_size != 1) {
+            vpushi(elem_size);
+            gen_op('/');
+        }
+        gen_cast_s(VT_SIZE_T);
+    } else {
+        tcc_error("'$' requires an array or slice");
+    }
+}
+
 ST_FUNC void unary(void)
 {
     int n, t, align, size, r;
@@ -6496,6 +6540,11 @@ special_math_val:
         s = sym_find(t);
         if (!s || IS_ASM_SYM(s)) {
             const char *name = get_tok_str(t, NULL);
+            /* '$' denotes the length of the subscripted aggregate */
+            if (nb_dollar_ctx && !strcmp(name, "$")) {
+                gen_dollar();
+                break;
+            }
             if (tok != '(')
                 tcc_error("'%s' undeclared", name);
             /* for simple function calls, we tolerate undeclared
@@ -6676,10 +6725,12 @@ special_math_val:
             skip_normal_next: ;
         } else if (tok == '[') {
             CType base_type, elem_type;
+            SValue *base_sv;
             int base_is_slice;
 
             next();
             base_type = vtop->type;
+            base_sv = vtop;
             base_is_slice = is_slice_type(&base_type);
 
             if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
@@ -6701,6 +6752,16 @@ special_math_val:
                 continue;
             }
 
+            /* make '$' refer to the length of this aggregate; the base
+               value is still intact here, before it is converted to a
+               pointer below */
+            if (nb_dollar_ctx ==
+                (int)(sizeof dollar_ctx_stack / sizeof dollar_ctx_stack[0]))
+                tcc_error("subscript expressions nested too deeply");
+            dollar_ctx_stack[nb_dollar_ctx].type = base_type;
+            dollar_ctx_stack[nb_dollar_ctx].sv = *base_sv;
+            ++nb_dollar_ctx;
+
             if (base_is_slice) {
                 elem_type = *pointed_type(&base_type.ref->next->next->type);
                 slice_to_ptr();
@@ -6720,6 +6781,7 @@ special_math_val:
                 next();
                 gexpr();
                 skip(']');
+                --nb_dollar_ctx;
                 /* [base, lo, hi] -> [base + lo, hi - lo] */
                 vpushv(vtop - 1);   /* lo */
                 gen_op('-');        /* hi - lo */
@@ -6731,6 +6793,7 @@ special_math_val:
                 gen_op('+');
                 indir();
                 skip(']');
+                --nb_dollar_ctx;
             }
         } else if (tok == '(') {
             SValue ret;

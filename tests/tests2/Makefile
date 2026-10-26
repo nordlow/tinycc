@@ -105,6 +105,8 @@ endif
 319_d_slice_expr_bcheck.test : FLAGS += -b
 321_d_foreach_error.test : FLAGS += -dt
 322_d_foreach_bcheck.test : FLAGS += -b
+324_d_dollar_error.test : FLAGS += -dt
+325_d_dollar_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
