@@ -190,10 +190,10 @@ involve `/dev/tty` or `isatty` checks.
 
 ### One-shot diagnostic helper
 
-Save as `tools/hangdiag.py`. It runs a command with a time limit and,
+Save as `tools/hangdiag`. It runs a command with a time limit and,
 if still alive, dumps everything useful before killing it.
 
-Example: `tools/hangdiag.py 120 make -j$(nproc) test`
+Example: `tools/hangdiag 120 make -j$(nproc) test`
 
 ### Reporting
 
