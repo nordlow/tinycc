@@ -1,0 +1,11 @@
+[test_char_to_int]
+330_d_string_slice_error.c:8: error: cannot convert 'char [3]' to 'int [..]'
+
+[test_wide_to_char]
+330_d_string_slice_error.c:11: error: cannot convert 'int [3]' to 'char [..]'
+
+[test_narrow_to_wide]
+330_d_string_slice_error.c:14: error: cannot convert 'char [3]' to 'int [..]'
+
+[test_mixed_merging]
+330_d_string_slice_error.c:17: error: unhandled string literal merging

@@ -497,7 +497,7 @@ typedef struct SValue {
 
 /* symbol attributes */
 struct SymAttr {
-    unsigned short
+    unsigned int
     aligned     : 5, /* alignment as log2+1 (0 == unspecified) */
     packed      : 1,
     weak        : 1,
@@ -508,7 +508,9 @@ struct SymAttr {
     addrtaken   : 1,
     nodebug     : 1,
     nocopy      : 1,
-    is_slice    : 1; /* struct generated for a T[..] slice type */
+    is_slice    : 1, /* struct generated for a T[..] slice type */
+    str_lit     : 1; /* array created for a string literal; its length
+                        includes the terminating null character */
 };
 
 /* function attributes or temporary attributes for parsing */

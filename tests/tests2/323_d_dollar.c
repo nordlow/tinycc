@@ -20,8 +20,9 @@ int main(void)
     /* ... of a slice */
     printf("%d %d %ld\n", s[$-1], s[$-2], (long)s[$/2]);
 
-    /* ... of a global array and of a string literal */
-    printf("%d %d %d\n", garr[$-1], gstr[$-1], "xyz"[$-2]);
+    /* ... of a global array and of a string literal (whose '$' excludes
+       the terminating null character) */
+    printf("%d %d %d\n", garr[$-1], gstr[$-1], "xyz"[$-1]);
 
     /* '$' in slice bounds */
     printf("%ld %d %d\n", (long)s[0..$].length, s[0..$].ptr[0],

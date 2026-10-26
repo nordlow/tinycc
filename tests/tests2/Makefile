@@ -110,6 +110,9 @@ endif
 326_d_typedecl.test : GEN = $(GEN-TCC)
 327_d_typedecl_error.test : FLAGS += -dt
 328_d_typedecl_bcheck.test : FLAGS += -b
+329_d_string_slice.test : GEN = $(GEN-TCC)
+330_d_string_slice_error.test : FLAGS += -dt
+331_d_string_slice_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 

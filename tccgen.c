@@ -3618,6 +3618,17 @@ static int is_slice_type(CType *type)
         && type->ref && type->ref->a.is_slice;
 }
 
+/* Return the number of elements an array of type 'type' has when it is
+   viewed through a slice.  Arrays that hold a string literal store the
+   terminating null character as well, which is not part of the slice.  */
+static int array_slice_length(CType *type)
+{
+    int n = type->ref->c;
+    if (type->ref->a.str_lit && n > 0)
+        --n;
+    return n;
+}
+
 /* return true if token 't' can start a type specifier list */
 static int is_type_start(int t)
 {
@@ -3719,7 +3730,7 @@ static int convert_array_to_slice(CType *dt)
             gen_op('/');
         }
     } else {
-        vpushs(st.ref->c);
+        vpushs(array_slice_length(&st));
     }
     len_type = s->next->type;
     vset(&len_type, VT_LOCAL | VT_LVAL, l);
@@ -5718,6 +5729,12 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
     type->t &= ~VT_STORAGE;
     post = ret = type;
 
+    /* A type taken from a string literal, as in 'typeof("ab")', no longer
+       describes that literal, so give it its own array reference and stop
+       treating it as one when it is converted to a slice.  */
+    if ((type->t & VT_ARRAY) && type->ref && type->ref->a.str_lit)
+        type->ref = sym_push(SYM_FIELD, &type->ref->type, 0, type->ref->c);
+
     while (tok == '*' || (tok == '[' && (td & TYPE_DIRECT) && !(td & TYPE_PARAM))) {
         if (tok == '[') {
             /* D-style array suffix before the declarator name.  Parameter
@@ -6087,7 +6104,7 @@ static void gen_dollar(void)
         vtop->type = len_type;
         vtop->r |= VT_LVAL;
     } else if (ctx->type.t & VT_ARRAY) {
-        vpush64(VT_SIZE_T, ctx->type.ref->c);
+        vpush64(VT_SIZE_T, array_slice_length(&ctx->type));
     } else if (ctx->type.t & VT_VLA) {
         /* the total byte size is stored in the array reference */
         elem_size = type_size(&ctx->type.ref->type, &align);
@@ -6104,7 +6121,7 @@ static void gen_dollar(void)
 
 ST_FUNC void unary(void)
 {
-    int n, t, align, size, r;
+    int n, t, align, size, r, str_lit = 0;
     CType type;
     Sym *s;
     AttributeDef ad;
@@ -6173,6 +6190,7 @@ ST_FUNC void unary(void)
         cstr_cat(&tokcstr, funcname, 0);
         tokc.str.size = tokcstr.size;
         tokc.str.data = tokcstr.data;
+        str_lit = 0;
         goto case_TOK_STR;
     case TOK_LSTR:
 #ifdef TCC_TARGET_PE
@@ -6180,8 +6198,10 @@ ST_FUNC void unary(void)
 #else
         t = VT_INT;
 #endif
+        str_lit = 1;
         goto str_init;
     case TOK_STR:
+        str_lit = 1;
     case_TOK_STR:
         /* string parsing */
         t = char_type.t;
@@ -6194,6 +6214,10 @@ ST_FUNC void unary(void)
         memset(&ad, 0, sizeof(AttributeDef));
         ad.section = rodata_section;
         decl_initializer_alloc(&type, &ad, VT_CONST, 2, 0, 0);
+        /* an array holding a string literal is stored with its
+           terminating null character, which a slice does not expose */
+        if (str_lit && (vtop->type.t & VT_ARRAY) && vtop->type.ref)
+            vtop->type.ref->a.str_lit = 1;
         break;
     case TOK_SOTYPE:
     case '(':
@@ -8949,7 +8973,7 @@ static void init_slice_from_array(init_params *p, CType *type, unsigned long c)
             gen_op('/');
         }
     } else {
-        vpushs(st.ref->c);
+        vpushs(array_slice_length(&st));
     }
     init_putv(p, &s->next->type, c);
 
@@ -8991,6 +9015,35 @@ static void decl_initializer(init_params *p, CType *type, unsigned long c, int f
 	parse_init_elem(!p->sec ? EXPR_ANY : EXPR_CONST);
         nocode_wanted = ncw_prev;
         flags |= DIF_HAVE_ELEM;
+    }
+
+    if (is_slice_type(type) && !(flags & DIF_HAVE_ELEM)
+        && (tok == TOK_STR || tok == TOK_LSTR)) {
+        /* A string literal initializes a slice.  Adjacent literals are
+           concatenated, as in C array initializers.  */
+        int ncw_prev = nocode_wanted;
+        int size1 = (tok == TOK_STR ? 1 : sizeof(nwchar_t));
+        cstr_reset(&initstr);
+        while (tok == TOK_STR || tok == TOK_LSTR) {
+            if ((tok == TOK_STR ? 1 : sizeof(nwchar_t)) != size1)
+                tcc_error("unhandled string literal merging");
+            if (initstr.size)
+                initstr.size -= size1;
+            cstr_cat(&initstr, tokc.str.data, tokc.str.size);
+            next();
+        }
+        unget_tok(size1 == 1 ? TOK_STR : TOK_LSTR);
+        tokc.str.size = initstr.size;
+        tokc.str.data = initstr.data;
+        if ((flags & DIF_SIZE_ONLY) && !p->sec)
+            ++nocode_wanted;
+        parse_init_elem(!p->sec ? EXPR_ANY : EXPR_CONST);
+        nocode_wanted = ncw_prev;
+        if (flags & DIF_SIZE_ONLY)
+            vpop();
+        else
+            init_slice_from_array(p, type, c);
+        return;
     }
 
     if ((flags & DIF_HAVE_ELEM) && is_slice_type(type)) {
