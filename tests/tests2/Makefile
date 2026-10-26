@@ -122,7 +122,8 @@ endif
 337_d_unittest_error.test : FLAGS += -dt
 338_d_immutable.test : GEN = $(GEN-TCC)
 339_d_immutable_error.test : FLAGS += -dt
-GEN-ALWAYS =
+340_debug_dumps.test : FLAGS += -fdump-types -fdump-decls -fdump-vstack -dt
+340_debug_dumps.test : GEN = $(GEN-TCC)
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields
