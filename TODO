@@ -1,11 +1,56 @@
-TODO list:
+# TODO list
 
-Releases:
+## The Practical Solution: Signature Elision Rules (The "Rust" Approach)
+
+There is a way to get zero annotations in function bodies while still
+working in TinyCC and across header files: Convention-based Elision.
+
+Instead of inspecting the body, the compiler infers the qualifier
+mapping strictly from the shape of the function signature: The Rule:
+
+    "If a function returns a pointer and has exactly one pointer
+    parameter, the return qualifier is automatically tied to that
+    parameter."
+
+Purity also plays a role here.
+
+Look at common C functions under this rule: code C
+
+// You write standard C: char* strchr(const char* s, int c); void*
+memcpy(void* dest, const void* src, size_t n);
+
+// TCC automatically infers: // - strchr: only 1 pointer parameter
+('s').  // -> Return qualifier automatically inherits from 's'.  // -
+memcpy: 2 pointer parameters.  // -> Ambiguous, so it falls back to
+standard C behavior.
+
+Why this works brilliantly in TinyCC:
+
+Works across headers: TCC only needs the function declaration in
+.h files. It doesn't need to see the body.
+
+Trivially easy to implement in TCC:
+
+In tccgen.c, when parsing a function prototype, count pointer
+arguments.
+
+If `pointer_arg_count == 1` and return_type is a pointer, set a single
+bit in the function's symbol entry: `VT_INFER_RETURN_QUAL`.
+
+At call sites: if `VT_INFER_RETURN_QUAL` is set, copy the
+qualifier of that single argument to `vtop->type`.
+
+Zero new keywords, zero sigils: 90% of utility functions (`strchr`,
+`trim`, `find`, `next_node`) naturally take only one main input
+pointer and return a slice of it. They would "just work" with
+`immutable` and `const` for free.
+
+# Releases
 
 - release tcc on a regular basis
 - testing repo.or.cz
 
-Bugs:
+# Bugs
 
 - i386 fastcall is mostly wrong
 - FPU st(0) is left unclean (kwisatz haderach). Incompatible with
@@ -28,7 +73,7 @@ Bugs:
 - __STDC_IEC_559__: float f(void) { static float x = 0.0 / 0.0; return x; }
 - memory may be leaked after errors (longjmp).
 
-Portability:
+# Portability
 
 - it is assumed that int is 32-bit and sizeof(int) == 4
 - int is used when host or target size_t would make more sense
@@ -36,14 +81,14 @@ Portability:
   arithmetic, which is simple and fast but may lead to exceptions
   and inaccuracy and wrong representations when cross-compiling
 
-Linking:
+# Linking
 
 - static linking (-static) does sort of work
 	works with musl libc
 	glibc requires libc.so even when statically linked (very bad, but not
 	up to tcc)
 
-Bound checking:
+# Bound checking
 
 - fix bound exit on RedHat 7.3
 - setjmp is not supported properly in bound checking.
@@ -52,7 +97,7 @@ Bound checking:
 - bound checking and float/long long/struct copy code. bound
   checking and symbol + offset optimization
 
-Missing features:
+# Missing features
 
 - disable-asm and disable-bcheck options
 - __builtin_expect()
@@ -61,7 +106,7 @@ Missing features:
 - postfix compound literals (see 20010124-1.c)
 - interactive mode / integrated debugger
 
-Optimizations:
+# Optimizations
 
 - suppress specific anonymous symbol handling
 - more parse optimizations (=even faster compilation)
@@ -69,7 +114,7 @@ Optimizations:
 - optimize VT_LOCAL + const
 - better local variables handling (needed for other targets)
 
-Not critical:
+# Not critical
 
 - C99: fix multiple compound literals inits in blocks (ISOC99
   normative example - only relevant when using gotos! -> must add
@@ -87,7 +132,7 @@ Not critical:
 - VLAs are implemented in a way that is not compatible with signals:
   http://lists.gnu.org/archive/html/tinycc-devel/2015-11/msg00018.html
 
-Fixed (probably):
+# Fixed (probably)
 
 - bug with defines:
     #define spin_lock(lock) do { } while (0)
