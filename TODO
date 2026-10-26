@@ -242,6 +242,7 @@ or generated headers once inferred.
 - **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
 - **Manifest Constants (`enum x = 42;`)**: Manifest constants without
   storage (type-safe `#define`).
+
 # Optimizations
 
 - Suppress specific anonymous symbol handling.
