@@ -40,6 +40,8 @@ ST_DATA Sym *local_label_stack;
 static Sym *sym_free_first;
 static void **sym_pools;
 static int nb_sym_pools;
+static TCCState *cur_tcc_state;
+
 
 static Sym *all_cleanups, *pending_gotos;
 static int local_scope;
@@ -344,14 +346,6 @@ ST_FUNC void test_lvalue(void)
         expect("lvalue");
 }
 
-ST_FUNC void check_vstack(void)
-{
-    if (vtop != vstack - 1)
-        tcc_error("internal compiler error: vstack leak (%d)",
-                  (int)(vtop - vstack + 1));
-}
-
-#if 0
 /* dump 'b' vstack entries starting with 'a'  */
 void pv (const char *lbl, int a, int b)
 {
@@ -384,12 +378,20 @@ static void ptype(const char *msg, CType *type, int v)
         (v & ~SYM_FIELD) ? get_tok_str(v, NULL) : NULL);
     printf("%s : %s;\n", msg, buf);
 }
-#endif
 
+ST_FUNC void check_vstack(void)
+{
+    if (cur_tcc_state && cur_tcc_state->dump_vstack)
+        pv("VSTACK", 0, vtop - vstack + 1);
+    if (vtop != vstack - 1)
+        tcc_error("internal compiler error: vstack leak (%d)",
+                  (int)(vtop - vstack + 1));
+}
 /* ------------------------------------------------------------------------- */
 /* initialize vstack and types.  This must be done also for tcc -E */
 ST_FUNC void tccgen_init(TCCState *s1)
 {
+    cur_tcc_state = s1;
     vtop = vstack - 1;
     memset(vtop, 0, sizeof *vtop);
     nb_dollar_ctx = 0;
@@ -415,6 +417,7 @@ ST_FUNC void tccgen_init(TCCState *s1)
 
 ST_FUNC int tccgen_compile(TCCState *s1)
 {
+    cur_tcc_state = s1;
     funcname = "";
     func_ind = -1;
     anon_sym = SYM_FIRST_ANOM;
@@ -772,6 +775,8 @@ ST_FUNC Sym *sym_push(int v, CType *type, int r, int c)
         if (s->prev_tok && sym_scope_ex(s->prev_tok) == local_scope)
             tcc_error("redeclaration of '%s'", get_tok_str(s->v, NULL));
     }
+    if (cur_tcc_state && cur_tcc_state->dump_decls)
+        psyms("DECL", s, s->prev);
     return s;
 }
 
@@ -10091,7 +10096,8 @@ static int decl(int l)
             type = btype;
 	    ad = adbase;
             type_decl(&type, &ad, &v, l == VT_CMP ? TYPE_DIRECT | TYPE_PARAM : TYPE_DIRECT);
-            /*ptype("decl", &type, v);*/
+            if (cur_tcc_state && cur_tcc_state->dump_types)
+                ptype("TYPE", &type, v);
             if ((type.t & VT_BTYPE) == VT_FUNC) {
                 if ((type.t & VT_STATIC) && (l != VT_CONST))
                     tcc_error("function without file scope cannot be static");

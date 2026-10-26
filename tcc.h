@@ -789,7 +789,9 @@ struct TCCState {
     unsigned char do_bounds_check;
 #endif
     unsigned char test_coverage;  /* generate test coverage code */
-
+    unsigned char dump_types;
+    unsigned char dump_decls;
+    unsigned char dump_vstack;
     /* use GNU C extensions */
     unsigned char gnu_ext;
     /* use TinyCC extensions */

@@ -128,6 +128,9 @@ static const char help2[] =
     "  gnu89-inline                  'extern inline' is like 'static inline'\n"
     "  asynchronous-unwind-tables    create eh_frame section [on]\n"
     "  test-coverage                 create code coverage code\n"
+    "  dump-types                    dump types during parsing\n"
+    "  dump-decls                    dump declarations during parsing\n"
+    "  dump-vstack                   dump vstack state during parsing\n"
     "-m... target specific options:\n"
     "  ms-bitfields                  use MSVC bitfield layout\n"
 #ifdef TCC_TARGET_ARM
