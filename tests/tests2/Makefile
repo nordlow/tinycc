@@ -103,6 +103,8 @@ endif
 307_static_assert_errors.test : FLAGS += -dt
 318_d_slice_expr_error.test : FLAGS += -dt
 319_d_slice_expr_bcheck.test : FLAGS += -b
+321_d_foreach_error.test : FLAGS += -dt
+322_d_foreach_bcheck.test : FLAGS += -b
 GEN-ALWAYS =
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 

@@ -1,0 +1,14 @@
+[test_pointer_aggregate]
+321_d_foreach_error.c:2: error: 'foreach' requires an array or slice
+
+[test_scalar_aggregate]
+321_d_foreach_error.c:5: error: 'foreach' requires an array or slice
+
+[test_too_many_variables]
+321_d_foreach_error.c:8: error: too many variables in 'foreach'
+
+[test_missing_semicolon]
+321_d_foreach_error.c:11: error: ';' expected (got 'a')
+
+[test_missing_aggregate]
+321_d_foreach_error.c:14: error: expression expected before ')'

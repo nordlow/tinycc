@@ -3607,6 +3607,28 @@ static int is_slice_type(CType *type)
         && type->ref && type->ref->a.is_slice;
 }
 
+/* return true if token 't' can start a type specifier list */
+static int is_type_start(int t)
+{
+    Sym *s;
+
+    switch (t) {
+    case TOK_VOID: case TOK_CHAR: case TOK_SHORT: case TOK_INT:
+    case TOK_LONG: case TOK_FLOAT: case TOK_DOUBLE: case TOK_BOOL:
+    case TOK_COMPLEX: case TOK_STRUCT: case TOK_UNION: case TOK_ENUM:
+    case TOK_SIGNED1: case TOK_SIGNED2: case TOK_SIGNED3:
+    case TOK_UNSIGNED: case TOK__Atomic:
+    case TOK_CONST1: case TOK_CONST2: case TOK_CONST3:
+    case TOK_VOLATILE1: case TOK_VOLATILE2: case TOK_VOLATILE3:
+    case TOK_RESTRICT1: case TOK_RESTRICT2: case TOK_RESTRICT3:
+    case TOK_TYPEOF1: case TOK_TYPEOF2: case TOK_TYPEOF3:
+    case TOK_ALIGNAS: case TOK_EXTENSION:
+        return 1;
+    }
+    s = sym_find(t);
+    return s && (s->type.t & VT_TYPEDEF);
+}
+
 static void check_restrict_type(CType *type)
 {
     while ((type->t & VT_BTYPE) == VT_PTR) {
@@ -5321,19 +5343,28 @@ static void slice_to_ptr(void)
     gv(RC_INT);
 }
 
+/* Copy the slice value on top of the stack into a temporary local and
+   return the offset of that local.  */
+static int copy_slice_to_temp(CType *type)
+{
+    int size, align, l;
+
+    size = type_size(type, &align);
+    loc = (loc - size) & -align;
+    l = loc;
+    vset(type, VT_LOCAL | VT_LVAL, l);
+    vswap();
+    vstore();
+    vpop();
+    return l;
+}
+
 /* Copy the slice value on top of the stack into a temporary local.  */
 static void copy_slice_value(void)
 {
     CType type = vtop->type;
-    int size, align, l;
+    int l = copy_slice_to_temp(&type);
 
-    size = type_size(&type, &align);
-    loc = (loc - size) & -align;
-    l = loc;
-    vset(&type, VT_LOCAL | VT_LVAL, l);
-    vswap();
-    vstore();
-    vpop();
     vset(&type, VT_LOCAL | VT_LVAL, l);
 }
 
@@ -7669,6 +7700,189 @@ static void lblock(int *bsym, int *csym)
     }
 }
 
+/* D-style foreach loop over an array or slice:
+
+     foreach (v; a) ...          value only
+     foreach (i, v; a) ...       index and value
+     foreach_reverse (...) ...   iterate from the end
+
+   The aggregate is evaluated once and converted to a slice, so that
+   arrays and slices are handled uniformly.  */
+static void do_foreach(int reverse)
+{
+    struct scope o;
+    AttributeDef ad, adbase;
+    CType btype, type, agg_type, slice_type, elem_type, len_type, ptr_type;
+    CType vtypes[2];
+    int names[2], vaddr[2], nvars, explicit[2], i;
+    int slice_addr, len_addr, ptr_addr, idx_addr;
+    int size, align, a, b, c, d, e;
+
+    new_scope(&o);
+    skip('(');
+
+    nvars = 0;
+    memset(&adbase, 0, sizeof(adbase));
+    btype.t = VT_INT;
+    btype.ref = NULL;
+
+    for (;;) {
+        if (is_type_start(tok)) {
+            parse_btype(&btype, &adbase, 0);
+            type = btype;
+            ad = adbase;
+            type_decl(&type, &ad, &names[nvars], TYPE_DIRECT);
+            vtypes[nvars] = type;
+            explicit[nvars] = 1;
+        } else {
+            if (tok < TOK_UIDENT)
+                expect("identifier");
+            names[nvars] = tok;
+            explicit[nvars] = 0;
+            next();
+        }
+        ++nvars;
+        if (tok != ',')
+            break;
+        if (nvars == 2)
+            tcc_error("too many variables in 'foreach'");
+        next();
+    }
+    skip(';');
+
+    gexpr();
+    skip(')');
+
+    agg_type = vtop->type;
+    if (is_slice_type(&agg_type)) {
+        slice_type = agg_type;
+    } else if (agg_type.t & (VT_ARRAY | VT_VLA)) {
+        slice_type.t = VT_STRUCT;
+        slice_type.ref = make_slice_type(&agg_type.ref->type);
+        convert_array_to_slice(&slice_type);
+    } else {
+        tcc_error("'foreach' requires an array or slice");
+    }
+
+    elem_type = *pointed_type(&slice_type.ref->next->next->type);
+    len_type = slice_type.ref->next->type;
+    ptr_type = slice_type.ref->next->next->type;
+
+    /* an array element is bound to a slice, as arrays are not
+       assignable values in C */
+    if (elem_type.t & (VT_ARRAY | VT_VLA)) {
+        CType st;
+        st.t = VT_STRUCT;
+        st.ref = make_slice_type(&elem_type.ref->type);
+        elem_type = st;
+    }
+
+    /* keep the slice in a temporary local so that both members can be
+       loaded from it */
+    slice_addr = copy_slice_to_temp(&slice_type);
+
+    size = type_size(&len_type, &align);
+    loc = (loc - size) & -align;
+    len_addr = loc;
+    size = type_size(&ptr_type, &align);
+    loc = (loc - size) & -align;
+    ptr_addr = loc;
+    size = type_size(&len_type, &align);
+    loc = (loc - size) & -align;
+    idx_addr = loc;
+
+    /* len = slice.length; ptr = slice.ptr */
+    vset(&len_type, VT_LOCAL | VT_LVAL, slice_addr);
+    vset(&len_type, VT_LOCAL | VT_LVAL, len_addr);
+    vswap();
+    vstore();
+    vpop();
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, slice_addr + PTR_SIZE);
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, ptr_addr);
+    vswap();
+    vstore();
+    vpop();
+
+    /* declare the loop variables */
+    for (i = 0; i < nvars; ++i) {
+        if (!explicit[i])
+            vtypes[i] = (nvars == 2 && i == 0) ? len_type : elem_type;
+        memset(&ad, 0, sizeof(ad));
+        decl_initializer_alloc(&vtypes[i], &ad, VT_LOCAL | VT_LVAL, 0,
+                               names[i], 0);
+        vaddr[i] = sym_find(names[i])->c;
+    }
+
+    /* idx = reverse ? len : 0 */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    if (reverse)
+        vset(&len_type, VT_LOCAL | VT_LVAL, len_addr);
+    else
+        vpushi(0);
+    vstore();
+    vpop();
+
+    a = b = 0;
+    c = gind();
+    /* condition: idx < len, or idx > 0 when iterating in reverse */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    if (reverse) {
+        vpushi(0);
+        gen_op(TOK_GT);
+    } else {
+        vset(&len_type, VT_LOCAL | VT_LVAL, len_addr);
+        gen_op(TOK_LT);
+    }
+    a = gvtst(1, 0);
+    e = gjmp(0);
+    d = gind();
+    /* increment: ++idx, or --idx when iterating in reverse */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vpushi(1);
+    gen_op(reverse ? '-' : '+');
+    vstore();
+    vpop();
+    gjmp_addr(c);
+    gsym(e);
+
+    /* index variable */
+    if (nvars == 2) {
+        vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+        if (reverse) {
+            vpushi(1);
+            gen_op('-');
+        }
+        gen_assign_cast(&vtypes[0]);
+        vset(&vtypes[0], VT_LOCAL | VT_LVAL, vaddr[0]);
+        vswap();
+        vstore();
+        vpop();
+    }
+
+    /* value variable */
+    i = nvars - 1;
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, ptr_addr);
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    if (reverse) {
+        vpushi(1);
+        gen_op('-');
+    }
+    gen_op('+');
+    indir();
+    gen_assign_cast(&vtypes[i]);
+    vset(&vtypes[i], VT_LOCAL | VT_LVAL, vaddr[i]);
+    vswap();
+    vstore();
+    vpop();
+
+    lblock(&a, &b);
+    gjmp_addr(d);
+    gsym_addr(b, d);
+    gsym(a);
+    prev_scope(&o, 0);
+}
+
 /* c2y if/switch declaration */
 static void gexpr_decl(void)
 {
@@ -7845,6 +8059,8 @@ again:
         cls->cleanup_func = (Sym *)dstr;
         cls->next = cur_scope->cl.s;
         cur_scope->cl.s = cls;
+    } else if (t == TOK_FOREACH || t == TOK_FOREACH_REVERSE) {
+        do_foreach(t == TOK_FOREACH_REVERSE);
     } else if (t == TOK_FOR) {
         new_scope(&o);
 
