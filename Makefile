@@ -341,13 +341,56 @@ S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
 
 # Profile-Guided Optimization (PGO) build target
-# Usage: CC=clang make pgo or CC=gcc make pgo (or PGO_CC=clang|gcc)
+# Usage: make pgo PGO_CC=clang (or PGO_CC=gcc)
 PGO_CC ?= clang
+PGO_MARCH ?= native
+# Valgrind cannot decode some AVX-512 instructions emitted by
+# -march=native on recent CPUs, so disable them for the PGO build.
+ifneq (,$(filter i386 x86_64,$(ARCH)))
+PGO_CFLAGS_ARCH = -march=$(PGO_MARCH) -mno-avx512f
+else
+PGO_CFLAGS_ARCH = -march=$(PGO_MARCH)
+endif
+PGO_CFLAGS = -O3 $(PGO_CFLAGS_ARCH)
+PGO_CLEAN = rm -f *.profraw *.gcda lib/*.profraw lib/*.gcda tcc.profdata
+
+# Benchmark the current tcc by compiling itself, reporting throughput
+# and the number of executed instructions (Valgrind cachegrind).
+pgo-bench:
+	@echo "=== Benchmark: tcc compiling itself ==="
+	@for i in 1 2 3 4 5; do \
+	  ./tcc -B. -Iinclude -I. -bench tcc.c -o /dev/null 2>&1; \
+	done | awk '/lines\/s/ { \
+	    for (i = 1; i <= NF; i++) \
+	      if ($$i == "lines/s,") { \
+	        l = $$(i - 1) + 0; \
+	        if (l > best) best = l; \
+	      } \
+	  } \
+	  END { \
+	    if (best) \
+	      printf "Throughput: %.2f Mlines/s (%d lines/s, best of 5)\n", \
+	             best / 1000000, best; \
+	    else \
+	      print "Throughput: (no -bench data)"; \
+	  }'
+	@if command -v valgrind >/dev/null 2>&1; then \
+	  vg=$$(valgrind --tool=cachegrind --cachegrind-out-file=/dev/null \
+	    ./tcc -B. -Iinclude -I. tcc.c -o /dev/null 2>&1); \
+	  echo "$$vg" | sed -n \
+	    's/.*I *refs: *\([0-9,][0-9,]*\).*/Instructions (Valgrind): \1/p'; \
+	  echo "$$vg" | grep -q "I *refs:" || \
+	    echo "Instructions (Valgrind): measurement failed"; \
+	else \
+	  echo "Instructions (Valgrind): skipped (valgrind not found)"; \
+	fi
+
 pgo:
 	$(MAKE) clean
+	@$(PGO_CLEAN)
 ifeq ($(PGO_CC),clang)
 	@echo "=== Phase 1: Building PGO instrumented binary (Clang) ==="
-	CC=clang CFLAGS="-O3 -march=native -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
+	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
 	$(MAKE) -j$(nproc) -B CC=clang
 	@echo "=== Phase 2: Running training workload ==="
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
@@ -355,20 +398,22 @@ ifeq ($(PGO_CC),clang)
 	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
 	$(MAKE) clean
 	@echo "=== Phase 4: Building PGO optimized binary (Clang) ==="
-	CC=clang CFLAGS="-O3 -march=native -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
+	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
 	$(MAKE) -j$(nproc) -B CC=clang
 else
 	@echo "=== Phase 1: Building PGO instrumented binary (GCC) ==="
-	CC=gcc CFLAGS="-O3 -march=native -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
+	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
 	$(MAKE) -j$(nproc) -B CC=gcc
 	@echo "=== Phase 2: Running training workload ==="
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
 	$(MAKE) clean
 	@echo "=== Phase 3: Building PGO optimized binary (GCC) ==="
-	CC=gcc CFLAGS="-O3 -march=native -fprofile-use" LDFLAGS="-fprofile-use" ./configure
+	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-use" LDFLAGS="-fprofile-use" ./configure
 	$(MAKE) -j$(nproc) -B CC=gcc
 endif
 	@echo "PGO build complete using $(PGO_CC)!"
+	@$(MAKE) --no-print-directory pgo-bench
+	@$(PGO_CLEAN)
 
 
 
@@ -525,7 +570,7 @@ distclean: clean
 	@rm -vf config.h config.mak config.texi
 	@rm -vf $(TCCDOCS)
 
-.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE
+.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE pgo pgo-bench
 
 help:
 	@echo "make"

@@ -19,6 +19,15 @@ regressions are introduced. Choose the command by what you changed:
 - **Changes only under `tests/`** (including `tests/tests2/`): `make
   -j$(nproc) test` is sufficient.
 
+- **Compiler performance benchmark** (whenever you changed compiler
+  sources): after the regression tests pass, run
+
+      make -j$(nproc) pgo PGO_CC=clang
+
+  This rebuilds `tcc` with Profile-Guided Optimization and then
+  benchmarks it by compiling itself. Include the printed throughput
+  (Mlines/s) and Valgrind instruction count in your final summary.
+
 Run the applicable command after every change while
 iterating. Incremental builds are fast, so don't batch up edits before
 verifying.
@@ -63,7 +72,7 @@ make pgo PGO_CC=gcc
 
 *(Note: GNU Make assigns a default built-in value to `CC` (`cc`/`gcc`), so passing `PGO_CC=...` explicitly is required to override the compiler selection).*
 
-This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and final PGO-optimized production build.
+This automatically handles instrumented building, training runs (defaulting to an optimal sweet spot of **25 iterations**), profile merging, and the final PGO-optimized production build. It then runs `make pgo-bench`, which reports the self-compile throughput in Mlines/s and the number of executed instructions from Valgrind cachegrind (`I refs`). `PGO_MARCH` defaults to `native`; on x86, `-mno-avx512f` is added so that Valgrind can decode the generated code. Run `make pgo-bench` on its own to benchmark an already-built `tcc`.
 
 *Note (2026-10-24):* On AMD Ryzen AI 7 350, Linux x64, Clang PGO (`CC=clang make pgo`, ~5.13M lines/sec) outperforms GCC PGO (`CC=gcc make pgo`, ~4.62M lines/sec) by ~11% due to LLVM's aggressive profile-guided inlining and optimizer passes.
 
