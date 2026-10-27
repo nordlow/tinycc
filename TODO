@@ -225,30 +225,39 @@ or generated headers once inferred.
   returning a pointer to the element or boolean.
 - **`with` Statement**: `with (expression) { ... }` or `with (symbol) { ... }`
   scope block opening member access without qualification.
-- **`version` and `debug` Blocks**: Declarative conditional compilation
-  blocks (`version(X)`, `debug`) integrated into the grammar.
-- **Additional Array Properties**: `.dup` and `.idup` are **already covered**.
-  Properties `.ptr`, `.reverse`, `.init`, and `.stringof` are **still missing**.
+- **`version` and `debug` Blocks**: Declarative conditional
+  compilation blocks (`version(X)`, `debug`) integrated into the
+  grammar.
+- **Additional Array Properties**: `.dup` and `.idup` are **already
+  covered**.  Properties `.ptr`, `.reverse`, `.init`, and `.stringof`
+  are **still missing**.
 - **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...` and
   delegate literals.
-- **`scope` Guards**: `scope(success)` and `scope(failure)` complementing
-  the existing `scope(exit)` (`defer`).
+- **`scope` Guards**: `scope(success)` and `scope(failure)`
+  complementing the existing `scope(exit)` (`defer`).
 - **`typeof` and Metaprogramming**: `typeof(expr)`, `typeof(return)`,
   `typeid`, and `__traits`.
 - **`ref` Function Parameters & Returns**: Reference parameters and
   returns without explicit pointer syntax.
-- **`inout` Qualifier**: Qualifier polymorphism for functions preserving
-  mutability.
+- **`inout` Qualifier**: Qualifier polymorphism for functions
+  preserving mutability.
 - **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
 - **Manifest Constants**: Scalar manifest constants (`enum x = 42;`,
   `enum int x = 42;`) without storage are **already covered**.
   Aggregate/struct manifest constants (`enum S = { ... };`) are
   **still missing**.
-- **Slice Assignment (`a[..] = b[..]`)**: Bulk copying and filling of slice ranges.
-- **`out` Function Parameters**: Parameters automatically initialized to default/zero upon entry.
-- **`@safe` and `@nogc` Attributes**: Function attributes enforcing memory safety and non-allocation.
-- **Property Call Syntax**: Omitting parentheses for 0-argument function calls (`obj.method`).
-
+- **Slice Assignment (`a[..] = b[..]`)**: Bulk copying and filling of
+  slice ranges.
+- **`assert` with Custom Message**: `assert(cond, "message")` printing
+  descriptive failure strings on failure.
+- **`out` Function Parameters**: Parameters automatically initialized
+  to default/zero upon entry.
+- **`scope` RAII Objects**: `scope struct T obj = ...;` ensuring
+  deterministic object destruction at scope exit.
+- **`@safe` and `@nogc` Attributes**: Function attributes enforcing
+  memory safety and non-allocation.
+- **Property Call Syntax**: Omitting parentheses for 0-argument
+  function calls (`obj.method`).
 # Optimizations
 
 - Add optimizations to the `__darray...` so that each, when possible,
