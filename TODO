@@ -146,6 +146,32 @@ or generated headers once inferred.
      require two passes or deferred emission for functions called
      before definition; resolved by emitting declarations at
      end-of-file or via stub generation.
+
+## Proposal: Compile-Time & Run-Time Reflection (`$fields`, `$members`, RTTI)
+
+Inspired by Zig and Jai, provide first-class compile-time and run-time
+reflection for structs and pointers to enable zero-boilerplate
+serialization and graph traversal.
+
+### Semantics & Syntax
+- **`$fields(T)`**: Evaluates at compile time to a tuple/array of
+  field reflection nodes (containing `.name`, `.type`, `.offset`,
+  `.size`, `.is_pointer`, etc.).
+- **`$members(T)`**: Evaluates to all members (fields, methods, nested
+  types) of `T` as reference nodes.
+- **Dual CTTI & RTTI**:
+  - **Compile-Time Type Information (CTTI)**: Enables compile-time
+    iteration (`inline for ($fields(T))`) and unrolled code
+    generation.
+  - **Run-Time Type Information (RTTI)**: Emits static metadata tables
+    (`struct RTTI`) into `.rodata` for runtime graph serialization,
+    dynamic printing, and unmarshalling.
+
+### Use Case
+- Zero-boilerplate binary tree serialization and complex graph
+  traversal/relinking of pointer-linked nodes without manual
+  serialization code.
+
 # Bugs
 
 - i386 fastcall is mostly wrong.
@@ -238,7 +264,6 @@ or generated headers once inferred.
   returns without explicit pointer syntax.
 - **`inout` Qualifier**: Qualifier polymorphism for functions
   preserving mutability.
-- **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
 - **Manifest Constants**: Scalar manifest constants (`enum x = 42;`,
   `enum int x = 42;`) without storage are **already covered**.
   Aggregate/struct manifest constants (`enum S = { ... };`) are
