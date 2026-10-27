@@ -147,7 +147,7 @@ or generated headers once inferred.
      before definition; resolved by emitting declarations at
      end-of-file or via stub generation.
 
-## Proposal: Compile-Time & Run-Time Reflection (`$fields`, `$members`, RTTI)
+## Proposal: Compile-Time & Run-Time Reflection
 
 Inspired by Zig and Jai, provide first-class compile-time and run-time
 reflection for structs and pointers to enable zero-boilerplate
