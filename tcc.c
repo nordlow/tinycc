@@ -328,6 +328,25 @@ int main(int argc, char **argv)
 redo:
     argc = argc0, argv = argv0;
     s = s1 = tcc_new();
+
+    if (argv0 && argv0[0]) {
+        const char *p = strrchr(argv0[0], '/');
+#if defined(_WIN32)
+        const char *p2 = strrchr(argv0[0], '\\');
+        if (p2 && (!p || p2 > p))
+            p = p2;
+#endif
+        const char *basename = p ? p + 1 : argv0[0];
+#if defined(_WIN32)
+        if (!strcasecmp(basename, "tdc") || !strcasecmp(basename, "tdc.exe") || !strcasecmp(basename, "tdc.bat"))
+#else
+        if (!strcmp(basename, "tdc"))
+#endif
+        {
+            s->lang_d = 1;
+        }
+    }
+
     opt = tcc_parse_args(s, &argc, &argv);
 
     if (n == 0) {

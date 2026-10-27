@@ -135,7 +135,11 @@ ifeq ($(INCLUDED),no)
 # --------------------------------------------------------------------------
 # running top Makefile
 
-PROGS = tcc$(EXESUF)
+ifeq ($(OS),Windows_NT)
+PROGS = tcc$(EXESUF) tdc.bat
+else
+PROGS = tcc$(EXESUF) tdc
+endif
 TCCLIBS = $(LIBTCCDEF) $(LIBTCC) $(LIBTCC1)
 TCCDOCS = tcc.1 tcc-doc.html tcc-doc.info
 
@@ -278,6 +282,14 @@ $(X)tcc.o : DEFINES += $(DEF_GITHASH)
 # Host Tiny Poly Compiler
 tcc$(EXESUF): tcc.o $(LIBTCC)
 	$S$(CC) -o $@ $^ $(addsuffix ,$(LIBS) $(LDFLAGS) $(LINK_LIBTCC))
+tdc: tcc$(EXESUF)
+ifeq ($(OS),Windows_NT)
+	@echo '@echo off' > tdc.bat
+	@echo 'tcc -lang=d %*' >> tdc.bat
+else
+	rm -f tdc
+	ln -s tcc$(EXESUF) tdc
+endif
 
 # Cross Tiny Poly Compilers
 # (the TCCDEFS_H dependency is only necessary for parallel makes,
@@ -581,7 +593,7 @@ distclean: clean
 	@rm -vf config.h config.mak config.texi
 	@rm -vf $(TCCDOCS)
 
-.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE pgo pgo-bench
+.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE pgo pgo-bench tdc
 
 help:
 	@echo "make"
