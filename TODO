@@ -159,11 +159,14 @@ serialization and graph traversal.
   `.size`, `.is_pointer`, etc.).
 - **`$members(T)`**: Evaluates to all members (fields, methods, nested
   types) of `T` as reference nodes.
-- **Compile-Time Type Traits (`$hasIndirections`, `$hasAliasing`,
-  `$isStruct`, `$isPointer`, etc.)**:
-  - Evaluates compile-time boolean queries on type `T` (e.g., checking
-    if `T` contains pointers/references or aliasing potential), vital
-    for safe serialization and garbage collection / GC integration.
+- **Compile-Time Type Traits & Expressions**:
+  - **Function/Trait style**: `$hasIndirections(T)`, `$hasAliasing(T)`, `$isStruct(T)`, etc.
+  - **Alternative Syntaxes**:
+    - `$is(T == struct)`,
+    - `T is struct`, or
+    - `T $is struct`
+    for enhanced readability when
+    querying type categories (structs, pointers, scalars, qualifiers).
   - **Compile-Time Type Information (CTTI)**: Enables compile-time
     iteration and unrolled code generation.
   - **Run-Time Type Information (RTTI)**: Emits static metadata tables
