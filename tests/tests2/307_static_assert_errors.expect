@@ -9,3 +9,15 @@
 
 [test_d_static_assert_struct_nomsg]
 307_static_assert_errors.c:11: error: _Static_assert fail
+
+[test_dollar_assert_msg]
+307_static_assert_errors.c:14: error: custom dollar assert message
+
+[test_dollar_assert_nomsg]
+307_static_assert_errors.c:17: error: _Static_assert fail
+
+[test_dollar_assert_struct_msg]
+307_static_assert_errors.c:20: error: struct dollar assert msg
+
+[test_dollar_assert_struct_nomsg]
+307_static_assert_errors.c:23: error: _Static_assert fail

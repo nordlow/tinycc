@@ -10107,10 +10107,22 @@ static int check_d_manifest_constant(int l)
 
 static int check_d_static_assert(void)
 {
+    int saved_tok;
+
     if (tok == TOK_STATIC) {
-        int saved_tok = tok;
+        saved_tok = tok;
         next();
         if (tok >= TOK_IDENT && strcmp(get_tok_str(tok, &tokc), "assert") == 0) {
+            do_Static_assert();
+            return 1;
+        }
+        unget_tok(saved_tok);
+    } else if (tok >= TOK_IDENT
+               && strcmp(get_tok_str(tok, &tokc), "$assert") == 0) {
+        saved_tok = tok;
+        next();
+        if (tok == '(') {
+            unget_tok(saved_tok);
             do_Static_assert();
             return 1;
         }

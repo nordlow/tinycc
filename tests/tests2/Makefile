@@ -158,6 +158,7 @@ endif
 363_d_slice_assign_empty_brackets_mismatch.test : GEN = $(GEN-TCC)
 364_d_slice_assign_empty_brackets_error.test : FLAGS += -dt -lang=d
 365_c_slice_empty_brackets_error.test : FLAGS += -dt
+366_d_assert_alias.test : FLAGS += -lang=d
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields

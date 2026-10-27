@@ -218,7 +218,9 @@ Select the language dialect.  The default is @code{c}.  @code{d} and
 @code{D} enable extended D-style semantics on top of the C language
 implemented by TCC: element-wise compound assignment on D slice ranges
 (for example @code{a[..] += 1}), and an empty subscript as an alias for
-a full slice (@code{a[]}, as in @code{a[] = b[]}).  The option may also
+a full slice (@code{a[]}, as in @code{a[] = b[]}).  The D-style
+@code{$assert(@var{expr}[, @var{msg}])} form is accepted as an alias
+for @code{static assert(@var{expr}[, @var{msg}])}.  The option may also
 be spelled @option{--lang}.
 
 @end table
