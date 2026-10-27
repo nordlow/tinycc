@@ -218,14 +218,14 @@ serialization and graph traversal.
   arithmetic. This is simple and fast, but may lead to exceptions,
   inaccuracy and wrong representations when cross-compiling.
 
-# Linking
+## Linking
 
 - Static linking (`-static`) works to some extent:
   - It works with musl libc.
   - glibc requires `libc.so` even when statically linked (very bad,
     but not up to tcc).
 
-# Bound checking
+## Bound checking
 
 - Fix bound exit on RedHat 7.3.
 - `setjmp` is not supported properly in bound checking.
@@ -233,6 +233,18 @@ serialization and graph traversal.
   only for local arrays).
 - Bound checking and float/long long/struct copy code; bound checking
   and symbol + offset optimization.
+
+## Array (Slices)
+
+- Also make sure that slice assignments work like in D where:
+
+`y = x;`
+
+copying the fields `x.ptr/length` to `y.ptr/length` respectively and
+
+`y[..] = x[..]`
+
+copies the elements from `x` to `y` where `x.length must == y.length`.
 
 ## Missing Features
 
