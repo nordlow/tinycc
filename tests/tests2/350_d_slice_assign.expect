@@ -1,0 +1,24 @@
+copy: 10 20 30 40
+result: len=4 ptr=1
+array: 5 6 7 8
+string: hello
+substring: 'world'
+range: 1 3 4 5 5 6
+range2: 10 20 4 5 5 6
+fill: 7 7 7 7 7
+fill2: 7 8 8 7 7
+arr copy: 1 2 3 4
+arr fill: 1 9 9 4
+arr range: 3 4 9 4
+arr string: abcde
+dollar: 0 3 3 3
+pointer: 9 9 0 0
+slice value: 10 20 30 40
+conditional: 10 20 30 40
+struct fill: 8 9 8 9
+struct copy: 8 9 8 9
+aggregate fill: 7 8 7 8
+zero: 1 2 3
+overlap fwd: 2 3 4 4 5
+overlap bwd: 1 1 2 3 5
+equal: 1 2 3

@@ -1,0 +1,2 @@
+before
+tcc: slice assignment length mismatch (destination 3, source 5 elements)

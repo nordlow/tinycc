@@ -209,6 +209,12 @@ Print target machine architecture triplet.
 @item -dumpversion
 Print TCC compiler version.
 
+@item -lang=c|d|D
+Select the language dialect.  The default is @code{c}.  @code{d} and
+@code{D} enable extended D-style semantics on top of the C language
+implemented by TCC, currently element-wise compound assignment on D
+slice ranges (for example @code{a[..] += 1}).
+
 @end table
 
 @subheading Preprocessor Options
@@ -301,6 +307,12 @@ Create eh_frame section [on]
 @item -ftest-coverage
 Create code coverage code. After running the resulting code an executable.tcov
 or sofile.tcov file is generated with code coverage.
+
+@item -fslice-len-mismatch=@var{mode}
+Select what a D-style slice assignment (@code{a[..] = b[..]}) does when the
+two lengths differ: @code{abort} (the default; report a range error and
+exit), @code{copy} (copy only the elements that both slices have in
+common), or @code{ignore} (copy nothing).
 
 @end table
 

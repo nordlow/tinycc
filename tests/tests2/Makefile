@@ -142,6 +142,12 @@ endif
 348_test_coverage_warn_error.test : NORUN = true
 348_test_coverage_warn_error.test : GEN = $(GEN-TCC)
 348_test_coverage_warn_error.test : FILTER = 2>&1 | sed -e 's,.*/,,g'
+352_d_slice_assign_mismatch_copy.test : FLAGS += -fslice-len-mismatch=copy
+353_d_slice_assign_mismatch_ignore.test : FLAGS += -fslice-len-mismatch=ignore
+354_d_slice_assign_error.test : FLAGS += -dt
+355_d_slice_op_assign.test : FLAGS += -lang=d
+356_d_slice_op_assign_error.test : FLAGS += -dt -lang=D
+357_d_slice_assign_mismatch_abort_flag.test : FLAGS += -fslice-len-mismatch=abort
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields

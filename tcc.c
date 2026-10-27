@@ -108,6 +108,7 @@ static const char help2[] =
     "  -rstdin file                  with -run: use 'file' as custom stdin\n"
     "  -dt                           with -run/-E: auto-define 'test_...' macros\n"
     "  -unittest                     compile and run D-style unittest blocks\n"
+    "  -lang=c|d|D                   language dialect: c [default], or D extensions\n"
     "Ignored options:\n"
     "  -arch -C --param -pedantic -pipe -s -traditional\n"
     "-W[no-]... warnings:\n"
@@ -132,6 +133,8 @@ static const char help2[] =
     "  dump-types                    dump types during parsing\n"
     "  dump-decls                    dump declarations during parsing\n"
     "  dump-vstack                   dump vstack state during parsing\n"
+    "  slice-len-mismatch=MODE       slice assign length mismatch: abort [default],\n"
+    "                                copy (common prefix), or ignore\n"
     "-m... target specific options:\n"
     "  ms-bitfields                  use MSVC bitfield layout\n"
 #ifdef TCC_TARGET_ARM

@@ -735,6 +735,11 @@ struct sym_attr {
 #endif
 };
 
+/* Runtime policies for D slice assignments whose lengths differ.  */
+#define TCC_SLICE_MISMATCH_ABORT  0 /* D-style range error (default) */
+#define TCC_SLICE_MISMATCH_COPY   1 /* copy only the common prefix */
+#define TCC_SLICE_MISMATCH_IGNORE 2 /* copy nothing */
+
 struct TCCState {
     unsigned char verbose; /* if true, display some information during compilation */
     unsigned char nostdinc; /* if true, no standard headers are added */
@@ -760,6 +765,9 @@ struct TCCState {
     unsigned char reverse_funcargs; /* if true, evaluate last function arg first */
     unsigned char gnu89_inline; /* treat 'extern inline' like 'static inline' */
     unsigned char unwind_tables; /* create eh_frame section */
+    unsigned char lang_d; /* -lang=d: enable extended D semantics */
+    /* Runtime policy for slice copies whose lengths differ.  */
+    unsigned char slice_len_mismatch;
 
     /* warning switches */
     unsigned char warn_none;

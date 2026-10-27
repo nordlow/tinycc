@@ -1,0 +1,11 @@
+[test_slice_rhs]
+356_d_slice_op_assign_error.c:14: error: cannot convert 'int [..]' to 'int'
+
+[test_struct_rhs]
+356_d_slice_op_assign_error.c:23: error: invalid operand types for binary operation
+
+[test_append]
+356_d_slice_op_assign_error.c:31: error: cannot append to a slice range
+
+[test_const_op_assign]
+356_d_slice_op_assign_error.c:39: warning: assignment of read-only location

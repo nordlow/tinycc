@@ -1,0 +1,20 @@
+[test_type_mismatch]
+354_d_slice_assign_error.c:11: error: cannot convert 'char [..]' to 'int [..]'
+
+[test_array_mismatch]
+354_d_slice_assign_error.c:20: error: cannot convert 'char [2]' to 'int [..]'
+
+[test_append]
+354_d_slice_assign_error.c:28: error: cannot append to a slice range
+
+[test_op_assign]
+354_d_slice_assign_error.c:36: error: only '=' is supported for slice assignment (use -lang=d)
+
+[test_op_assign_sub]
+354_d_slice_assign_error.c:44: error: only '=' is supported for slice assignment (use -lang=d)
+
+[test_const_fill]
+354_d_slice_assign_error.c:52: warning: assignment of read-only location
+
+[test_const_copy]
+354_d_slice_assign_error.c:62: warning: assignment of read-only location

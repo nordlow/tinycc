@@ -177,7 +177,7 @@ static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
 static int check_d_manifest_constant(int l);
-static void gen_slice_assign(void);
+static void gen_slice_assign(int assign_tok);
 static void expr_cond(void);
 static int slice_range_target;
 /* Automagical code suppression */
@@ -5393,12 +5393,18 @@ static void slice_to_ptr(void)
    return the offset of that local.  */
 static int copy_slice_to_temp(CType *type)
 {
+    CType tmp_type;
     int size, align, l;
 
     size = type_size(type, &align);
     loc = (loc - size) & -align;
     l = loc;
-    vset(type, VT_LOCAL | VT_LVAL, l);
+    /* a temporary is always writable, so don't inherit the qualifiers
+       of the source; otherwise copying a const/immutable slice value
+       would warn "assignment of read-only location" */
+    tmp_type = *type;
+    tmp_type.t &= ~(VT_CONSTANT | VT_IMMUTABLE);
+    vset(&tmp_type, VT_LOCAL | VT_LVAL, l);
     vswap();
     vstore();
     vpop();
@@ -7062,6 +7068,8 @@ special_math_val:
 
             if (base_is_slice) {
                 elem_type = *pointed_type(&base_type.ref->next->next->type);
+                /* pointees of a qualified slice are qualified as well */
+                elem_type.t |= base_type.t & (VT_CONSTANT | VT_IMMUTABLE);
                 slice_to_ptr();
             } else if (base_type.t & (VT_ARRAY | VT_VLA)) {
                 elem_type = base_type.ref->type;
@@ -7634,10 +7642,8 @@ static void expr_eq(void)
     expr_cond();
     if ((t = tok) == '=' || TOK_ASSIGN(t)) {
         if (is_slice_type(&vtop->type) && slice_range_target) {
-            if (t != '=')
-                tcc_error("only '=' assignment is supported for slices");
             slice_range_target = 0;
-            gen_slice_assign();
+            gen_slice_assign(t);
             return;
         }
         slice_range_target = 0;
@@ -10466,46 +10472,156 @@ static int decl(int l)
     return 0;
 }
 
-static void gen_slice_assign(void)
+/* Emit an element-wise 'a[lo..hi] op= x' for a D slice.  'slice_type'
+   is the destination slice type, 'elem' its (unqualified) element type,
+   'dst' the stack offset of the temporary holding the destination
+   slice header and 'op' the binary operator of the compound
+   assignment.  The scalar right operand is on top of the value
+   stack.  */
+static void gen_slice_op_assign(CType *slice_type, CType *elem, int dst,
+                                int op)
 {
-    CType elem, *lt = &vtop->type;
+    CType len_type, ptr_type;
+    int size, align, esize, ealign, rhs_addr, idx_addr;
+    int cond, exit;
+
+    len_type = slice_type->ref->next->type;
+    ptr_type = slice_type->ref->next->next->type;
+    esize = type_size(elem, &ealign);
+
+    /* Evaluate the right operand exactly once.  */
+    loc = (loc - esize) & -ealign;
+    rhs_addr = loc;
+    vset(elem, VT_LOCAL | VT_LVAL, rhs_addr);
+    vswap();
+    vstore();
+    vpop();
+
+    if (nocode_wanted)
+        return;
+
+    size = type_size(&len_type, &align);
+    loc = (loc - size) & -align;
+    idx_addr = loc;
+
+    /* idx = 0 */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vpushi(0);
+    vstore();
+    vpop();
+
+    cond = gind();
+    /* idx < dst.length */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vset(&len_type, VT_LOCAL | VT_LVAL, dst);
+    gen_op(TOK_LT);
+    exit = gvtst(1, 0);
+
+    /* dst.ptr[idx] op= rhs */
+    vset(&ptr_type, VT_LOCAL | VT_LVAL, dst + PTR_SIZE);
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    gen_op('+');
+    indir();
+    /* the read-only location, if any, was already diagnosed above */
+    vtop->type.t &= ~(VT_CONSTANT | VT_IMMUTABLE);
+    vdup();
+    vset(elem, VT_LOCAL | VT_LVAL, rhs_addr);
+    gen_op(op);
+    vstore();
+    vpop();
+
+    /* ++idx */
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vset(&len_type, VT_LOCAL | VT_LVAL, idx_addr);
+    vpushi(1);
+    gen_op('+');
+    vstore();
+    vpop();
+
+    gjmp_addr(cond);
+    gsym(exit);
+}
+
+/* Emit a D slice assignment, with the destination slice value on top of
+   the value stack.  'assign_tok' is '=' for a bulk copy or fill, or a
+   compound assignment token for an element-wise operation.  */
+static void gen_slice_assign(int assign_tok)
+{
+    CType elem, elem_nc, dest_type;
     int esize, ealign, l, r2;
 
-    if (!is_slice_type(lt))
+    dest_type = vtop->type;
+    if (!is_slice_type(&dest_type))
         tcc_error("left operand of slice assignment must be a D slice");
-    elem = *pointed_type(&lt->ref->next->next->type);
+    elem = *pointed_type(&dest_type.ref->next->next->type);
     esize = type_size(&elem, &ealign);
 
-    l = copy_slice_to_temp(lt);
+    if ((dest_type.t | elem.t) & (VT_CONSTANT | VT_IMMUTABLE))
+        tcc_warning("assignment of read-only location");
 
-    next(); /* consume '=' */
+    /* The temporaries used below are writable; don't inherit the
+       qualifiers of the destination elements and warn twice.  */
+    elem_nc = elem;
+    elem_nc.t &= ~(VT_CONSTANT | VT_IMMUTABLE);
+
+    if (assign_tok == TOK_A_CAT)
+        tcc_error("cannot append to a slice range");
+    if (assign_tok != '=' && !tcc_state->lang_d)
+        tcc_error("only '=' is supported for slice assignment (use -lang=d)");
+
+    l = copy_slice_to_temp(&dest_type);
+
+    next(); /* consume the assignment operator */
 
     expr_cond();
 
-    if (is_slice_type(&vtop->type)) {
-        int r_slice = copy_slice_to_temp(&vtop->type);
-
-        vpush_helper_func(TOK___darray_copy);
-        vset(&char_pointer_type, VT_LOCAL, l);
-        vset(&char_pointer_type, VT_LOCAL, r_slice);
-        vpushs(esize);
-        gfunc_call(3);
+    if (assign_tok != '=') {
+        gen_slice_op_assign(&dest_type, &elem_nc, l, TOK_ASSIGN_OP(assign_tok));
     } else {
-        int elem_addr = get_temp_local_var(esize, ealign, &r2);
-        vset(&elem, VT_LOCAL | VT_LVAL, elem_addr);
-        vswap();
-        vstore();
-        vpop();
+        /* An array right operand is bulk-copied, unless it is the
+           element type itself.  */
+        if (!is_slice_type(&vtop->type)
+            && (vtop->type.t & (VT_ARRAY | VT_VLA))
+            && !is_compatible_unqualified_types(&elem, &vtop->type)) {
+            CType slice_type;
+            slice_type.t = VT_STRUCT;
+            slice_type.ref = make_slice_type(&elem);
+            convert_array_to_slice(&slice_type);
+        }
 
-        vpush_helper_func(TOK___darray_fill);
-        vset(&char_pointer_type, VT_LOCAL, l);
-        vset(&elem, VT_LOCAL | VT_LVAL, elem_addr);
-        gaddrof();
-        vtop->type = char_pointer_type;
-        vpushs(esize);
-        gfunc_call(3);
+        if (is_slice_type(&vtop->type)) {
+            CType *re = pointed_type(&vtop->type.ref->next->next->type);
+            int r_slice;
+
+            if (!is_compatible_unqualified_types(re, &elem))
+                cast_error(&vtop->type, &dest_type);
+            r_slice = copy_slice_to_temp(&vtop->type);
+
+            vpush_helper_func(TOK___darray_copy);
+            vset(&char_pointer_type, VT_LOCAL, l);
+            vset(&char_pointer_type, VT_LOCAL, r_slice);
+            vpushs(esize);
+            vpushi(tcc_state->slice_len_mismatch);
+            gfunc_call(4);
+        } else {
+            int elem_addr;
+
+            elem_addr = get_temp_local_var(esize, ealign, &r2);
+            vset(&elem_nc, VT_LOCAL | VT_LVAL, elem_addr);
+            vswap();
+            vstore();
+            vpop();
+
+            vpush_helper_func(TOK___darray_fill);
+            vset(&char_pointer_type, VT_LOCAL, l);
+            vset(&elem_nc, VT_LOCAL | VT_LVAL, elem_addr);
+            gaddrof();
+            vtop->type = char_pointer_type;
+            vpushs(esize);
+            gfunc_call(3);
+        }
     }
-    vset(lt, VT_LOCAL | VT_LVAL, l);
+    vset(&dest_type, VT_LOCAL | VT_LVAL, l);
 }
 
 /* ------------------------------------------------------------------------- */

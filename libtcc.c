@@ -1566,6 +1566,8 @@ enum {
     TCC_OPTION_d,
     TCC_OPTION_static,
     TCC_OPTION_std,
+    TCC_OPTION_lang,
+    TCC_OPTION_slice_len_mismatch,
     TCC_OPTION_shared,
     TCC_OPTION_soname,
     TCC_OPTION_o,
@@ -1624,6 +1626,7 @@ static const TCCOption tcc_options[] = {
     { "P", TCC_OPTION_P, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "L", TCC_OPTION_L, TCC_OPTION_HAS_ARG },
     { "B", TCC_OPTION_B, TCC_OPTION_HAS_ARG },
+    { "lang", TCC_OPTION_lang, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "l", TCC_OPTION_l, TCC_OPTION_HAS_ARG },
     { "bench", TCC_OPTION_bench, 0 },
     { "unittest", TCC_OPTION_unittest, 0 },
@@ -1665,6 +1668,7 @@ static const TCCOption tcc_options[] = {
     { "mfloat-abi", TCC_OPTION_mfloat_abi, TCC_OPTION_HAS_ARG },
 #endif
     { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+    { "fslice-len-mismatch", TCC_OPTION_slice_len_mismatch, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "isystem", TCC_OPTION_isystem, TCC_OPTION_HAS_ARG },
     { "include", TCC_OPTION_include, TCC_OPTION_HAS_ARG },
@@ -2003,6 +2007,30 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
         case TCC_OPTION_std:
             if (strcmp(optarg, "=c11") == 0 || strcmp(optarg, "=gnu11") == 0)
                 s->cversion = 201112;
+            break;
+        case TCC_OPTION_lang:
+            r = optarg;
+            if (*r == '=')
+                ++r;
+            if (!strcmp(r, "c"))
+                s->lang_d = 0;
+            else if (!strcmp(r, "d") || !strcmp(r, "D"))
+                s->lang_d = 1;
+            else
+                return tcc_error_noabort("unsupported language '%s'", r);
+            break;
+        case TCC_OPTION_slice_len_mismatch:
+            r = optarg;
+            if (*r == '=')
+                ++r;
+            if (!strcmp(r, "abort"))
+                s->slice_len_mismatch = TCC_SLICE_MISMATCH_ABORT;
+            else if (!strcmp(r, "copy"))
+                s->slice_len_mismatch = TCC_SLICE_MISMATCH_COPY;
+            else if (!strcmp(r, "ignore"))
+                s->slice_len_mismatch = TCC_SLICE_MISMATCH_IGNORE;
+            else
+                return tcc_error_noabort("unsupported slice length mismatch policy '%s'", r);
             break;
         case TCC_OPTION_shared:
             x = TCC_OUTPUT_DLL;

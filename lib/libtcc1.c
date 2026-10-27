@@ -640,6 +640,8 @@ extern void *realloc(void *, size_t);
 extern void free(void *);
 extern void *memcpy(void *, const void *, size_t);
 extern void *memmove(void *, const void *, size_t);
+extern int printf(const char *, ...);
+extern void exit(int);
 
 static void darray_set_length(struct darray_header *a,
                               size_t elemsize,
@@ -690,13 +692,32 @@ void __darray_dup(void *dst, const void *src, size_t elemsize)
         memcpy(d->ptr, s->ptr, s->length * elemsize);
 }
 
-void __darray_copy(void *dst_slice, const void *src_slice, size_t elemsize)
+/* Bulk copy of one slice into another.  D requires the lengths to be
+   equal; 'mode' selects what happens otherwise:
+   0 (default) - report a range error and abort, like D's RangeError,
+   1           - copy only the common prefix,
+   2           - silently ignore the mismatch.  */
+void __darray_copy(void *dst_slice, const void *src_slice, size_t elemsize,
+                   int mode)
 {
     const struct darray_header *d = dst_slice;
     const struct darray_header *s = src_slice;
-    if (d->length == s->length && d->length && d->ptr && s->ptr) {
-        memmove(d->ptr, s->ptr, d->length * elemsize);
+    size_t n = d->length;
+
+    if (d->length != s->length) {
+        if (mode == 2)
+            return;
+        if (mode == 0) {
+            printf("tcc: slice assignment length mismatch "
+                   "(destination %lu, source %lu elements)\n",
+                   (unsigned long)d->length, (unsigned long)s->length);
+            exit(255);
+        }
+        if (s->length < n)
+            n = s->length;
     }
+    if (n && d->ptr && s->ptr)
+        memmove(d->ptr, s->ptr, n * elemsize);
 }
 
 void __darray_copy_nonoverlapping(void *dst_slice, const void *src_slice, size_t elemsize)
