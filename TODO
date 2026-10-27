@@ -227,8 +227,8 @@ or generated headers once inferred.
   scope block opening member access without qualification.
 - **`version` and `debug` Blocks**: Declarative conditional compilation
   blocks (`version(X)`, `debug`) integrated into the grammar.
-- **Additional Array Properties**: `.ptr`, `.reverse`, `.dup`, `.idup`,
-  `.init`, `.stringof`.
+- **Additional Array Properties**: `.dup` and `.idup` are **already covered**.
+  Properties `.ptr`, `.reverse`, `.init`, and `.stringof` are **still missing**.
 - **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...` and
   delegate literals.
 - **`scope` Guards**: `scope(success)` and `scope(failure)` complementing
@@ -244,6 +244,10 @@ or generated headers once inferred.
   `enum int x = 42;`) without storage are **already covered**.
   Aggregate/struct manifest constants (`enum S = { ... };`) are
   **still missing**.
+- **Slice Assignment (`a[..] = b[..]`)**: Bulk copying and filling of slice ranges.
+- **`out` Function Parameters**: Parameters automatically initialized to default/zero upon entry.
+- **`@safe` and `@nogc` Attributes**: Function attributes enforcing memory safety and non-allocation.
+- **Property Call Syntax**: Omitting parentheses for 0-argument function calls (`obj.method`).
 
 # Optimizations
 
