@@ -1627,6 +1627,7 @@ static const TCCOption tcc_options[] = {
     { "L", TCC_OPTION_L, TCC_OPTION_HAS_ARG },
     { "B", TCC_OPTION_B, TCC_OPTION_HAS_ARG },
     { "lang", TCC_OPTION_lang, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+    { "-lang", TCC_OPTION_lang, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "l", TCC_OPTION_l, TCC_OPTION_HAS_ARG },
     { "bench", TCC_OPTION_bench, 0 },
     { "unittest", TCC_OPTION_unittest, 0 },

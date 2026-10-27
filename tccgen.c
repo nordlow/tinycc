@@ -7051,11 +7051,13 @@ special_math_val:
             base_sv = vtop;
             base_is_slice = is_slice_type(&base_type);
 
-            if (tok == TOK_TWODOTS || tok == TOK_DOTS) {
-                /* full slice: a[..] */
+            if (tok == TOK_TWODOTS || tok == TOK_DOTS
+                || (tcc_state->lang_d && tok == ']')) {
+                /* full slice: a[..], or a[] in D mode */
                 if (nocode_wanted & DATA_ONLY_WANTED)
                     tcc_error("slice expression is not computable at load time");
-                next();
+                if (tok != ']')
+                    next();
                 skip(']');
                 if (base_is_slice) {
                     copy_slice_value();

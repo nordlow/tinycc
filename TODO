@@ -234,33 +234,6 @@ serialization and graph traversal.
 - Bound checking and float/long long/struct copy code; bound checking
   and symbol + offset optimization.
 
-## Array (Slices)
-
-- Make sure that slice assignments work like in D where:
-
-`y = x;`
-
-copies the fields `x.ptr/length` to `y.ptr/length` respectively and
-
-`y[..] = x[..]`
-
-copies the elements from `x` to `y` where `x.length must == y.length`.
-
-Also when `--lang=d` is passed allow
-
-`
-y[] = x[];
-y[] = x;
-`
-
-to be equivalent to
-
-`
-y[..] = x[..]
-y[..] = x;`
-
-.
-
 ## Missing Features
 
 - `TCC`: `--disable-asm` and `--disable-bcheck` options.

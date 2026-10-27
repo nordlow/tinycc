@@ -216,8 +216,10 @@ Print TCC compiler version.
 @item -lang=c|d|D
 Select the language dialect.  The default is @code{c}.  @code{d} and
 @code{D} enable extended D-style semantics on top of the C language
-implemented by TCC, currently element-wise compound assignment on D
-slice ranges (for example @code{a[..] += 1}).
+implemented by TCC: element-wise compound assignment on D slice ranges
+(for example @code{a[..] += 1}), and an empty subscript as an alias for
+a full slice (@code{a[]}, as in @code{a[] = b[]}).  The option may also
+be spelled @option{--lang}.
 
 @end table
 
@@ -325,10 +327,11 @@ operation. Intended for debugging TCC itself; the output format is not
 stable and may change between versions.
 
 @item -fslice-len-mismatch=@var{mode}
-Select what a D-style slice assignment (@code{a[..] = b[..]}) does when the
-two lengths differ: @code{abort} (the default; report a range error and
-exit), @code{copy} (copy only the elements that both slices have in
-common), or @code{ignore} (copy nothing).
+Select what a D-style slice assignment (@code{a[..] = b[..]}, or
+@code{a[] = b[]} in D mode) does when the two lengths differ:
+@code{abort} (the default; report a range error and exit), @code{copy}
+(copy only the elements that both slices have in common), or
+@code{ignore} (copy nothing).
 
 @end table
 

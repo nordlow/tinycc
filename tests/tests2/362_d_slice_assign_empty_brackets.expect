@@ -1,0 +1,20 @@
+header elem: 10 20 30 40
+header: len=4 ptr_a=1
+copy: 1 2 3 4
+copy: len=4 ptr_b=1
+slice rhs: 1 2 3 4
+range rhs: 1 2 3 4
+result: len=4 ptr_b=1
+fill: 9 9 9 9
+array header: len=2 ptr_c=1
+array copy: 1 2 3 4
+array from slice: 9 9 9 9
+array fill: 7 7 7 7
+sum: 10 10
+string: hello
+string copy: world
+struct fill: 8 9 8 9
+member fill: 4 4 4
+zero: 1 2 len=0
+range fill: 1 8 8 8 5
+range copy: 8 8 8 8 5

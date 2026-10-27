@@ -152,6 +152,12 @@ endif
 358_d_scope_exit.test : GEN = $(GEN-TCC)
 360_implicit_run.test : T1 = cd $(SRC) && $(abspath $(TCC_LOCAL)) -B$(abspath $(TOP)) 360_implicit_run one two
 361_implicit_compile.test : T1 = cd $(SRC) && $(abspath $(TCC_LOCAL)) -B$(abspath $(TOP)) -c 361_implicit_compile -o $(CURDIR)/361_implicit_compile.o && rm -f $(CURDIR)/361_implicit_compile.o
+362_d_slice_assign_empty_brackets.test : FLAGS += --lang=d
+362_d_slice_assign_empty_brackets.test : GEN = $(GEN-TCC)
+363_d_slice_assign_empty_brackets_mismatch.test : FLAGS += -lang=d
+363_d_slice_assign_empty_brackets_mismatch.test : GEN = $(GEN-TCC)
+364_d_slice_assign_empty_brackets_error.test : FLAGS += -dt -lang=d
+365_c_slice_empty_brackets_error.test : FLAGS += -dt
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields

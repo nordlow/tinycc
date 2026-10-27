@@ -1,0 +1,5 @@
+[test_empty_lvalue]
+365_c_slice_empty_brackets_error.c:7: error: expression expected before ']'
+
+[test_empty_rvalue]
+365_c_slice_empty_brackets_error.c:14: error: expression expected before ']'
