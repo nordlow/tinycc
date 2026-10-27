@@ -350,8 +350,26 @@ serialization and graph traversal.
   - A compact surface area, but functions as a type-and-effect system,
     requiring strict semantic soundness per line of code.
 
-# Refactorings for development speed
+## Proposal: Linear-Complexity ($O(N)$) Code Generation Improvements
 
+Enhance TCC's single-pass performance and code quality while strictly
+preserving linear time and space complexity:
+
+- **Sliding-Window Peephole Optimizer**: Fixed-size window (last 2-3
+  instructions) during emission to fold redundant moves,
+  zero-extensions, or comparisons instantly.
+- **SIMD-Accelerated Lexing**: Extend SIMD scans (`memchr`, vector
+  comparisons) in `tccpp.c` for delimiter skipping and identifier
+  scanning.
+- **Bump-Pointer Arena Allocators**: Replace fine-grained
+  `malloc`/`free` for symbols and token strings with cache-friendly
+  arena allocation.
+- **Enhanced Register Caching**: Refine register tracking on `vstack`
+  across adjacent expression nodes to minimize spills and reloads.
+- **Optimized Inline Helpers**: Tighter inline code sequences for
+  frequent runtime operations like slice resizing and bounds checking.
+
+# Refactorings for development speed
 Ordered by (productivity gain) / (risk x effort):
 
 - **Attribute table** (about one day, low risk).  `parse_attribute()`
