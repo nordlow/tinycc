@@ -699,6 +699,15 @@ void __darray_copy(void *dst_slice, const void *src_slice, size_t elemsize)
     }
 }
 
+void __darray_copy_nonoverlapping(void *dst_slice, const void *src_slice, size_t elemsize)
+{
+    const struct darray_header *d = dst_slice;
+    const struct darray_header *s = src_slice;
+    if (d->length == s->length && d->length && d->ptr && s->ptr) {
+        memcpy(d->ptr, s->ptr, d->length * elemsize);
+    }
+}
+
 void __darray_fill(void *dst_slice, const void *elem, size_t elemsize)
 {
     const struct darray_header *d = dst_slice;
