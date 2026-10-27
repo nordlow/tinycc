@@ -308,6 +308,18 @@ Create eh_frame section [on]
 Create code coverage code. After running the resulting code an executable.tcov
 or sofile.tcov file is generated with code coverage.
 
+@item -fdump-types
+Dump the type of each declaration to standard output while parsing.
+
+@item -fdump-decls
+Dump each symbol table entry created by a declaration to standard
+output while parsing.
+
+@item -fdump-vstack
+Dump the compiler's value stack after every push, pop, or reordering
+operation. Intended for debugging TCC itself; the output format is not
+stable and may change between versions.
+
 @item -fslice-len-mismatch=@var{mode}
 Select what a D-style slice assignment (@code{a[..] = b[..]}) does when the
 two lengths differ: @code{abort} (the default; report a range error and

@@ -359,6 +359,16 @@ void pv (const char *lbl, int a, int b)
     }
 }
 
+/* print the whole vstack after a mutation, for -fdump-vstack */
+static void dump_vstack(const char *op)
+{
+    if (cur_tcc_state && cur_tcc_state->dump_vstack) {
+        int n = vtop - vstack + 1;
+        printf("VSTACK %s (%d)\n", op, n);
+        pv("VSTACK", 0, n);
+    }
+}
+
 /* dump symbols on stack from s ... last */
 static inline void psyms(const char *msg, Sym *s, Sym *last)
 {
@@ -383,8 +393,7 @@ static void ptype(const char *msg, CType *type, int v)
 
 ST_FUNC void check_vstack(void)
 {
-    if (cur_tcc_state && cur_tcc_state->dump_vstack)
-        pv("VSTACK", 0, vtop - vstack + 1);
+    dump_vstack("check");
     if (vtop != vstack - 1)
         tcc_error("internal compiler error: vstack leak (%d)",
                   (int)(vtop - vstack + 1));
@@ -916,6 +925,7 @@ static void vsetc(CType *type, int r, CValue *vc)
     vtop->r2 = VT_CONST;
     vtop->c = *vc;
     vtop->sym = NULL;
+    dump_vstack("push");
 }
 
 ST_FUNC void vswap(void)
@@ -926,6 +936,7 @@ ST_FUNC void vswap(void)
     tmp = vtop[0];
     vtop[0] = vtop[-1];
     vtop[-1] = tmp;
+    dump_vstack("swap");
 }
 
 /* pop stack value */
@@ -945,6 +956,7 @@ ST_FUNC void vpop(void)
         gsym(vtop->jfalse);
     }
     vtop--;
+    dump_vstack("pop");
 }
 
 /* push constant of type "type" with useless value */
@@ -1003,6 +1015,7 @@ ST_FUNC void vpushv(SValue *v)
         tcc_error("memory full (vstack)");
     vtop++;
     *vtop = *v;
+    dump_vstack("pushv");
 }
 
 static void vdup(void)
@@ -1032,6 +1045,7 @@ ST_FUNC void vrott(int n)
     tmp = vtop[0];
     memmove(vtop - n + 1, vtop - n, sizeof *vtop * n);
     vtop[-n] = tmp;
+    dump_vstack("rott");
 }
 
 /* reverse order of the the first n stack elements */
@@ -1042,6 +1056,7 @@ ST_FUNC void vrev(int n)
     vcheck_cmp();
     for (i = 0, n = -n; i > ++n; --i)
         tmp = vtop[i], vtop[i] = vtop[n], vtop[n] = tmp;
+    dump_vstack("rev");
 }
 
 /* ------------------------------------------------------------------------- */

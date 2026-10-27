@@ -377,9 +377,6 @@ Ordered by (productivity gain) / (risk x effort):
 - **Split `tccgen.c` into modules** (about one week, higher risk):
   `decl` / `expr` / `stmt` / `func` / `attrs`.  Do this after the
   attribute table and the type-system extraction.
-- **Debug dumps** (about one day).  `-fdump-types`, `-fdump-decls` and
-  `-fdump-vstack` behind a flag.  No architecture change, but it makes
-  every parser/codegen bug faster to localize.
 - **Differential fuzzing** (about 1-2 days).  Compare TCC against GCC
   on generated snippets; the `tests/tests2` suite is already good but
   only covers hand-written cases.
