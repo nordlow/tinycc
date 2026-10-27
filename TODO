@@ -4,8 +4,9 @@
 
 ## Proposal: Signature Elision Rules (the "Rust" approach)
 
-The goal is to avoid annotations in function bodies while still working
-in TinyCC and across header files, using **convention-based elision**.
+The goal is to avoid annotations in function bodies while still
+working in TinyCC and across header files, using **convention-based
+elision**.
 
 Instead of inspecting the function body, the compiler infers the
 qualifier mapping purely from the shape of the signature.
@@ -41,13 +42,13 @@ TCC would infer:
 - **Easy to implement:** in `tccgen.c`, when parsing a function
   prototype, count the pointer parameters. If `pointer_arg_count == 1`
   and the return type is a pointer, set a single bit in the function's
-  symbol entry: `VT_INFER_RETURN_QUAL`.
-  At call sites, if `VT_INFER_RETURN_QUAL` is set, copy the qualifier
-  of that single argument to `vtop->type`.
-- **Zero new keywords, zero sigils:** most utility functions (`strchr`,
-  `trim`, `find`, `next_node`) take a single main input pointer and
-  return a slice of it. They would "just work" with `immutable` and
-  `const` for free.
+  symbol entry: `VT_INFER_RETURN_QUAL`.  At call sites, if
+  `VT_INFER_RETURN_QUAL` is set, copy the qualifier of that single
+  argument to `vtop->type`.
+- **Zero new keywords, zero sigils:** most utility functions
+  (`strchr`, `trim`, `find`, `next_node`) take a single main input
+  pointer and return a slice of it. They would "just work" with
+  `immutable` and `const` for free.
 
 For reference see
 https://aistudio.google.com/prompts/191Hd2mWffHJ8B9OYybf6h2vFp9DH2LrK
@@ -94,11 +95,11 @@ generics and no AST, but the useful case is local to the call site:
 - Store an `inout_arg` index in `struct FuncAttr` (the `f` bitfield of
   the function `Sym`), set by an attribute such as `@inout(1)` or
   `__attribute__((inout(1)))`.
-- In the call handling in `unary()`, if `inout_arg` is set, qualify the
-  result's pointee with the union of the declared qualifiers and the
-  qualifier bits of argument N's pointee.  This is the "properties of
-  the return infer the properties of `x`" rule, resolved statically per
-  call.
+- In the call handling in `unary()`, if `inout_arg` is set, qualify
+  the result's pointee with the union of the declared qualifiers and
+  the qualifier bits of argument N's pointee.  This is the "properties
+  of the return infer the properties of `x`" rule, resolved statically
+  per call.
 - The argument side is already diagnosed: passing `const int *` where
   `int *` is expected triggers "assignment discards qualifiers" in
   `verify_assign_cast()`.
@@ -325,8 +326,8 @@ Ordered by (productivity gain) / (risk x effort):
 
 - **Attribute table** (about one day, low risk).  `parse_attribute()`
   is a large switch over `TOK_*` pairs; every attribute needs two
-  tokens, a case, and `AttributeDef`/`SymAttr` bits.  Replace it with a
-  table of `{ name, flags, handler }` shared by
+  tokens, a case, and `AttributeDef`/`SymAttr` bits.  Replace it with
+  a table of `{ name, flags, handler }` shared by
   `__attribute__((...))` and the pending `@name(...)` syntax.  This
   makes `immutable`, `inout`, `nocopy` and future attributes cheap.
 - **Extract the type system into `tcctype.c`** (about 2-3 days,
@@ -366,10 +367,10 @@ Ordered by (productivity gain) / (risk x effort):
 
 # Not critical
 
-- C99: fix multiple compound literal initializations in blocks (ISO C99
-  normative example; only relevant when using gotos). This requires a
-  boolean variable telling whether the compound literal was already
-  initialized.
+- C99: fix multiple compound literal initializations in blocks (ISO
+  C99 normative example; only relevant when using gotos). This
+  requires a boolean variable telling whether the compound literal was
+  already initialized.
 - Add a PowerPC generator and improve codegen for RISC (need to
   suppress `VT_LOCAL` and use a base register instead).
 - Fix preprocessor symbol redefinition.
