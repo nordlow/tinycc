@@ -265,7 +265,7 @@ serialization and graph traversal.
 - `D`: **`version` and `debug` Blocks**: Declarative conditional
   compilation blocks (`version(X)`, `debug`).
 - `D`: **Additional Array Properties**: `.ptr`, `.reverse`, `.init`,
-  and `.stringof` (`.dup` and `.idup` are already covered).
+  and `.stringof`.
 - `D`: **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...`
   and delegate literals.
 - `D`: **`scope` Guards**: `scope(success)` and `scope(failure)`
