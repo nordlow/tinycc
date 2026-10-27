@@ -6255,6 +6255,22 @@ ST_FUNC void unary(void)
         tcc_debug_line(tcc_state), tcc_tcov_check_line (tcc_state, 1);
 
     type.ref = NULL;
+    if (tcc_state->lang_d && is_type_start(tok)) {
+        parse_type(&type);
+        if (tok == '.') {
+            next();
+            if (tok == TOK_SIZEOF) {
+                next();
+                vpush_type_size(&type, &align);
+                gen_cast_s(VT_SIZE_T);
+                return;
+            } else {
+                tcc_error("expected 'sizeof' after type");
+            }
+        } else {
+            tcc_error("expected '.' after type");
+        }
+    }
     /* XXX: GCC 2.95.3 does not generate a table although it should be
        better here */
  tok_next:
@@ -6847,6 +6863,16 @@ special_math_val:
             qualifiers = vtop->type.t & VT_QUAL;
             /* expect pointer on structure */
             next();
+            if (tcc_state->lang_d && tok == TOK_SIZEOF) {
+                next();
+                {
+                    CType expr_type_val = vtop->type;
+                    vpop();
+                    vpush_type_size(&expr_type_val, &align);
+                    gen_cast_s(VT_SIZE_T);
+                }
+                continue;
+            }
             if (!is_arrow && (is_slice_type(&vtop->type)
                               || (vtop->type.t & (VT_ARRAY | VT_VLA)))) {
                 CType elem, slice_type;

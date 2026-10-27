@@ -1,0 +1,11 @@
+int.sizeof = 4
+char.sizeof = 1
+double.sizeof = 8
+struct Foo.sizeof = 16
+int[10].sizeof = 40
+int*.sizeof = 8
+x.sizeof = 4
+ch.sizeof = 1
+arr.sizeof = 40
+f.sizeof = 16
+arr[0].sizeof = 4

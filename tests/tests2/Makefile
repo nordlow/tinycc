@@ -166,9 +166,9 @@ endif
 370_d_version_debug_options.test : GEN = $(GEN-TCC)
 371_d_version_debug_unittest.test : FLAGS += -lang=d -unittest
 371_d_version_debug_unittest.test : GEN = $(GEN-TCC)
+372_d_sizeof_property.test : FLAGS += -lang=d
+372_d_sizeof_property.test : GEN = $(GEN-TCC)
 # GEN-ALWAYS += 95_bitfields.expect # does not work
-
-# using the ms compiler for the really ms-compatible bitfields
 95_bitfields_ms.test : GEN = $(GEN-MSC)
 
 # this test compiles/links two files:
