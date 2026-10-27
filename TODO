@@ -286,8 +286,11 @@ serialization and graph traversal.
   initialized to default/zero upon entry.
 - `D`: **`scope` RAII Objects**: `scope struct T obj = ...;` ensuring
   deterministic object destruction at scope exit.
-- `D`: **`@safe` and `@nogc` Attributes**: Function attributes
-  enforcing memory safety and non-allocation.
+- `D`: **`@safe`, `@trusted`, `@system` Attributes**: Function attributes
+  enforcing memory safety.
+- `D`: **`@nogc` Attributes**: Function enforcing non-GC-allocation.
+- `Rust`: **`@unsafe` Attributes**: Function attributes
+  allowing memory un-safety.
 - `D`: **Property Call Syntax**: Omitting parentheses for 0-argument
   function calls (`obj.method`).
 - `Zig`: **Saturating Arithmetic Operators**: Support saturating
