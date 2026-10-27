@@ -293,7 +293,10 @@ serialization and graph traversal.
   memory safety and non-allocation.
 - **Property Call Syntax**: Omitting parentheses for 0-argument
   function calls (`obj.method`).
-# Optimizations
+- **Automatic Pointer-to-Struct Member Access (`x.field` sugar for
+  `x->field`)**: Automatically dereference pointer-typed receivers
+  when accessing struct fields with `.` (Go/Swift style), eliminating
+  explicit `->` boilerplate.
 
 - Add optimizations to the `__darray...` so that each, when possible,
   lowers to a single call to `memcpy`/`memmove`/`memset/...` without
