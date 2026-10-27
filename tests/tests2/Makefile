@@ -150,6 +150,8 @@ endif
 357_d_slice_assign_mismatch_abort_flag.test : FLAGS += -fslice-len-mismatch=abort
 358_d_scope_exit.test : FLAGS += -lang=d
 358_d_scope_exit.test : GEN = $(GEN-TCC)
+360_implicit_run.test : T1 = cd $(SRC) && $(abspath $(TCC_LOCAL)) -B$(abspath $(TOP)) 360_implicit_run one two
+361_implicit_compile.test : T1 = cd $(SRC) && $(abspath $(TCC_LOCAL)) -B$(abspath $(TOP)) -c 361_implicit_compile -o $(CURDIR)/361_implicit_compile.o && rm -f $(CURDIR)/361_implicit_compile.o
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields

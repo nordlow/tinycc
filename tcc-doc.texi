@@ -106,6 +106,10 @@ Here are some examples to understand the logic:
 @item @samp{tcc -run a.c}
 Compile @file{a.c} and execute it directly
 
+@item @samp{tcc a}
+If @file{a} does not exist but @file{a.c} does, compile and execute
+@file{a.c} directly (same as @samp{tcc -run a.c}).
+
 @item @samp{tcc -run a.c arg1}
 Compile a.c and execute it directly. arg1 is given as first argument to
 the @code{main()} of a.c.

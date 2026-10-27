@@ -1860,6 +1860,22 @@ static void args_parser_add_file(TCCState *s, const char* filename, int filetype
         ++s->nb_libraries;
 }
 
+/* Resolve 'name' to 'name.c' when 'name' itself does not exist.  */
+static char *args_parser_implicit_c_file(const char *name)
+{
+    char *filename;
+
+    if (*tcc_fileextension(name) || access(name, F_OK) == 0)
+        return NULL;
+    filename = tcc_malloc(strlen(name) + 3);
+    strcpy(filename, name);
+    strcat(filename, ".c");
+    if (access(filename, F_OK) == 0)
+        return filename;
+    tcc_free(filename);
+    return NULL;
+}
+
 /* using * to argc/argv to let "tcc -ar" benefit from @listfile expansion */
 PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
 {
@@ -1887,7 +1903,22 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
         }
         optind++;
         if (r[0] != '-' || r[1] == '\0') { /* file or '-' (stdin) */
-            args_parser_add_file(s, r, s->filetype);
+            char *source = NULL;
+            if (r[1] != '\0'
+                && ((s->filetype & AFF_TYPE_MASK) == AFF_TYPE_NONE
+                    || (s->filetype & AFF_TYPE_MASK) == AFF_TYPE_C))
+                source = args_parser_implicit_c_file(r);
+            if (source) {
+                args_parser_add_file(s, source, s->filetype);
+                if (s->output_type == 0 && !s->outfile && !s->just_deps
+                    && !s->option_r) {
+                    s->output_type = TCC_OUTPUT_MEMORY;
+                    run = "";
+                }
+                tcc_free(source);
+            } else {
+                args_parser_add_file(s, r, s->filetype);
+            }
             empty = 0;
         dorun:
             if (run)
