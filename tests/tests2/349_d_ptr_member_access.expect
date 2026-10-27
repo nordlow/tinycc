@@ -1,0 +1,7 @@
+p.x = 10, p.y = 20
+ptr.x = 10, ptr.y = 20
+after ptr.x = 100, ptr.y = 200
+compound ptr.x = 150, ptr.y = 201
+cptr.x = 150
+nptr.val = 10, nptr.next.val = 42
+optr.inner.a = 99

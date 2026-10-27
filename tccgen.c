@@ -6814,6 +6814,12 @@ special_math_val:
             int qualifiers, cumofs;
             int is_arrow = tok == TOK_ARROW;
             /* field */ 
+            if (!is_arrow && (vtop->type.t & VT_BTYPE) == VT_PTR) {
+                CType *pt = pointed_type(&vtop->type);
+                if (pt && (pt->t & VT_BTYPE) == VT_STRUCT) {
+                    is_arrow = 1;
+                }
+            }
             if (is_arrow)
                 indir();
             qualifiers = vtop->type.t & VT_QUAL;
