@@ -176,6 +176,7 @@ static void d_array_suffix(CType *type, int storage);
 static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
+static void do_d_assert(void);
 static int check_d_manifest_constant(int l);
 static int check_d_conditional(int l, int flags);
 static void gen_slice_assign(int assign_tok);
@@ -8581,6 +8582,8 @@ again:
 
     } else if (t == TOK_DEFER) {
         do_defer();
+    } else if (t == TOK_ASSERT) {
+        do_d_assert();
     } else if (tcc_state->lang_d && tok == '('
                && t >= TOK_UIDENT
                && !strcmp(get_tok_str(t, &tokc), "scope")) {
@@ -10184,6 +10187,33 @@ static void do_Static_assert(void)
         tcc_error("%s", msg);
     skip(';');
 }
+static void do_d_assert(void)
+{
+    int a, b;
+
+    if (!tcc_state->lang_d)
+        tcc_error("'assert' requires -lang=d");
+
+    skip('(');
+    gexpr();
+    a = gvtst(1, 0);
+
+    b = gjmp(0);
+
+    gsym(a);
+    vpush_helper_func(TOK___d_assert);
+    if (tok == ',') {
+        next();
+        gexpr();
+    } else {
+        vpushi(0);
+    }
+    skip(')');
+    skip(';');
+    gfunc_call(1);
+
+    gsym(b);
+}
 
 #ifdef TCC_TARGET_PE
 static void pe_check_linkage(CType *type, AttributeDef *ad)
@@ -10614,8 +10644,8 @@ static int check_d_conditional(int l, int flags)
         if (tok == TOK_UNITTEST) {
             take = !is_debug && tcc_state->do_unittest;
             next();
-        } else if (tok >= TOK_UIDENT) {
-            const char *id = get_tok_str(tok, &tokc);
+        } else if (tok >= TOK_UIDENT || tok == TOK_ASSERT) {
+            const char *id = (tok == TOK_ASSERT) ? "assert" : get_tok_str(tok, &tokc);
             take = is_debug ? d_debug_id_is_defined(id)
                             : d_version_id_is_defined(id);
             next();

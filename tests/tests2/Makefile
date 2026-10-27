@@ -170,6 +170,8 @@ endif
 372_d_sizeof_property.test : GEN = $(GEN-TCC)
 373_scope_guards_error.test : FLAGS += -dt -lang=d
 373_scope_guards_error.test : GEN = $(GEN-TCC)
+374_d_assert.test : FLAGS += -lang=d
+374_d_assert.test : GEN = $(GEN-TCC)
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)

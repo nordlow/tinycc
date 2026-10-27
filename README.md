@@ -484,6 +484,16 @@ $assert(sizeof(int) == 4);
 $assert(sizeof(void *) == 8, "expected 64-bit pointers");
 ```
 
+### Runtime `assert` with custom message
+
+In D mode (`-lang=d`), runtime `assert` is supported with an optional message string:
+
+```c
+assert(cond);
+assert(cond, "descriptive failure message");
+```
+
+If the condition fails at runtime, it prints an assertion failure message and aborts.
 ### Pointer-to-struct member access
 
 For a pointer to a struct, `x.field` is accepted as a synonym for

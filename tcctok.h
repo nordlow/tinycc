@@ -8,6 +8,7 @@
      DEF(TOK_CONTINUE, "continue")
      DEF(TOK_BREAK, "break")
      DEF(TOK_DEFER, "defer")
+     DEF(TOK_ASSERT, "assert")
      DEF(TOK_FOREACH, "foreach")
      DEF(TOK_FOREACH_REVERSE, "foreach_reverse")
      DEF(TOK_UNITTEST, "unittest")
@@ -354,6 +355,7 @@
 #endif
 
 /* D-style dynamic array support, implemented in libtcc1 */
+     DEF(TOK___d_assert, "__d_assert")
      DEF(TOK___darray_resize, "__darray_resize")
      DEF(TOK___darray_append, "__darray_append")
      DEF(TOK___darray_dup, "__darray_dup")

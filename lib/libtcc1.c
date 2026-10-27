@@ -758,3 +758,11 @@ void __darray_concat(void *dst, const void *asrc, const void *bsrc,
     if (nb)
         memcpy((char *)d->ptr + na * elemsize, b->ptr, nb * elemsize);
 }
+void __d_assert(const char *msg)
+{
+    if (msg)
+        printf("Assertion failure: %s\n", msg);
+    else
+        printf("Assertion failure\n");
+    exit(255);
+}

@@ -280,8 +280,6 @@ serialization and graph traversal.
 - `D`: **Manifest Constants**: Aggregate/struct manifest constants
   (`enum S = { ... };`) (scalar manifest constants are already
   covered).
-- `D`: **`assert` with Custom Message**: `assert(cond, "message")`
-  printing descriptive failure strings on failure.
 - `D`: **`out` Function Parameters**: Parameters automatically
   initialized to default/zero upon entry.
 - `D`: **`scope` RAII Objects**: `scope struct T obj = ...;` ensuring
