@@ -107,15 +107,14 @@ static int sort_line (const void *p, const void *q)
 }
 
 /* sort to let inline functions work */
-static tcov_file *sort_test_coverage (unsigned char *p, unsigned char *pwarn_uncovered)
+static tcov_file *sort_test_coverage (unsigned char *p)
 {
     int i, j, k;
     unsigned char *start = p;
     tcov_file *file = NULL;
     tcov_file *nfile;
 
-    *pwarn_uncovered = p[4];
-    p += 5;
+    p += 4;
     while (*p) {
         char *filename = (char *)p;
 	size_t len = strlen (filename);
@@ -269,8 +268,8 @@ static void merge_test_coverage (tcov_file *file, FILE *fp,
     }
 }
 
-/* store tcov data in file */
-void __store_test_coverage (unsigned char * p)
+/* store tcov data in file; warn_uncovered is set by -Wuncovered */
+void __store_test_coverage (unsigned char * p, int warn_uncovered)
 {
     int i, j;
     unsigned int files;
@@ -278,7 +277,6 @@ void __store_test_coverage (unsigned char * p)
     unsigned int blocks;
     unsigned int blocks_run;
     unsigned int runs;
-    unsigned char warn_uncovered;
     char *cov_filename = (char *)p + get_value (p, 4);
     FILE *fp;
     char *q;
@@ -291,7 +289,7 @@ void __store_test_coverage (unsigned char * p)
 	fprintf (stderr, "Cannot create coverage file: %s\n", cov_filename);
 	return;
     }
-    file = sort_test_coverage (p, &warn_uncovered);
+    file = sort_test_coverage (p);
     merge_test_coverage (file, fp, &runs);
     fseek (fp, 0, SEEK_SET);
     fprintf (fp, "        -:    0:Runs:%u\n", runs);

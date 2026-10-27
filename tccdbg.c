@@ -2635,7 +2635,6 @@ ST_FUNC void tcc_tcov_start(TCCState *s1)
         tcov_section = new_section(tcc_state, ".tcov", SHT_PROGBITS,
 				   SHF_ALLOC | SHF_WRITE);
 	section_ptr_add(tcov_section, 4); // pointer to executable name
-	*(unsigned char *)section_ptr_add(tcov_section, 1) = s1->warn_uncovered;
     }
 }
 

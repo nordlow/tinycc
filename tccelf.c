@@ -1754,8 +1754,8 @@ static void tcc_tcov_add_file(TCCState *s1, const char *filename)
         "extern char *__tcov_data[];"
         "extern void __store_test_coverage ();"
         "__attribute__((destructor)) static void __tcov_exit() {"
-        "__store_test_coverage(__tcov_data);"
-        "}");
+        "__store_test_coverage(__tcov_data, %d);"
+        "}", !!s1->warn_uncovered);
     tcc_compile_string_no_debug(s1, cstr.data);
     cstr_free(&cstr);
     set_local_sym(s1, &"___tcov_data"[!s1->leading_underscore], tcov_section, 0);

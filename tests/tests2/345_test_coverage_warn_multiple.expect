@@ -1,0 +1,5 @@
+hello
+covered branch
+345_test_coverage_warn_multiple.c:5: warning: uncovered line
+345_test_coverage_warn_multiple.c:6: warning: uncovered line
+345_test_coverage_warn_multiple.c:14: warning: uncovered line

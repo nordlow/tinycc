@@ -126,7 +126,22 @@ endif
 340_debug_dumps.test : GEN = $(GEN-TCC)
 341_test_coverage_warn.test : FLAGS += -ftest-coverage -Wuncovered
 341_test_coverage_warn.test : NORUN = true
+341_test_coverage_warn.test : GEN = $(GEN-TCC)
 341_test_coverage_warn.test : FILTER = 2>&1 | sed -e 's,.*/,,g'
+345_test_coverage_warn_multiple.test : FLAGS += -ftest-coverage -Wuncovered
+345_test_coverage_warn_multiple.test : NORUN = true
+345_test_coverage_warn_multiple.test : GEN = $(GEN-TCC)
+345_test_coverage_warn_multiple.test : FILTER = 2>&1 | sed -e 's,.*/,,g'
+346_test_coverage_warn_disabled.test : FLAGS += -ftest-coverage -Wuncovered -Wno-uncovered
+346_test_coverage_warn_disabled.test : NORUN = true
+346_test_coverage_warn_disabled.test : GEN = $(GEN-TCC)
+347_test_coverage_warn_without_coverage.test : FLAGS += -Wuncovered
+347_test_coverage_warn_without_coverage.test : NORUN = true
+347_test_coverage_warn_without_coverage.test : GEN = $(GEN-TCC)
+348_test_coverage_warn_error.test : FLAGS += -ftest-coverage -Werror=uncovered
+348_test_coverage_warn_error.test : NORUN = true
+348_test_coverage_warn_error.test : GEN = $(GEN-TCC)
+348_test_coverage_warn_error.test : FILTER = 2>&1 | sed -e 's,.*/,,g'
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields
@@ -256,4 +271,4 @@ $(sort $(GEN-ALWAYS) $(UPDATE)) : force
 force:
 
 clean :
-	rm -f fred.txt *.output *.o *.a *.exe *.dll *.so *.def $(GEN-ALWAYS)
+	rm -f fred.txt *.output *.o *.a *.exe *.dll *.so *.def *.tcov $(GEN-ALWAYS)
