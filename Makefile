@@ -16,8 +16,11 @@ endif
 # use unnamed struct and union members.  Use the GNU dialect so that
 # the POSIX/GNU extensions used by the sources and tests remain
 # available.  Keep in sync with the "Language" section of CodingStyle.
+# An explicit -std=... in CFLAGS (or --extra-cflags) takes precedence.
 CSTD ?= -std=gnu11
-CFLAGS += $(CSTD)
+ifeq (,$(findstring -std=,$(CFLAGS)))
+ CFLAGS += $(CSTD)
+endif
 
 ifeq (-$(GCC_MAJOR)-$(findstring $(GCC_MINOR),56789)-,-4--)
  CFLAGS += -D_FORTIFY_SOURCE=0
