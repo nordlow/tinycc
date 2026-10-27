@@ -234,85 +234,75 @@ serialization and graph traversal.
 - Bound checking and float/long long/struct copy code; bound checking
   and symbol + offset optimization.
 
-# Missing features
+## Missing Features
 
-- `--disable-asm` and `--disable-bcheck` options.
-- `__builtin_expect()`.
-- `atexit` (Nigel Horne).
-- C99: add complex types (gcc 3.2 testsuite issue).
-- Postfix compound literals (see `20010124-1.c`).
-- Interactive mode / integrated debugger.
-- `@attribute` syntax: `@name` / `@name(args)` for builtin and
-  user-defined attributes, e.g. `struct T @nocopy {}`.  User-defined
-  attributes parse and are ignored initially.  Reuse
-  `parse_attribute()` and also accept the syntax after struct, union
-  and enum tags, next to the existing attribute positions.
-- **Attribute-Based Type/Storage Qualifiers (`@static`, `@const`,
-  `@immutable`, etc.)**: Allow storage and type qualifiers to be
-  expressed via `@`-prefixed attribute syntax (e.g., `@const int x`,
-  `@static int y`). The traditional keyword form (without `@`) remains
-  allowed when neither an explicit type nor the `auto` keyword is
-  used.  string literal) so that `a.length = n` can reallocate safely.
-  Today `.length` is a plain header field and reallocation is the
-  explicit `.resize(n)`.
-- D: `int[] a = {1, 2, 3}, b = {4, 5};` (several array declarators with
-  initializers) is not supported.
-
-## Missing D Language Features
-
-- **Built-in Associative Arrays (`V[K]`)**: Syntax and runtime support
-  for hash maps, `.keys`, `.values`, `.remove()`, and the `in` operator.
-- **Built-in UTF-8 `string` Type**: Support a dedicated UTF-8 `string`
-  type that does *not* implicitly convert to `char[]` (unlike D), and
-  provides a property (e.g. `.bytes` or `.raw`) to access its raw
-  underlying form as a slice of `ubyte`, `byte`, or `void` elements.
-- **`with` Statement**: `with (expression) { ... }` or `with (symbol) { ... }`
-  scope block opening member access without qualification.
-- **`version` and `debug` Blocks**: Declarative conditional
-  compilation blocks (`version(X)`, `debug`) integrated into the
-  grammar.
-- **Additional Array Properties**: `.dup` and `.idup` are **already
-  covered**.  Properties `.ptr`, `.reverse`, `.init`, and `.stringof`
-  are **still missing**.
-- **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...` and
-  delegate literals.
-- **`scope` Guards**: `scope(success)` and `scope(failure)`
-  complementing the existing `scope(exit)` (`defer`).
-- **`typeof` and Metaprogramming**: `typeof(expr)`, `typeof(return)`,
-  `typeid`, and `__traits`.
-- **`ref` Function Parameters & Returns**: Reference parameters and
-  returns without explicit pointer syntax.
-- **`inout` Qualifier**: Qualifier polymorphism for functions
+- `TCC`: `--disable-asm` and `--disable-bcheck` options.
+- `C / GCC`: `__builtin_expect()`.
+- `C`: `atexit` (Nigel Horne).
+- `C99`: Add complex types (gcc 3.2 testsuite issue).
+- `C99`: Postfix compound literals (see `20010124-1.c`).
+- `TCC`: Interactive mode / integrated debugger.
+- `C / TCC`: `@attribute` syntax: `@name` / `@name(args)` for builtin
+  and user-defined attributes, e.g. `struct T @nocopy {}`.
+- `C, D`: **Attribute-Based Type/Storage Qualifiers (`@static`,
+  `@const`, `@immutable`, etc.)**: Allow storage and type qualifiers
+  via `@`-prefixed attribute syntax (e.g., `@const int x`, `@static
+  int y`).
+- `D`: Track ownership of D slices (heap-allocated vs view of string
+  literal) so that `a.length = n` can reallocate safely.
+- `D`: Several array declarators with initializers (`int[] a = {1, 2,
+  3}, b = {4, 5};`).
+- `D`: **Built-in Associative Arrays (`V[K]`)**: Syntax and runtime
+  support for hash maps, `.keys`, `.values`, `.remove()`, and the `in`
+  operator.
+- `D`: **Built-in UTF-8 `string` Type**: Dedicated UTF-8 `string` type
+  that does *not* implicitly convert to `char[]`, with a property
+  (e.g. `.bytes` or `.raw`) to access its raw underlying form as a
+  slice of `ubyte`, `byte`, or `void`.
+- `D`: **`with` Statement**: `with (expression) { ... }` or `with
+  (symbol) { ... }` scope block opening member access without
+  qualification.
+- `D`: **`version` and `debug` Blocks**: Declarative conditional
+  compilation blocks (`version(X)`, `debug`).
+- `D`: **Additional Array Properties**: `.ptr`, `.reverse`, `.init`,
+  and `.stringof` (`.dup` and `.idup` are already covered).
+- `D`: **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...`
+  and delegate literals.
+- `D`: **`scope` Guards**: `scope(success)` and `scope(failure)`
+  complementing `scope(exit)` (`defer`).
+- `D, Zig, Jai`: **`typeof` and Metaprogramming**: `typeof(expr)`,
+  `typeof(return)`, `typeid`, `__traits`, and reflection nodes
+  (`$fields(T)`, `$members(T)`).
+- `D`: **`ref` Function Parameters & Returns**: Reference parameters
+  and returns without explicit pointer syntax.
+- `D`: **`inout` Qualifier**: Qualifier polymorphism for functions
   preserving mutability.
-- **Manifest Constants**: Scalar manifest constants (`enum x = 42;`,
-  `enum int x = 42;`) without storage are **already covered**.
-  Aggregate/struct manifest constants (`enum S = { ... };`) are
-  **still missing**.
-- **`assert` with Custom Message**: `assert(cond, "message")` printing
-  descriptive failure strings on failure.
-- **`out` Function Parameters**: Parameters automatically initialized
-  to default/zero upon entry.
-- **`scope` RAII Objects**: `scope struct T obj = ...;` ensuring
+- `D`: **Mixins**: String mixins (`mixin(...)`) for metaprogramming.
+- `D`: **Manifest Constants**: Aggregate/struct manifest constants
+  (`enum S = { ... };`) (scalar manifest constants are already
+  covered).
+- `D`: **`assert` with Custom Message**: `assert(cond, "message")`
+  printing descriptive failure strings on failure.
+- `D`: **`out` Function Parameters**: Parameters automatically
+  initialized to default/zero upon entry.
+- `D`: **`scope` RAII Objects**: `scope struct T obj = ...;` ensuring
   deterministic object destruction at scope exit.
-- **`@safe` and `@nogc` Attributes**: Function attributes enforcing
-  memory safety and non-allocation.
-- **Property Call Syntax**: Omitting parentheses for 0-argument
+- `D`: **`@safe` and `@nogc` Attributes**: Function attributes
+  enforcing memory safety and non-allocation.
+- `D`: **Property Call Syntax**: Omitting parentheses for 0-argument
   function calls (`obj.method`).
-- **Automatic Pointer-to-Struct Member Access (`x.field` sugar for
-  `x->field`)**: Automatically dereference pointer-typed receivers
-  when accessing struct fields with `.` (Go/Swift style), eliminating
-  explicit `->` boilerplate.
-- **Saturating Arithmetic Operators**: Support saturating arithmetic
-  operations (clamping at type limits instead of wrapping on
-  overflow), using Zig-inspired syntax (`+|`, `-|`, `*|`, `<<|`).
-- **Slice `.len` Property Alias**: Support `.len` as an alias for the
-  existing `.length` property on slices and arrays (matching Zig, Go,
-  and other modern static languages).
-- Suppress specific anonymous symbol handling.
-- More parse optimizations (i.e. even faster compilation).
-- Memory allocation optimizations (i.e. even faster compilation).
-- Optimize `VT_LOCAL` + const.
-- Better local variables handling (needed for other targets).
+- `Go, Swift`: **Automatic Pointer-to-Struct Member Access (`x.field`
+  sugar for `x->field`)**: Automatically dereference pointer-typed
+  receivers when accessing struct fields with `.`.
+- `Zig`: **Saturating Arithmetic Operators**: Support saturating
+  arithmetic operations (`+|`, `-|`, `*|`, `<<|`).
+- `Zig, Go, D`: **Slice `.len` Property Alias**: Support `.len` as an
+  alias for `.length` on slices and arrays.
+- `TCC`: Suppress specific anonymous symbol handling.
+- `TCC`: More parse optimizations (faster compilation).
+- `TCC`: Memory allocation optimizations.
+- `TCC`: Optimize `VT_LOCAL` + const.
+- `TCC`: Better local variables handling (needed for other targets).
 
 ## Architecture & Complexity Analysis
 
