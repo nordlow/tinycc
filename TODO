@@ -291,15 +291,24 @@ serialization and graph traversal.
   enforcing memory safety and non-allocation.
 - `D`: **Property Call Syntax**: Omitting parentheses for 0-argument
   function calls (`obj.method`).
-- `Zig`: **Saturating Arithmetic Operators**: Support saturating arithmetic operations (`+|`, `-|`, `*|`, `<<|` and assignment forms `+|=`, `-|=`, `*|=`, `<<|=`):
-  - *Saturation Width*: Saturates at the usual-arithmetic-conversion type.
-  - *Operator Set*: Limited to `+`, `-`, `*`, `<<` and their assignment forms.
-  - *Shift Edge Cases (`<<|`)*: Defined as mathematical saturating shifts rather than undefined behavior.
-  - *Operand Types*: Integers only; floats/pointers/complex rejected with standard error.
+- `Zig`: **Saturating Arithmetic Operators**: Support saturating
+  arithmetic operations (`+|`, `-|`, `*|`, `<<|` and assignment forms
+  `+|=`, `-|=`, `*|=`, `<<|=`):
+  - *Saturation Width*: Saturates at the usual-arithmetic-conversion
+    type.
+  - *Operator Set*: Limited to `+`, `-`, `*`, `<<` and their assignment
+    forms.
+  - *Shift Edge Cases (`<<|`)*: Defined as mathematical saturating
+    shifts rather than undefined behavior.
+  - *Operand Types*: Integers only; floats/pointers/complex rejected
+    with standard error.
   - *Gating*: Always-on (since `+|` is never valid C).
-  - *Constant Contexts & Preprocessor*: Folded at compile-time for enums, array sizes, `_Static_assert`, initializers, and `#if` expressions.
+  - *Constant Contexts & Preprocessor*: Folded at compile-time for
+    enums, array sizes, `_Static_assert`, initializers, and `#if`
+    expressions.
   - *Slice Op-Assign*: Integrates with slice op-assign gating.
-  - *Evaluation Invariant*: Both operands are evaluated exactly once (using temporary variables).
+  - *Evaluation Invariant*: Both operands are evaluated exactly once
+    (using temporary variables).
 - `Zig, Go, D`: **Slice `.len` Property Alias**: Support `.len` as an
   alias for `.length` on slices and arrays.
 - `TCC`: Suppress specific anonymous symbol handling.
