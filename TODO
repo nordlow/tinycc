@@ -262,8 +262,6 @@ serialization and graph traversal.
 - `D`: **`with` Statement**: `with (expression) { ... }` or `with
   (symbol) { ... }` scope block opening member access without
   qualification.
-- `D`: **`version` and `debug` Blocks**: Declarative conditional
-  compilation blocks (`version(X)`, `debug`).
 - `D`: **Additional Array Properties**: `.ptr`, `.reverse`, `.init`,
   and `.stringof`.
 - `D`: **Anonymous Functions & Lambdas**: Short lambdas `(x) => ...`

@@ -766,6 +766,13 @@ struct TCCState {
     unsigned char gnu89_inline; /* treat 'extern inline' like 'static inline' */
     unsigned char unwind_tables; /* create eh_frame section */
     unsigned char lang_d; /* -lang=d: enable extended D semantics */
+    /* D conditional compilation (version and debug blocks).  */
+    char **d_version_ids;
+    int nb_d_version_ids;
+    char **d_debug_ids;
+    int nb_d_debug_ids;
+    int d_version_level;
+    int d_debug_level;
     /* Runtime policy for slice copies whose lengths differ.  */
     unsigned char slice_len_mismatch;
 
@@ -1470,6 +1477,8 @@ ST_DATA const char *funcname;
 ST_FUNC void tccgen_init(TCCState *s1);
 ST_FUNC int tccgen_compile(TCCState *s1);
 ST_FUNC void tccgen_finish(TCCState *s1);
+ST_FUNC void tcc_add_d_version(TCCState *s, const char *id);
+ST_FUNC void tcc_add_d_debug(TCCState *s, const char *id);
 ST_FUNC void check_vstack(void);
 
 ST_INLN int is_float(int t);

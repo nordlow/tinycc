@@ -1,0 +1,35 @@
+[test_missing_paren]
+368_d_version_debug_error.c:2: error: '(' expected
+
+[test_bad_condition]
+368_d_version_debug_error.c:4: error: ')' expected (got '+')
+
+[test_bad_version_spec]
+368_d_version_debug_error.c:6: error: identifier or integer literal expected
+
+[test_bad_debug_spec]
+368_d_version_debug_error.c:8: error: identifier or integer literal expected
+
+[test_colon]
+368_d_version_debug_error.c:10: error: version/debug colon declarations are not supported
+
+[test_debug_colon]
+368_d_version_debug_error.c:13: error: version/debug colon declarations are not supported
+
+[test_bad_condition_tail]
+368_d_version_debug_error.c:15: error: ')' expected (got 'extra')
+
+[test_bad_debug_condition]
+368_d_version_debug_error.c:17: error: ')' expected (got '+')
+
+[test_bad_version_spec_paren]
+368_d_version_debug_error.c:19: error: identifier or integer literal expected
+
+[test_eof_block]
+368_d_version_debug_error.c:27: error: unexpected end of file in version/debug block
+
+[test_eof_else_block]
+368_d_version_debug_error.c:27: error: unexpected end of file in version/debug block
+
+[test_eof_condition]
+368_d_version_debug_error.c:27: error: ')' expected (got '<eof>')

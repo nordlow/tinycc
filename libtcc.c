@@ -950,6 +950,8 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
     cstr_free(&s1->cmdline_defs);
     cstr_free(&s1->cmdline_incl);
     tcc_free(s1->dState);
+    dynarray_reset(&s1->d_version_ids, &s1->nb_d_version_ids);
+    dynarray_reset(&s1->d_debug_ids, &s1->nb_d_debug_ids);
 #ifdef TCC_IS_NATIVE
     /* free runtime memory */
     tcc_run_free(s1);
@@ -1557,6 +1559,8 @@ enum {
     TCC_OPTION_l,
     TCC_OPTION_bench,
     TCC_OPTION_unittest,
+    TCC_OPTION_d_version,
+    TCC_OPTION_d_debug,
     TCC_OPTION_bt,
     TCC_OPTION_b,
     TCC_OPTION_g,
@@ -1618,6 +1622,8 @@ static const TCCOption tcc_options[] = {
     { "-help", TCC_OPTION_HELP, 0 },
     { "?", TCC_OPTION_HELP, 0 },
     { "hh", TCC_OPTION_HELP2, 0 },
+    { "version", TCC_OPTION_d_version, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+    { "debug", TCC_OPTION_d_debug, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "v", TCC_OPTION_v, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "-version", TCC_OPTION_v, 0 }, /* handle as verbose, also prints version*/
     { "I", TCC_OPTION_I, TCC_OPTION_HAS_ARG },
@@ -1978,6 +1984,33 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
             break;
         case TCC_OPTION_unittest:
             s->do_unittest = 1;
+            break;
+        case TCC_OPTION_d_version:
+            if (!*optarg) {
+                /* bare -version is still accepted as an alias for -v */
+                ++s->verbose;
+                continue;
+            }
+            r = optarg;
+            if (*r == '=')
+                ++r;
+            if (!*r)
+                return tcc_error_noabort("argument to '-version' is missing");
+            if (isnum(*r))
+                s->d_version_level = atoi(r);
+            else
+                tcc_add_d_version(s, r);
+            break;
+        case TCC_OPTION_d_debug:
+            r = optarg;
+            if (*r == '=')
+                ++r;
+            if (!*r)
+                s->d_debug_level = 1;
+            else if (isnum(*r))
+                s->d_debug_level = atoi(r);
+            else
+                tcc_add_d_debug(s, r);
             break;
 #ifdef CONFIG_TCC_BACKTRACE
         case TCC_OPTION_bt:

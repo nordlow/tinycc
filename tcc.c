@@ -109,6 +109,8 @@ static const char help2[] =
     "  -dt                           with -run/-E: auto-define 'test_...' macros\n"
     "  -unittest                     compile and run D-style unittest blocks\n"
     "  -lang=c|d|D                   language dialect: c [default], or D extensions\n"
+    "  -version=ID|LEVEL            define D version identifier or level\n"
+    "  -debug[=ID|LEVEL]            define D debug identifier or level\n"
     "Ignored options:\n"
     "  -arch -C --param -pedantic -pipe -s -traditional\n"
     "-W[no-]... warnings:\n"

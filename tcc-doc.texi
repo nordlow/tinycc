@@ -220,6 +220,20 @@ a full slice (@code{a[]}, as in @code{a[] = b[]}).  The D-style
 for @code{static assert(@var{expr}[, @var{msg}])}.  The option may also
 be spelled @option{--lang}.
 
+@item -version=@var{id}
+Define the D version identifier @var{id}, or set the D version level
+when @var{id} is an integer literal.  D @code{version(@var{id})}
+blocks are compiled when the identifier is defined or when their
+integer level is not greater than the version level.
+
+@item -debug[=@var{id}]
+Define the D debug identifier @var{id}, or set the D debug level when
+@var{id} is an integer literal.  Without an argument, the debug level
+is set to 1.  D @code{debug} blocks are compiled while the debug level
+is nonzero, @code{debug(@var{n})} blocks are compiled when @var{n} is
+not greater than the debug level, and @code{debug(@var{id})} blocks
+are compiled when the identifier is defined.
+
 @end table
 
 @subheading Preprocessor Options

@@ -177,6 +177,7 @@ static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
 static int check_d_manifest_constant(int l);
+static int check_d_conditional(int l, int flags);
 static void gen_slice_assign(int assign_tok);
 static void expr_cond(void);
 static int slice_range_target;
@@ -8428,6 +8429,8 @@ static void block(int flags)
     struct scope o;
     Sym *s;
 again:
+    if (check_d_conditional(VT_LOCAL, flags))
+        return;
     t = tok;
     /* If the token carries a value, next() might destroy it. Only with
        invalid code such as f(){"123"4;} */
@@ -10251,6 +10254,395 @@ static void do_unittest(void)
     gen_function(sym);
 }
 
+/* D conditional compilation (version and debug blocks).  */
+
+static int d_ident_is(int t, const char *name)
+{
+    return t >= TOK_UIDENT && !strcmp(get_tok_str(t, &tokc), name);
+}
+
+static int d_tok_is_int(int t)
+{
+    return t == TOK_CINT || t == TOK_CUINT
+        || t == TOK_CLONG || t == TOK_CULONG
+        || t == TOK_CLLONG || t == TOK_CULLONG;
+}
+
+static int d_id_is_defined(char **ids, int nb_ids, const char *id)
+{
+    int i;
+    for (i = 0; i < nb_ids; ++i)
+        if (!strcmp(ids[i], id))
+            return 1;
+    return 0;
+}
+
+ST_FUNC void tcc_add_d_version(TCCState *s, const char *id)
+{
+    if (!d_id_is_defined(s->d_version_ids, s->nb_d_version_ids, id))
+        dynarray_add(&s->d_version_ids, &s->nb_d_version_ids,
+                     tcc_strdup(id));
+}
+
+ST_FUNC void tcc_add_d_debug(TCCState *s, const char *id)
+{
+    if (!d_id_is_defined(s->d_debug_ids, s->nb_d_debug_ids, id))
+        dynarray_add(&s->d_debug_ids, &s->nb_d_debug_ids,
+                     tcc_strdup(id));
+}
+
+static int d_version_id_is_defined(const char *id)
+{
+    TCCState *s = tcc_state;
+
+    if (d_id_is_defined(s->d_version_ids, s->nb_d_version_ids, id))
+        return 1;
+    if (!strcmp(id, "all"))
+        return 1;
+    if (!strcmp(id, "none"))
+        return 0;
+    if (!strcmp(id, "D_Version2"))
+        return 1;
+    if (!strcmp(id, "unittest"))
+        return s->do_unittest;
+    if (!strcmp(id, "assert"))
+        return 1;
+#if defined TCC_TARGET_I386
+    if (!strcmp(id, "X86"))
+        return 1;
+#elif defined TCC_TARGET_X86_64
+    if (!strcmp(id, "X86_64"))
+        return 1;
+#elif defined TCC_TARGET_ARM
+    if (!strcmp(id, "ARM"))
+        return 1;
+#elif defined TCC_TARGET_ARM64
+    if (!strcmp(id, "AArch64"))
+        return 1;
+#elif defined TCC_TARGET_RISCV64
+    if (!strcmp(id, "RISCV64"))
+        return 1;
+#endif
+#if defined TCC_TARGET_PE
+    if (!strcmp(id, "Windows"))
+        return 1;
+# if PTR_SIZE == 8
+    if (!strcmp(id, "Win64"))
+        return 1;
+# else
+    if (!strcmp(id, "Win32"))
+        return 1;
+# endif
+#elif defined TCC_TARGET_MACHO
+    if (!strcmp(id, "OSX") || !strcmp(id, "Darwin"))
+        return 1;
+#endif
+#if defined TARGETOS_ANDROID
+    if (!strcmp(id, "Android") || !strcmp(id, "linux"))
+        return 1;
+#elif defined TARGETOS_FreeBSD || defined TARGETOS_FreeBSD_kernel
+    if (!strcmp(id, "FreeBSD"))
+        return 1;
+#elif defined TARGETOS_OpenBSD
+    if (!strcmp(id, "OpenBSD"))
+        return 1;
+#elif defined TARGETOS_NetBSD
+    if (!strcmp(id, "NetBSD"))
+        return 1;
+#elif defined TARGETOS_DragonFly
+    if (!strcmp(id, "DragonFlyBSD"))
+        return 1;
+#elif defined TARGETOS_Linux
+    if (!strcmp(id, "linux"))
+        return 1;
+#endif
+#if !defined TCC_TARGET_PE && !defined TCC_TARGET_C67
+    if (!strcmp(id, "Posix"))
+        return 1;
+#endif
+#if !defined TCC_TARGET_C67
+    if (!strcmp(id, "LittleEndian"))
+        return 1;
+#else
+    if (!strcmp(id, "BigEndian"))
+        return 1;
+#endif
+    return 0;
+}
+
+static int d_debug_id_is_defined(const char *id)
+{
+    TCCState *s = tcc_state;
+    return d_id_is_defined(s->d_debug_ids, s->nb_d_debug_ids, id);
+}
+
+static void d_scan_body(TokenString *str, int file_scope);
+
+/* Scan a parenthesized token sequence, saving it in STR if not NULL.
+   The current token must be '('.  */
+static void d_scan_parens(TokenString *str)
+{
+    int depth = 0, t;
+    do {
+        t = tok;
+        if (t == TOK_EOF)
+            tcc_error("unexpected end of file in version/debug condition");
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        if (t == '(')
+            ++depth;
+        else if (t == ')')
+            --depth;
+    } while (depth > 0);
+}
+
+/* Scan a balanced brace group, saving it in STR if not NULL.  */
+static void d_scan_braces(TokenString *str)
+{
+    int depth = 0, t;
+    do {
+        t = tok;
+        if (t == TOK_EOF)
+            tcc_error("unexpected end of file in version/debug block");
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        if (t == '{')
+            ++depth;
+        else if (t == '}')
+            --depth;
+    } while (depth > 0);
+}
+
+/* Scan a declaration or expression statement.  Top-level brace groups
+   are skipped, but a function body terminates the scan when it is not
+   followed by a declarator separator.  */
+static void d_scan_decl_or_expr(TokenString *str)
+{
+    int level = 0, has_init = 0, t;
+    while (tok != TOK_EOF) {
+        t = tok;
+        if (level == 0 && t == ';') {
+            if (str)
+                tok_str_add_tok(str);
+            next();
+            return;
+        }
+        if (level == 0 && (t == '}' || t == TOK_ELSE))
+            return;
+        if (level == 0 && t == '{') {
+            d_scan_braces(str);
+            if (!has_init && tok != ';' && tok != ',')
+                return;
+            has_init = 0;
+            continue;
+        }
+        if (str)
+            tok_str_add_tok(str);
+        if (t == '=')
+            has_init = 1;
+        if (t == '(' || t == '[')
+            ++level;
+        else if (t == ')' || t == ']') {
+            if (level)
+                --level;
+        }
+        next();
+    }
+}
+
+/* Scan one D declaration or statement, appending it to STR if not NULL.
+   At file scope a leading '{' is stripped and its declarations are
+   scanned individually.  */
+static void d_scan_body(TokenString *str, int file_scope)
+{
+    int t = tok;
+
+    if (t == '{') {
+        if (file_scope) {
+            next();
+            while (tok != '}' && tok != TOK_EOF)
+                d_scan_body(str, 1);
+            if (tok != '}')
+                tcc_error("unexpected end of file in version/debug block");
+            next();
+        } else {
+            d_scan_braces(str);
+        }
+        return;
+    }
+    if (t == TOK_IF) {
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        d_scan_parens(str);
+        d_scan_body(str, 0);
+        if (tok == TOK_ELSE) {
+            if (str)
+                tok_str_add_tok(str);
+            next();
+            d_scan_body(str, 0);
+        }
+        return;
+    }
+    if (t == TOK_FOR || t == TOK_WHILE || t == TOK_SWITCH
+        || t == TOK_FOREACH || t == TOK_FOREACH_REVERSE) {
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        d_scan_parens(str);
+        d_scan_body(str, 0);
+        return;
+    }
+    if (t == TOK_DO) {
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        d_scan_body(str, 0);
+        if (tok == TOK_WHILE) {
+            if (str)
+                tok_str_add_tok(str);
+            next();
+            d_scan_parens(str);
+        }
+        if (tok == ';') {
+            if (str)
+                tok_str_add_tok(str);
+            next();
+        }
+        return;
+    }
+    if (d_ident_is(t, "version") || d_ident_is(t, "debug")) {
+        int is_debug = d_ident_is(t, "debug");
+        if (str)
+            tok_str_add_tok(str);
+        next();
+        if (tok == '=') {
+            d_scan_decl_or_expr(str);
+        } else {
+            if (tok == '(')
+                d_scan_parens(str);
+            else if (!is_debug)
+                expect("'('");
+            d_scan_body(str, file_scope);
+            if (tok == TOK_ELSE) {
+                if (str)
+                    tok_str_add_tok(str);
+                next();
+                d_scan_body(str, file_scope);
+            }
+        }
+        return;
+    }
+    d_scan_decl_or_expr(str);
+}
+
+/* Parse and act on a D 'version' or 'debug' specification or block.
+   Returns nonzero when the current token started such a construct.  */
+static int check_d_conditional(int l, int flags)
+{
+    int is_debug, take;
+    TokenString *body, *else_body, *sel;
+
+    if (!tcc_state->lang_d || (l != VT_CONST && l != VT_LOCAL))
+        return 0;
+    if (!(d_ident_is(tok, "version") || d_ident_is(tok, "debug")))
+        return 0;
+
+    is_debug = d_ident_is(tok, "debug");
+    next();
+    if (tok == '=') {
+        next();
+        if (tok >= TOK_UIDENT) {
+            const char *id = get_tok_str(tok, &tokc);
+            if (is_debug)
+                tcc_add_d_debug(tcc_state, id);
+            else
+                tcc_add_d_version(tcc_state, id);
+            next();
+        } else if (d_tok_is_int(tok)) {
+            unsigned level = tokc.i;
+            if (is_debug)
+                tcc_state->d_debug_level = level;
+            else
+                tcc_state->d_version_level = level;
+            next();
+        } else {
+            expect("identifier or integer literal");
+        }
+        skip(';');
+        return 1;
+    }
+
+    if (tok == '(') {
+        next();
+        if (tok == TOK_UNITTEST) {
+            take = !is_debug && tcc_state->do_unittest;
+            next();
+        } else if (tok >= TOK_UIDENT) {
+            const char *id = get_tok_str(tok, &tokc);
+            take = is_debug ? d_debug_id_is_defined(id)
+                            : d_version_id_is_defined(id);
+            next();
+        } else if (d_tok_is_int(tok)) {
+            uint64_t level = tokc.i;
+            take = is_debug ? (uint64_t)tcc_state->d_debug_level >= level
+                            : (uint64_t)tcc_state->d_version_level >= level;
+            next();
+        } else {
+            expect("version identifier or integer literal");
+        }
+        skip(')');
+    } else {
+        if (!is_debug)
+            expect("'('");
+        take = tcc_state->d_debug_level > 0;
+    }
+    if (tok == ':')
+        tcc_error("version/debug colon declarations are not supported");
+
+    body = tok_str_alloc();
+    d_scan_body(body, l == VT_CONST);
+    tok_str_add(body, TOK_EOF);
+    else_body = NULL;
+    if (tok == TOK_ELSE) {
+        next();
+        else_body = tok_str_alloc();
+        d_scan_body(else_body, l == VT_CONST);
+        tok_str_add(else_body, TOK_EOF);
+    }
+
+    sel = take ? body : else_body;
+    if (sel != body)
+        tok_str_free(body);
+    if (else_body && sel != else_body)
+        tok_str_free(else_body);
+    if (sel) {
+        if (sel->len > 1) {
+            /* Keep the token following the conditional in a macro
+               stream so that it is restored after the replay.  */
+            unget_tok(0);
+            begin_macro(sel, 1);
+            next();
+            if (l == VT_CONST) {
+                decl(VT_CONST);
+            } else {
+                decl(VT_LOCAL);
+                if (tok != TOK_EOF)
+                    block(flags);
+            }
+            while (tok != TOK_EOF)
+                next();
+            end_macro();
+            next();
+        } else {
+            tok_str_free(sel);
+        }
+    }
+    return 1;
+}
+
 /* 'l' is VT_LOCAL or VT_CONST to define default storage type
    or VT_CMP if parsing old style parameter list
    or VT_JMP if parsing c99 for decl: for (int i = 0, ...) */
@@ -10265,6 +10657,8 @@ static int decl(int l)
     while (1) {
 
         oldint = 0;
+        if (check_d_conditional(l, 0))
+            continue;
         if (check_d_static_assert())
             continue;
         if (check_d_manifest_constant(l))
