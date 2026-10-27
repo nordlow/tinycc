@@ -637,6 +637,7 @@ extern void *malloc(__SIZE_TYPE__);
 extern void *realloc(void *, __SIZE_TYPE__);
 extern void free(void *);
 extern void *memcpy(void *, const void *, __SIZE_TYPE__);
+extern void *memmove(void *, const void *, __SIZE_TYPE__);
 
 static void darray_set_length(struct darray_header *a,
                               __SIZE_TYPE__ elemsize,
