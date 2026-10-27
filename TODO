@@ -163,18 +163,14 @@ serialization and graph traversal.
   by chaining type inspections naturally.
 - **Compile-Time Type Traits & Expressions**:
   - **Function/Trait style**: `$hasIndirections(T)`, `$hasAliasing(T)`,
-    etc.
-  - **Alternative Syntaxes**:
-    - `$is(T == struct)`,
-    - `$isA(T, struct)`,
-    - `T is struct`, or
-    - `T $is struct`
-    - `T $isA struct`
-    for enhanced readability when
-    querying type categories/classes (structs, pointers, scalars,
-      qualifiers).
-  - **Compile-Time Type Information (CTTI)**: Enables compile-time
-    iteration and unrolled code generation.
+    `$isA(T, U)`, etc. Functional syntax (e.g. `$isA(T, U)`) is
+    particularly useful when composing higher-order functions
+    operating on compile-time tuples and reflection nodes.
+- **Alternative Syntaxes**:
+  - `$is(T == struct)` / `$isA(T, struct)`
+  - `T is struct` / `T $is struct` / `T $isA struct`
+  - Enhanced readability when querying type categories (structs,
+    pointers, scalars, qualifiers).
   - **Run-Time Type Information (RTTI)**: Emits static metadata tables
     (`struct RTTI`) into `.rodata` for runtime graph serialization,
     dynamic printing, and unmarshalling.
