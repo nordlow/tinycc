@@ -159,7 +159,11 @@ serialization and graph traversal.
   `.size`, `.is_pointer`, etc.).
 - **`$members(T)`**: Evaluates to all members (fields, methods, nested
   types) of `T` as reference nodes.
-- **Dual CTTI & RTTI**:
+- **Compile-Time Type Traits (`$hasIndirections`, `$hasAliasing`,
+  `$isStruct`, `$isPointer`, etc.)**:
+  - Evaluates compile-time boolean queries on type `T` (e.g., checking
+    if `T` contains pointers/references or aliasing potential), vital
+    for safe serialization and garbage collection / GC integration.
   - **Compile-Time Type Information (CTTI)**: Enables compile-time
     iteration and unrolled code generation.
   - **Run-Time Type Information (RTTI)**: Emits static metadata tables
