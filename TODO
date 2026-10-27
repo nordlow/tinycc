@@ -52,42 +52,39 @@ TCC would infer:
 For reference see
 https://aistudio.google.com/prompts/191Hd2mWffHJ8B9OYybf6h2vFp9DH2LrK
 
-## Proposal: D-style `immutable` qualifier
+## D-style `immutable` qualifier
 
-`immutable` is accepted on instances and currently maps to `const`
-(see `TOK_IMMUTABLE` in `parse_btype()`), which gives immutable
-scalars, aggregates, members and arrays: `verify_assign_cast()` rejects
-writes, and member access propagates qualifiers from the aggregate to
-the field.
+`immutable` is accepted on instances and is represented by a distinct
+`VT_IMMUTABLE` bit (see `TOK_IMMUTABLE` in `parse_btype()` and
+`type_decl()`), while also implying `const`.  Immutability is
+transitive:
 
-Caveats: `immutable int *p` follows C placement rules (qualifies the
-pointee, not the pointer), unlike D's transitive whole-type rule, and
-nothing prevents writes through aliases:
+- members of an immutable aggregate are immutable, including nested
+  aggregates, array elements and pointer members, because member
+  access propagates the qualifiers of the aggregate to the field;
+- `indir()` propagates immutability from a pointer to the object it
+  refers to, so writes through an immutable pointer are diagnosed too;
+- `verify_assign_cast()` rejects converting a pointer to immutable
+  data into a pointer to mutable data, while `immutable` -> `const`
+  and mutable -> `immutable` conversions are accepted.
 
-```c
-int *q = (int *)&immutable_obj;
-*q = 1; /* still accepted */
-```
+Remaining caveats:
 
-**Transitive immutability:** add a deep `VT_IMMUTABLE` bit
-and teach the following about it:
+- The qualifier follows C placement rules (`immutable int *p`
+  qualifies the pointee, `int * immutable p` the pointer), unlike D's
+  whole-type rule, and an explicit cast still discards immutability:
 
-- `compare_types()` and `verify_assign_cast()`: walk the whole
-  pointee/aggregate chain instead of only one pointer level.
-- `type_qualifiers()` and `parse_btype_qualify()`.
-- Member access qualifier propagation, so fields of immutable
-  aggregates become immutable transitively.
-- `decl_initializer()` paths, which bypass some assignment checks.
-- Pointer conversions: mutable to immutable is allowed, immutable to
-  mutable is rejected except for an explicit cast.
+  ```c
+  int *q = (int *)&immutable_obj;
+  *q = 1; /* still accepted */
+  ```
 
-Type-level D syntax such as `immutable(int *)` additionally needs
-parenthesized type constructors, which `parse_btype()` does not
-support for `const` either.
-
-**Full D semantics (not planned):** immutable implies that no
-mutable alias exists anywhere, transitive slice element types,
-`shared`) is a real type-and-effect system and would take weeks.
+- Copying an immutable aggregate into a mutable one is allowed (value
+  semantics), even when the aggregate holds pointers, so the copy may
+  alias immutable data.
+- Slice element types are not made immutable transitively, and
+  `shared` is not modeled.  Full D semantics (no mutable alias exists
+  anywhere) is a type-and-effect system that is not planned.
 
 ## Proposal: inout-style qualifier inference
 

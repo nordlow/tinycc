@@ -1,19 +1,51 @@
 [test_scalar]
-339_d_immutable_error.c:12: warning: assignment of read-only location
+339_d_immutable_error.c:22: warning: assignment of read-only location
 2
 
 [test_member]
-339_d_immutable_error.c:21: warning: assignment of read-only location
+339_d_immutable_error.c:31: warning: assignment of read-only location
 3
 
 [test_aggregate_member]
-339_d_immutable_error.c:30: warning: assignment of read-only location
+339_d_immutable_error.c:40: warning: assignment of read-only location
 3
 
 [test_array_element]
-339_d_immutable_error.c:39: warning: assignment of read-only location
+339_d_immutable_error.c:49: warning: assignment of read-only location
 3
 
 [test_pointer_target]
-339_d_immutable_error.c:49: warning: assignment of read-only location
+339_d_immutable_error.c:59: warning: assignment of read-only location
 2
+
+[test_transitive_member]
+339_d_immutable_error.c:68: warning: assignment of read-only location
+20
+
+[test_transitive_pointer_member]
+339_d_immutable_error.c:78: warning: assignment of read-only location
+2
+
+[test_transitive_through_pointer]
+339_d_immutable_error.c:88: warning: assignment of read-only location
+2
+
+[test_transitive_array_element]
+339_d_immutable_error.c:97: warning: assignment of read-only location
+3
+
+[test_immutable_pointer_write]
+339_d_immutable_error.c:107: warning: assignment of read-only location
+2
+
+[test_pointer_discard]
+339_d_immutable_error.c:117: error: assignment discards 'immutable' qualifier
+
+[test_member_pointer_discard]
+339_d_immutable_error.c:126: error: assignment discards 'immutable' qualifier
+
+[test_argument_discard]
+339_d_immutable_error.c:141: error: assignment discards 'immutable' qualifier
+
+[test_return_discard]
+339_d_immutable_error.c:152: error: assignment discards 'immutable' qualifier

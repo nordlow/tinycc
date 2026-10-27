@@ -3796,7 +3796,11 @@ static void verify_assign_cast(CType *dt)
         if (is_compatible_types(type1, type2))
             break;
         for (qualwarn = lvl = 0;; ++lvl) {
-            if ((type2->t & ~type1->t) & VT_QUAL)
+            int discards = (type2->t & ~type1->t) & VT_QUAL;
+            /* dropping 'immutable' is only allowed for 'const' */
+            if ((discards & VT_IMMUTABLE) && !(type1->t & VT_CONSTANT))
+                tcc_error("assignment discards 'immutable' qualifier");
+            if (discards & ~VT_IMMUTABLE)
                 qualwarn = 1;
             dbt = type1->t & (VT_BTYPE|VT_LONG);
             sbt = type2->t & (VT_BTYPE|VT_LONG);
@@ -5110,9 +5114,12 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             next();
             break;
         case TOK_IMMUTABLE:
-            /* D-style immutable qualifier, currently mapped to const */
+            /* D-style immutable qualifier.  It implies 'const' but unlike
+               plain 'const' it is transitive: members of an immutable
+               aggregate, and the objects referenced by an immutable
+               pointer, are immutable as well.  */
             type->t = t;
-            parse_btype_qualify(type, VT_CONSTANT);
+            parse_btype_qualify(type, VT_CONSTANT | VT_IMMUTABLE);
             t = type->t;
             next();
             break;
@@ -5837,8 +5844,10 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
         case TOK_CONST1:
         case TOK_CONST2:
         case TOK_CONST3:
-        case TOK_IMMUTABLE:
             qualifiers |= VT_CONSTANT;
+            goto redo;
+        case TOK_IMMUTABLE:
+            qualifiers |= VT_CONSTANT | VT_IMMUTABLE;
             goto redo;
         case TOK_VOLATILE1:
         case TOK_VOLATILE2:
@@ -5897,6 +5906,8 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
 /* indirection with full error checking and bound check */
 ST_FUNC void indir(void)
 {
+    int qualifiers;
+
     if ((vtop->type.t & VT_BTYPE) != VT_PTR) {
         if ((vtop->type.t & VT_BTYPE) == VT_FUNC)
             return;
@@ -5904,7 +5915,12 @@ ST_FUNC void indir(void)
     }
     if (vtop->r & VT_LVAL)
         gv(RC_INT);
+    /* immutability is transitive: whatever an immutable pointer refers
+       to is immutable as well */
+    qualifiers = vtop->type.t & VT_IMMUTABLE;
     vtop->type = *pointed_type(&vtop->type);
+    if (qualifiers)
+        parse_btype_qualify(&vtop->type, VT_CONSTANT | VT_IMMUTABLE);
     /* Arrays and functions are never lvalues */
     if (!(vtop->type.t & (VT_ARRAY | VT_VLA))
         && (vtop->type.t & VT_BTYPE) != VT_FUNC) {
@@ -5943,7 +5959,8 @@ static void gfunc_param_typed(Sym *func, Sym *arg)
         tcc_error("too many arguments to function");
     } else {
         type = arg->type;
-        type.t &= ~VT_CONSTANT; /* need to do that to avoid false warning */
+        /* need to do that to avoid false warning */
+        type.t &= ~(VT_CONSTANT | VT_IMMUTABLE);
         gen_assign_cast(&type);
     }
 }
@@ -9068,7 +9085,8 @@ static void init_putv(init_params *p, CType *type, unsigned long c)
     uint64_t val;
 
     dtype = *type;
-    dtype.t &= ~VT_CONSTANT; /* need to do that to avoid false warning */
+    /* need to do that to avoid false warning */
+    dtype.t &= ~(VT_CONSTANT | VT_IMMUTABLE);
 
     size = type_size(type, &align);
     if (type->t & VT_BITFIELD)
