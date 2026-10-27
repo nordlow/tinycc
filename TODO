@@ -291,9 +291,6 @@ serialization and graph traversal.
   enforcing memory safety and non-allocation.
 - `D`: **Property Call Syntax**: Omitting parentheses for 0-argument
   function calls (`obj.method`).
-- `Go, Swift`: **Automatic Pointer-to-Struct Member Access (`x.field`
-  sugar for `x->field`)**: Automatically dereference pointer-typed
-  receivers when accessing struct fields with `.`.
 - `Zig`: **Saturating Arithmetic Operators**: Support saturating arithmetic operations (`+|`, `-|`, `*|`, `<<|` and assignment forms `+|=`, `-|=`, `*|=`, `<<|=`):
   - *Saturation Width*: Saturates at the usual-arithmetic-conversion type.
   - *Operator Set*: Limited to `+`, `-`, `*`, `<<` and their assignment forms.
@@ -343,10 +340,6 @@ serialization and graph traversal.
 - **`inout` & Signature-Elision Inference**:
   - A compact surface area, but functions as a type-and-effect system,
     requiring strict semantic soundness per line of code.
-
-### Low-Complexity Quick Wins
-- Automatic pointer-to-struct member access (`x.field` sugar for
-  `x->field`) operate purely as local parser and codegen enhancements.
 
 # Refactorings for development speed
 
