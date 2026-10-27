@@ -162,7 +162,8 @@ serialization and graph traversal.
   (`T.$members`, `T.$hasAliasing`, etc.) greatly improves readability
   by chaining type inspections naturally.
 - **Compile-Time Type Traits & Expressions**:
-  - **Function/Trait style**: `$hasIndirections(T)`, `$hasAliasing(T)`, `$isStruct(T)`, etc.
+  - **Function/Trait style**: `$hasIndirections(T)`, `$hasAliasing(T)`,
+    `$isStruct(T)`, etc.
   - **Alternative Syntaxes**:
     - `$is(T == struct)`,
     - `T is struct`, or
