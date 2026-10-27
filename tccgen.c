@@ -8585,6 +8585,12 @@ again:
                && t >= TOK_UIDENT
                && !strcmp(get_tok_str(t, &tokc), "scope")) {
         next(); /* skip '(' */
+        if (tok >= TOK_UIDENT) {
+            const char *name = get_tok_str(tok, &tokc);
+            if (!strcmp(name, "success") || !strcmp(name, "failure")) {
+                tcc_error("scope(success) / scope(failure) requires error status tracking");
+            }
+        }
         if (!(tok >= TOK_UIDENT
               && !strcmp(get_tok_str(tok, &tokc), "exit")))
             tcc_error("only 'scope(exit)' is supported");

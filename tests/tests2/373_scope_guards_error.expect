@@ -1,0 +1,5 @@
+[test_scope_success]
+373_scope_guards_error.c:3: error: scope(success) / scope(failure) requires error status tracking
+
+[test_scope_failure]
+373_scope_guards_error.c:7: error: scope(success) / scope(failure) requires error status tracking
