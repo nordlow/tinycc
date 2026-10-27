@@ -1,0 +1,6 @@
+statement: 1 42
+block: 0 7 8
+lifo: 0 5 3 4 2 1
+early return: 9
+normal return: 8 9
+nested: 4 2 3 5 1

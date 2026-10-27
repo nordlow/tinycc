@@ -148,6 +148,8 @@ endif
 355_d_slice_op_assign.test : FLAGS += -lang=d
 356_d_slice_op_assign_error.test : FLAGS += -dt -lang=D
 357_d_slice_assign_mismatch_abort_flag.test : FLAGS += -fslice-len-mismatch=abort
+358_d_scope_exit.test : FLAGS += -lang=d
+358_d_scope_exit.test : GEN = $(GEN-TCC)
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 
 # using the ms compiler for the really ms-compatible bitfields
