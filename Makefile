@@ -1,7 +1,6 @@
 # --------------------------------------------------------------------------
-#
-# Tiny C Compiler Makefile
-#
+# Tiny Code Compiler Makefile
+
 
 ifndef TOP
  TOP = .

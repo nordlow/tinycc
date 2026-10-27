@@ -1,6 +1,5 @@
-#
-# Tiny C Compiler Makefile for libtcc1.a
-#
+# Tiny Code Compiler Makefile for libtcc1.a
+
 
 TOP = ..
 include $(TOP)/Makefile

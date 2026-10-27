@@ -1,5 +1,8 @@
-Tiny C Compiler - C Scripting Everywhere - The Smallest ANSI C compiler
------------------------------------------------------------------------
+Tiny Code Compiler (TCC) - Multi-Language Code Generation & Scripting - The Smallest C/D Compiler
+-------------------------------------------------------------------------------------------------
+
+*Note on the Name*: Originally known as the "Tiny C Compiler", TCC has evolved to support rich D language extensions (slices, dynamic arrays, UFCS, foreach, defer, immutable) and multi-language syntax features, prompting its re-titling as **The Tiny Code Compiler**.
+
 
 Features:
 --------

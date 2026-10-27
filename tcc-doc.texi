@@ -1,10 +1,10 @@
 \input texinfo @c -*- texinfo -*-
 @c %**start of header
 @setfilename tcc-doc.info
-@settitle Tiny C Compiler Reference Documentation
+@settitle Tiny Code Compiler Reference Documentation
 @dircategory Software development
 @direntry
-* TCC: (tcc-doc).               The Tiny C Compiler.
+* TCC: (tcc-doc).               The Tiny Code Compiler.
 @end direntry
 @c %**end of header
 
@@ -14,7 +14,7 @@
 @titlepage
 @afourpaper
 @sp 7
-@center @titlefont{Tiny C Compiler Reference Documentation}
+@center @titlefont{Tiny Code Compiler Reference Documentation}
 @sp 3
 @end titlepage
 @headings double
@@ -23,9 +23,9 @@
 @contents
 
 @node Top, Introduction, (dir), (dir)
-@top Tiny C Compiler Reference Documentation
+@top Tiny Code Compiler Reference Documentation
 
-This manual documents version @value{VERSION} of the Tiny C Compiler.
+This manual documents version @value{VERSION} of the Tiny Code Compiler.
 
 @menu
 * Introduction::                Introduction to tcc.
@@ -42,10 +42,7 @@ This manual documents version @value{VERSION} of the Tiny C Compiler.
 @node Introduction
 @chapter Introduction
 
-TinyCC (aka TCC) is a small but hyper fast C compiler. Unlike other C
-compilers, it is meant to be self-relying: you do not need an
-external assembler or linker because TCC does that for you.
-
+TinyCC (aka TCC) is a small and hyper-fast code compiler supporting C, D language extensions (slices, darrays, UFCS, foreach, defer), and multi-language features. Unlike other compilers, it is meant to be self-relying: you do not need an external assembler or linker because TCC does that for you.
 TCC compiles so @emph{fast} that even for big projects @code{Makefile}s may
 not be necessary.
 

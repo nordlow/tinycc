@@ -1,6 +1,5 @@
-#
-# Tiny C Compiler Makefile - tests
-#
+# Tiny Code Compiler Makefile - tests
+
 
 TOP = ..
 include $(TOP)/Makefile
