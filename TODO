@@ -2,6 +2,13 @@
 
 # TODO list
 
+## Trivial Refactorings
+
+### Rename
+- "Tiny C Compiler" => "Tiny Poly Compiler"
+- "TCC" => "TPC"
+- "TinyCC" => "TinyPC"
+
 ## Proposal: Signature Elision Rules (the "Rust" approach)
 
 The goal is to avoid annotations in function bodies while still
