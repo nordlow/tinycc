@@ -154,11 +154,13 @@ reflection for structs and pointers to enable zero-boilerplate
 serialization and graph traversal.
 
 ### Semantics & Syntax
-- **`$fields(T)`**: Evaluates at compile time to a tuple/array of
-  field reflection nodes (containing `.name`, `.type`, `.offset`,
-  `.size`, `.is_pointer`, etc.).
-- **`$members(T)`**: Evaluates to all members (fields, methods, nested
-  types) of `T` as reference nodes.
+- **`$fields(T)` / `T.$fields`**: Evaluates at compile time to a
+  tuple/array of field reflection nodes (containing `.name`, `.type`,
+  `.offset`, `.size`, `.is_pointer`, etc.).
+- **`$members(T)` / `T.$members`**: Evaluates to all members (fields,
+  methods, nested types) of `T` as reference nodes. UFCS syntax
+  (`T.$members`, `T.$hasAliasing`, etc.) greatly improves readability
+  by chaining type inspections naturally.
 - **Compile-Time Type Traits & Expressions**:
   - **Function/Trait style**: `$hasIndirections(T)`, `$hasAliasing(T)`, `$isStruct(T)`, etc.
   - **Alternative Syntaxes**:
