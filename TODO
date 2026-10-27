@@ -161,17 +161,21 @@ serialization and graph traversal.
   types) of `T` as reference nodes.
 - **Dual CTTI & RTTI**:
   - **Compile-Time Type Information (CTTI)**: Enables compile-time
-    iteration (`inline for ($fields(T))`) and unrolled code
-    generation.
+    iteration and unrolled code generation.
   - **Run-Time Type Information (RTTI)**: Emits static metadata tables
     (`struct RTTI`) into `.rodata` for runtime graph serialization,
     dynamic printing, and unmarshalling.
+- **Compile-Time Control Flow (`$if`, `$for`, `$foreach`, `$else`,
+  `$while`)**:
+  - Replaces runtime loops and macros with compile-time control
+    constructs prefixed with `$`.
+  - Operates on reflection nodes (like `$fields(T)`) to conditionally
+    include code and unroll loops statically at compile time.
 
 ### Use Case
 - Zero-boilerplate binary tree serialization and complex graph
   traversal/relinking of pointer-linked nodes without manual
   serialization code.
-
 # Bugs
 
 - i386 fastcall is mostly wrong.
