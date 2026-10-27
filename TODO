@@ -166,6 +166,7 @@ serialization and graph traversal.
     etc.
   - **Alternative Syntaxes**:
     - `$is(T == struct)`,
+    - `$isA(T, struct)`,
     - `T is struct`, or
     - `T $is struct`
     - `T $isA struct`
