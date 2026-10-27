@@ -628,20 +628,22 @@ long long __fixxfdi (long double a1)
    slices that view an array must be duplicated before they are
    modified.  */
 
+typedef __SIZE_TYPE__ size_t;
+
 struct darray_header {
-    __SIZE_TYPE__ length;
+    size_t length;
     void *ptr;
 };
 
-extern void *malloc(__SIZE_TYPE__);
-extern void *realloc(void *, __SIZE_TYPE__);
+extern void *malloc(size_t);
+extern void *realloc(void *, size_t);
 extern void free(void *);
-extern void *memcpy(void *, const void *, __SIZE_TYPE__);
-extern void *memmove(void *, const void *, __SIZE_TYPE__);
+extern void *memcpy(void *, const void *, size_t);
+extern void *memmove(void *, const void *, size_t);
 
 static void darray_set_length(struct darray_header *a,
-                              __SIZE_TYPE__ elemsize,
-                              __SIZE_TYPE__ newlen)
+                              size_t elemsize,
+                              size_t newlen)
 {
     void *np;
 
@@ -661,22 +663,22 @@ static void darray_set_length(struct darray_header *a,
     a->length = newlen;
 }
 
-void __darray_resize(void *p, __SIZE_TYPE__ elemsize, __SIZE_TYPE__ newlen)
+void __darray_resize(void *p, size_t elemsize, size_t newlen)
 {
     darray_set_length(p, elemsize, newlen);
 }
 
-void __darray_append(void *p, const void *elem, __SIZE_TYPE__ elemsize)
+void __darray_append(void *p, const void *elem, size_t elemsize)
 {
     struct darray_header *a = p;
-    __SIZE_TYPE__ n = a->length;
+    size_t n = a->length;
 
     darray_set_length(a, elemsize, n + 1);
     if (a->length == n + 1)
         memcpy((char *)a->ptr + n * elemsize, elem, elemsize);
 }
 
-void __darray_dup(void *dst, const void *src, __SIZE_TYPE__ elemsize)
+void __darray_dup(void *dst, const void *src, size_t elemsize)
 {
     const struct darray_header *s = src;
     struct darray_header *d = dst;
@@ -688,7 +690,7 @@ void __darray_dup(void *dst, const void *src, __SIZE_TYPE__ elemsize)
         memcpy(d->ptr, s->ptr, s->length * elemsize);
 }
 
-void __darray_copy(void *dst_slice, const void *src_slice, __SIZE_TYPE__ elemsize)
+void __darray_copy(void *dst_slice, const void *src_slice, size_t elemsize)
 {
     const struct darray_header *d = dst_slice;
     const struct darray_header *s = src_slice;
@@ -697,10 +699,10 @@ void __darray_copy(void *dst_slice, const void *src_slice, __SIZE_TYPE__ elemsiz
     }
 }
 
-void __darray_fill(void *dst_slice, const void *elem, __SIZE_TYPE__ elemsize)
+void __darray_fill(void *dst_slice, const void *elem, size_t elemsize)
 {
     const struct darray_header *d = dst_slice;
-    __SIZE_TYPE__ i;
+    size_t i;
     char *p = d->ptr;
     if (d->length && p) {
         for (i = 0; i < d->length; ++i) {
@@ -710,11 +712,11 @@ void __darray_fill(void *dst_slice, const void *elem, __SIZE_TYPE__ elemsize)
 }
 
 void __darray_concat(void *dst, const void *asrc, const void *bsrc,
-                     __SIZE_TYPE__ elemsize)
+                     size_t elemsize)
 {
     const struct darray_header *a = asrc, *b = bsrc;
     struct darray_header *d = dst;
-    __SIZE_TYPE__ na = a->length, nb = b->length;
+    size_t na = a->length, nb = b->length;
 
     d->length = 0;
     d->ptr = 0;
