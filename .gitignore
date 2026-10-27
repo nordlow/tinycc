@@ -16,6 +16,8 @@
 a.out
 tcc_g
 tcc
+tdc
+tdc.bat
 tcc_c
 tcc_p
 *-tcc
