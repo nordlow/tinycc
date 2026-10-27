@@ -8,7 +8,7 @@ ifndef TOP
  INCLUDED = no
 endif
 
-ifeq ($(findstring $(MAKECMDGOALS),clean distclean),)
+ifeq ($(findstring $(MAKECMDGOALS),clean distclean pgo),)
  include $(TOP)/config.mak
 endif
 
@@ -344,6 +344,7 @@ S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 # Usage: make pgo PGO_CC=clang (or PGO_CC=gcc)
 PGO_CC ?= clang
 PGO_MARCH ?= native
+PREFIX ?= /usr/local
 # Valgrind cannot decode some AVX-512 instructions emitted by
 # -march=native on recent CPUs, so disable them for the PGO build.
 ifneq (,$(filter i386 x86_64,$(ARCH)))
@@ -386,30 +387,30 @@ pgo-bench:
 	fi
 
 pgo:
-	$(MAKE) clean
+	$(MAKE) clean PREFIX=$(PREFIX)
 	@$(PGO_CLEAN)
 ifeq ($(PGO_CC),clang)
 	@echo "=== Phase 1: Building PGO instrumented binary (Clang) ==="
-	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure
-	$(MAKE) -j$(nproc) -B CC=clang
+	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-generate -mllvm -vp-counters-per-site=64" LDFLAGS="-fprofile-generate" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=clang PREFIX=$(PREFIX)
 	@echo "=== Phase 2: Running training workload ==="
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
 	@echo "=== Phase 3: Merging profile data ==="
 	llvm-profdata merge -output=tcc.profdata $$(find . -name "*.profraw")
-	$(MAKE) clean
+	$(MAKE) clean PREFIX=$(PREFIX)
 	@echo "=== Phase 4: Building PGO optimized binary (Clang) ==="
-	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure
-	$(MAKE) -j$(nproc) -B CC=clang
+	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=clang PREFIX=$(PREFIX)
 else
 	@echo "=== Phase 1: Building PGO instrumented binary (GCC) ==="
-	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure
-	$(MAKE) -j$(nproc) -B CC=gcc
+	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=gcc PREFIX=$(PREFIX)
 	@echo "=== Phase 2: Running training workload ==="
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
-	$(MAKE) clean
+	$(MAKE) clean PREFIX=$(PREFIX)
 	@echo "=== Phase 3: Building PGO optimized binary (GCC) ==="
-	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-use" LDFLAGS="-fprofile-use" ./configure
-	$(MAKE) -j$(nproc) -B CC=gcc
+	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-use" LDFLAGS="-fprofile-use" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=gcc PREFIX=$(PREFIX)
 endif
 	@echo "PGO build complete using $(PGO_CC)!"
 	@$(MAKE) --no-print-directory pgo-bench
