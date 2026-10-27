@@ -245,9 +245,9 @@ serialization and graph traversal.
 - `C / TPC`: `@attribute` syntax: `@name` / `@name(args)` for builtin
   and user-defined attributes, e.g. `struct T @nocopy {}`.
 - `C, D`: **Attribute-Based Type/Storage Qualifiers (`@static`,
-  `@const`, `@immutable`, etc.)**: Allow storage and type qualifiers
-  via `@`-prefixed attribute syntax (e.g., `@const int x`, `@static
-  int y`).
+  `@dynamic`, `@const`, `@immutable` (`@immut`), `@mutable` (`@mut`),
+  etc.)**: Allow storage and type qualifiers via `@`-prefixed
+  attribute syntax (e.g., `@const int x`, `@static int y`).
 - `D`: Track ownership of D slices (heap-allocated vs view of string
   literal) so that `a.length = n` can reallocate safely.
 - `D`: Several array declarators with initializers (`int[] a = {1, 2,
