@@ -246,10 +246,14 @@ serialization and graph traversal.
   attributes parse and are ignored initially.  Reuse
   `parse_attribute()` and also accept the syntax after struct, union
   and enum tags, next to the existing attribute positions.
-- Track ownership of D slices (heap-allocated vs view of an array or
-  string literal) so that `a.length = n` can reallocate safely.  Today
-  `.length` is a plain header field and reallocation is the explicit
-  `.resize(n)`.
+- **Attribute-Based Type/Storage Qualifiers (`@static`, `@const`,
+  `@immutable`, etc.)**: Allow storage and type qualifiers to be
+  expressed via `@`-prefixed attribute syntax (e.g., `@const int x`,
+  `@static int y`). The traditional keyword form (without `@`) remains
+  allowed when neither an explicit type nor the `auto` keyword is
+  used.  string literal) so that `a.length = n` can reallocate safely.
+  Today `.length` is a plain header field and reallocation is the
+  explicit `.resize(n)`.
 - D: `int[] a = {1, 2, 3}, b = {4, 5};` (several array declarators with
   initializers) is not supported.
 
