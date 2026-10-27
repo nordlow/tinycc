@@ -1,5 +1,5 @@
 /*
- *  ELF file handling for TCC
+ *  ELF file handling for TPC
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -865,7 +865,7 @@ static void update_relocs(TCCState *s1, Section *s, int *old_to_new_syms, int fi
 }
 
 /* In an ELF file symbol table, the local symbols must appear below
-   the global and weak ones. Since TCC cannot sort it while generating
+   the global and weak ones. Since TPC cannot sort it while generating
    the code, we must do it after. All the relocation tables are also
    modified to take into account the symbol table sorting */
 static void sort_syms(TCCState *s1, Section *s)
@@ -1463,7 +1463,7 @@ redo:
 		    /* Relocations for UNDEF symbols would normally need
 		       to be transferred into the executable or shared object.
 		       If that were done AUTO_GOTPLT_ENTRY wouldn't exist.
-		       But TCC doesn't do that (at least for exes), so we
+		       But TPC doesn't do that (at least for exes), so we
 		       need to resolve all such relocs locally.  And that
 		       means PLT slots for functions in DLLs and COPY relocs for
 		       data symbols.  COPY relocs were generated in

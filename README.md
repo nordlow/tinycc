@@ -1,103 +1,609 @@
-Tiny Code Compiler (TCC) - Multi-Language Code Generation & Scripting - The Smallest C/D Compiler
--------------------------------------------------------------------------------------------------
+# Tiny Poly Compiler (TPC)
 
-*Note on the Name*: Originally known as the "Tiny C Compiler", TCC has evolved to support rich D language extensions (slices, dynamic arrays, UFCS, foreach, defer, immutable) and multi-language syntax features, prompting its re-titling as **The Tiny Code Compiler**.
+**TPC** is a small, fast, self-hosting compiler for C and a growing
+D-inspired dialect.  It is derived from TinyCC, the *Tiny C Compiler*
+originally written by Fabrice Bellard, and is extended by Per Nordlöw
+with slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
+compile-time `version`/`debug` conditionals, and many other features.
 
+The historical short names are kept where they are part of the ABI,
+build interface, or compatibility surface: the executable is still
+called `tcc`, and internal identifiers and build variables still use
+the `TCC`/`TCC_*` prefixes.
 
-Features:
---------
+## Highlights
 
-- SMALL! You can compile and execute C code everywhere, for example on
-  rescue disks.
+- **Small!** TPC can compile and execute C code almost everywhere, for
+  example on rescue disks and embedded systems.
 
-- FAST! tcc generates machine code for i386, x86_64, arm, aarch64 or
-  riscv64.  Compiles and links about 10 times faster than 'gcc -O0'.
+- **Fast!** TPC generates machine code for i386, x86_64, ARM, AArch64,
+  and RISC-V 64.  It compiles and links roughly ten times faster than
+  `gcc -O0`.
 
-- UNLIMITED! Any C dynamic library can be used directly. TCC is
-  heading toward full ISOC99 compliance. TCC can of course compile
-  itself.
+- **Self-hosting!** TPC can compile itself, which is also used as a
+  stress test for the code generator.
 
-- SAFE! tcc includes an optional memory and bound checker. Bound
-  checked code can be mixed freely with standard code.
+- **Safe!** An optional memory and bounds checker can be enabled with
+  `-b`.  Checked code can be mixed freely with standard code.
 
-- Compile and execute C source directly. No linking or assembly
-  necessary. Full C preprocessor included.
+- **Direct execution!** C source can be compiled and run without a
+  separate linking or assembly step.  A full C preprocessor is
+  included.
 
-- C script supported : just add '#!/usr/local/bin/tcc -run' at the first
-  line of your C source, and execute it directly from the command
-  line.
+- **Scripting!** Add `#!/usr/local/bin/tcc -run` to the first line of a
+  C source file, make it executable, and run it like a shell or Perl
+  script.
 
-Documentation:
--------------
+- **Polyglot!** In addition to C, TPC supports a large and growing set
+  of D-style language extensions, plus an integrated assembler,
+  linker, archiver, and Windows `def` file generator.
 
-1) Installation on Linux, BSD variants or macOS hosts:
+## Supported targets
 
-   ./configure
-   make
-   make test
-   make install
+TPC can generate code for:
 
-   Notes: On BSD hosts, gmake should be used instead of make.
-   For Windows read tcc-win32.txt.
+- i386
+- x86_64
+- ARM (including EABI and VFP variants)
+- AArch64
+- RISC-V 64
+- TMS320C67xx
 
-   The TCC sources require a C11 compiler and are built with the GNU
-   C11 dialect (-std=gnu11) so that features from later C standards
-   are not used by accident.  See CodingStyle for the accepted
-   language extensions and language rules.  If the host compiler does
-   not support -std=gnu11, override it on the make command line, for
-   example: make CSTD=-std=gnu99
+It supports ELF (Linux, BSD, and other Unix-like systems), PE/COFF
+(Windows), and Mach-O (macOS) output.
 
-makeinfo must be installed to compile the doc.  By default, tcc is
-installed in /usr/local/bin.  ./configure --help  shows configuration
-options.
+## Building and installing
 
+On Linux, BSD variants, and macOS hosts:
 
-2) Introduction
+```sh
+./configure
+make -j$(nproc)
+make test
+make install
+```
 
-We assume here that you know ANSI C. Look at the example ex1.c to know
-what the programs look like.
+On BSD hosts use `gmake` instead of `make`.  For Windows, see
+[`win32/tcc-win32.txt`](win32/tcc-win32.txt).
 
-The include file <tcclib.h> can be used if you want a small basic libc
-include support (especially useful for floppy disks). Of course, you
-can also use standard headers, although they are slower to compile.
+The TPC sources require a C11 host compiler.  The Makefile builds with
+the GNU C11 dialect (`-std=gnu11`) via the `CSTD` variable so that
+features from later C standards are not used accidentally.  See
+[`CodingStyle`](CodingStyle) for the accepted language extensions and
+language rules.  An explicit `-std=` in `CFLAGS` takes precedence; to
+override the default entirely:
 
-You can begin your C script with '#!/usr/local/bin/tcc -run' on the first
-line and set its execute bits (chmod a+x your_script). Then, you can
-launch the C code as a shell or perl script :-) The command line
-arguments are put in 'argc' and 'argv' of the main functions, as in
-ANSI C.
+```sh
+make CSTD=-std=gnu99
+```
 
-3) Examples
+`makeinfo` is needed to build the documentation.  By default, `tcc` is
+installed in `/usr/local/bin`.  Run `./configure --help` for the
+available configuration options.
 
-ex1.c: simplest example (hello world). Can also be launched directly
-as a script: './ex1.c'.
+### Profile-guided optimization
 
-ex2.c: more complicated example: find a number with the four
-operations given a list of numbers (benchmark).
+TPC has automated PGO targets for Clang and GCC:
 
-ex3.c: compute fibonacci numbers (benchmark).
+```sh
+make pgo PGO_CC=clang
+make pgo PGO_CC=gcc
+```
 
-ex4.c: more complicated: X11 program. Very complicated test in fact
-because standard headers are being used ! As for ex1.c, can also be launched
-directly as a script: './ex4.c'.
+`make pgo` builds an instrumented compiler, trains it by compiling TPC
+itself, merges the profile, and produces a `-O3 -march=native` build.
+It finishes with `make pgo-bench`, which reports self-compile
+throughput in Mlines/s and the Valgrind cachegrind instruction count
+(`I refs`).  `PGO_MARCH` defaults to `native`; on x86, `-mno-avx512f`
+is added so that Valgrind can decode the generated code.
 
-ex5.c: 'hello world' with standard glibc headers.
+## Using TPC
 
-tcc.c: TCC can of course compile itself. Used to check the code
-generator.
+Compile and link a program:
 
-tcctest.c: auto test for TCC which tests many subtle possible bugs. Used
-when doing 'make test'.
+```sh
+tcc -o myprog a.c b.c
+```
 
-4) Full Documentation
+Compile only:
 
-Please read tcc-doc.html to have all the features of TCC.  Additional
-information for the Windows port is in tcc-win32.txt.
+```sh
+tcc -c a.c
+```
 
-License:
--------
+Compile and run immediately:
 
-TCC is distributed under the GNU Lesser General Public License (see
-COPYING file).
+```sh
+tcc -run app.c
+```
 
-Fabrice Bellard.
+The `.c` suffix may be omitted when no file of the given name exists.
+When the resulting file is run directly, as in the common case below,
+TPC does not leave an executable behind:
+
+```sh
+tcc app          # equivalent to tcc -run app.c
+```
+
+Show the version, more options, compilation statistics, or the
+preferred source formatting rules:
+
+```sh
+tcc -v
+tcc -hh
+tcc -bench
+tcc -style
+```
+
+`tcc -style` prints the formatting rules used by the project,
+including the rule that D conditional keywords are spelled without a
+space before the parenthesis: `version(...)` and `debug(...)`, not
+`version (...)` or `debug (...)`.
+
+### Documentation
+
+The reference manual is [`tcc-doc.html`](tcc-doc.html), generated from
+[`tcc-doc.texi`](tcc-doc.texi).  Windows-specific information is in
+[`win32/tcc-win32.txt`](win32/tcc-win32.txt).  The coding conventions
+are documented in [`CodingStyle`](CodingStyle), and the project's
+planned work is tracked in [`TODO`](TODO).
+
+## Language modes
+
+The default is C with a number of compatible C superset extensions
+always enabled.  Select the D-style dialect explicitly with:
+
+```sh
+tcc -lang=c ...    # default C dialect
+tcc -lang=d ...    # enable D-specific grammar and semantics
+tcc -lang=D ...    # same as -lang=d
+```
+
+The following features are available in all modes:
+
+- `defer` for scope-based cleanup in C functions
+- `__attribute__((nocopy))` for non-copyable struct types
+- `static assert(expr[, message])` and its `$assert(expr[, message])`
+  alias
+- automatic `x.field` member access through a pointer to a struct
+- D-style slices, slice expressions, dynamic arrays, `foreach`,
+  `alias`, manifest constants, `immutable`, and `unittest` blocks
+
+`-lang=d` or `-lang=D` additionally enables the D-specific forms that
+would otherwise change the meaning of valid C or reserve ordinary
+identifiers:
+
+- element-wise compound assignment on slice ranges (`a[..] += 1`)
+- empty subscripts as full slices (`a[] = b[]`)
+- `scope(exit)` as an alias for `defer`
+- `version(...)` and `debug(...)` conditional statements
+
+In C mode, names such as `version` and `debug` remain ordinary
+identifiers so that existing C code continues to compile unchanged.
+
+## D-style language extensions
+
+### Slices
+
+Slices are a pointer/length pair.  Both the D-style type syntax and a
+C-compatible spelling are accepted:
+
+```c
+int[]  s1;       /* D-style slice type */
+int[..] s2;      /* C-compatible slice type */
+int s3[..];      /* suffix form, usable in parameters */
+
+typedef int[..] Ints;
+
+int a[5] = {10, 20, 30, 40, 50};
+Ints s = a[1..4];   /* length 3, pointing at a[1] */
+```
+
+Slice expressions include:
+
+```c
+a[lo..hi]     /* half-open range */
+a[..]         /* entire array */
+a[]           /* entire array, D-style empty subscript (-lang=d) */
+"text"[..]    /* slice of a string literal; length excludes '\0' */
+a[$-1]        /* '$' is the length of the subscripted array or slice */
+```
+
+Slices expose `.ptr` and `.length`:
+
+```c
+int *p = s.ptr;
+size_t n = s.length;
+```
+
+Arrays and string literals convert implicitly to slices; slice values
+can be stored in structs, passed to and returned from functions, and
+compared with `__builtin_types_compatible_p`.
+
+### Slice assignment and element-wise operations
+
+Whole slices can be copied or filled:
+
+```c
+dst[..] = src[..];   /* copy */
+dst[]   = src[];     /* same, D-style empty subscript */
+dst[..] = 42;        /* fill every element */
+dst[1..4] += 10;     /* element-wise compound assignment (-lang=d) */
+```
+
+All integer compound assignments are supported element-wise (`+=`,
+`-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`).  The result
+of a slice assignment is the destination slice.
+
+When source and destination lengths differ, the behavior is selected
+with `-fslice-len-mismatch=MODE`:
+
+- `abort` (default): report an error
+- `copy`: copy the common prefix
+- `ignore`: perform no copy
+
+### Dynamic arrays
+
+Slices support D-style dynamic-array operations:
+
+```c
+typedef int[..] Ints;
+
+Ints a = {0};
+a ~= 10;             /* append */
+a ~= 20;
+Ints b = a ~ a;      /* concatenate */
+Ints c = a.dup;      /* mutable duplicate */
+Ints d = a.idup;     /* immutable duplicate */
+a.resize(100);       /* grow or shrink; growing preserves elements */
+```
+
+`~=` reallocates as needed and integrates with the bounds checker.
+`.dup` and `.idup` produce independent copies; `~` concatenates two
+slices (or arrays converted to slices).  `.length` and `.ptr` are the
+fields of the slice header; use `.resize(n)` when a length change
+should reallocate the element storage.
+
+### Foreach
+
+Iterate over arrays, slices, VLAs, string literals, and integer
+ranges:
+
+```c
+foreach (v; a)              /* value */
+foreach (i, v; a)           /* index and value */
+foreach_reverse (v; a)      /* reverse order */
+foreach_reverse (i, v; a)
+
+foreach (i; 0 .. 10)        /* integer range, half-open */
+foreach (int i; 10 .. 13)   /* explicit loop variable type */
+```
+
+The loop variable is a copy, `break` and `continue` work as expected,
+the aggregate expression is evaluated exactly once, and explicit
+types may be given for both the index and the value.
+
+### Type-first array declarations
+
+D-style type-first array declarations are accepted:
+
+```c
+int[4] a;                /* same as int a[4] */
+int[] b;                 /* unsized array */
+typedef int[4] Four;
+typedef int[..] IntSlice;
+const int[2] c;
+unsigned[2] u;
+int[2] x, y;             /* the suffix applies to every declarator */
+int[2][3] matrix;
+```
+
+### Uniform Function Call Syntax (UFCS)
+
+A call of the form `x.f(args)` is rewritten to `f(x, args)` when `f`
+is not a member of `x`:
+
+```c
+int add(int a, int b) { return a + b; }
+
+int x = 5;
+printf("%d\n", x.add(10));   /* calls add(x, 10) */
+```
+
+### Aliases
+
+D-style `alias` declarations create type aliases and interoperate with
+`typedef`:
+
+```c
+alias Int = int;
+alias IntPtr = int *;
+alias IntArr = int[3];
+alias IntSlice = int[..];
+alias Fn = int (*)(int);
+alias FnType = int(int);
+```
+
+Aliases may also be declared at block scope.
+
+### Manifest constants
+
+Compile-time constants may be declared with `enum`:
+
+```c
+enum x = 42;
+enum int y = 100;
+enum long z = 1000L;
+
+void f(void)
+{
+    enum local_const = 999;
+}
+```
+
+### Immutable
+
+The `immutable` qualifier declares deeply immutable objects:
+
+```c
+immutable int g = 42;
+immutable int ga[3] = {1, 2, 3};
+
+struct S {
+    int a;
+    immutable int b;
+};
+
+immutable struct S s = {1, 2};
+```
+
+Immutability is transitive through aggregates, pointers, and arrays.
+Converting a mutable pointer to an immutable one is allowed; dropping
+`immutable` requires an explicit cast.  Assignments that would violate
+immutability are diagnosed at compile time.
+
+### Defer and scope(exit)
+
+The `defer` statement registers cleanup code that runs when the
+enclosing scope exits, including on early `return`:
+
+```c
+void f(void)
+{
+    FILE *fp = fopen("data.txt", "r");
+    defer fclose(fp);
+    defer {
+        puts("leaving f");
+    }
+    /* ... */
+}
+```
+
+Deferred statements run in last-in, first-out order, one scope at a
+time:
+
+```c
+{
+    defer puts("outer");
+    {
+        defer puts("inner 1");
+        defer puts("inner 2");
+    }
+}
+```
+
+In `-lang=d` mode, `scope(exit)` is accepted as an alias for `defer`.
+
+### Unittest blocks
+
+D-style `unittest` blocks contain tests that are compiled and run only
+when `-unittest` is given:
+
+```c
+static int twice(int x) { return 2 * x; }
+
+unittest {
+    assert(twice(3) == 6);
+}
+
+int main(void)
+{
+    return 0;
+}
+```
+
+Without `-unittest`, the blocks are skipped and produce no code.
+`version(unittest)` reflects whether unit tests are enabled.
+
+### Version and debug conditionals
+
+D-style compile-time conditionals are supported:
+
+```c
+version(Foo) {
+    /* compiled when Foo is defined */
+} else version(Bar) {
+    /* ... */
+} else {
+    /* ... */
+}
+
+version(2) { /* compiled when the version level is at least 2 */ }
+
+version(none) { /* never compiled */ }
+version(all)  { /* always compiled */ }
+
+debug {
+    /* compiled when the debug level is nonzero */
+}
+
+debug(Lexer) {
+    /* compiled when the Lexer debug identifier is defined */
+}
+
+debug(2) {
+    /* compiled when the debug level is at least 2 */
+}
+```
+
+Identifiers and levels can also be specified in the source or on the
+command line:
+
+```c
+version = Foo;
+version = 2;
+debug = Lexer;
+debug = 3;
+```
+
+```sh
+tcc -version=Foo -version=2 -debug -debug=Lexer -debug=2 ...
+```
+
+`version = none;` cannot make `version(none)` true, and
+`version = all;` cannot make `version(all)` false.  Built-in version
+identifiers include `D_Version2`, `assert`, `unittest`, the target
+architecture (`X86`, `X86_64`, `ARM`, `AArch64`, `RISCV64`), the
+platform (`Windows`, `Win32`, `Win64`, `OSX`, `Darwin`, `linux`,
+`FreeBSD`, `OpenBSD`, `NetBSD`, `DragonFlyBSD`, `Android`, `Posix`),
+and endianness (`LittleEndian`, `BigEndian`).
+
+In D mode, `version` and `debug` are conditional keywords, not
+variables; their names are not visible to ordinary identifier lookup.
+
+### Static assertions and `$assert`
+
+The standard C11 `static assert` form is supported, with an optional
+message, and `$assert` is accepted as a shorter alias:
+
+```c
+static assert(sizeof(int) == 4);
+static assert(sizeof(void *) == 8, "expected 64-bit pointers");
+
+$assert(sizeof(int) == 4);
+$assert(sizeof(void *) == 8, "expected 64-bit pointers");
+```
+
+### Pointer-to-struct member access
+
+For a pointer to a struct, `x.field` is accepted as a synonym for
+`x->field`, including chained access and compound assignment:
+
+```c
+struct Point { int x, y; };
+struct Node { struct Node *next; int val; };
+
+struct Point p = {10, 20};
+struct Point *ptr = &p;
+
+ptr.x = 100;        /* same as ptr->x = 100 */
+ptr.x += 5;
+printf("%d\n", ptr.x);
+
+struct Node *n = /* ... */;
+printf("%d\n", n.next.val);   /* same as n->next->val */
+```
+
+### `__attribute__((nocopy))`
+
+A struct type may be marked non-copyable:
+
+```c
+struct UniqueRes {
+    int fd;
+} __attribute__((nocopy));
+
+struct UniqueRes r1 = {42};
+struct UniqueRes r2 = r1;   /* compile-time error */
+```
+
+Non-copyable structs cannot be passed by value (including through
+K&R and variadic parameter lists), initialized by copy, or returned by
+value.  This makes it possible to model move-only resources such as
+file descriptors and locks.
+
+## Tooling and diagnostics
+
+### Debug dumps
+
+The front end can dump its internal state while parsing:
+
+```sh
+tcc -fdump-types  ...
+tcc -fdump-decls  ...
+tcc -fdump-vstack ...
+```
+
+`-fdump-vstack` prints the value stack on every mutation, which is
+useful when debugging the parser and code generator.
+
+### Coverage and uncovered-line warnings
+
+`-ftest-coverage` instruments the program and writes a `.tcov`
+section.  `-Wuncovered` reports source lines that were never executed:
+
+```sh
+tcc -ftest-coverage -Wuncovered -run tests.c
+```
+
+The warning can be promoted to an error in the usual way:
+
+```sh
+tcc -ftest-coverage -Werror=uncovered -run tests.c
+```
+
+`-Wno-uncovered` disables the warning.  The `.tcov` section layout is
+kept stable so that existing coverage tooling continues to work.
+
+### Other useful options
+
+- `-b`: enable the memory and bounds checker (implies `-g`)
+- `-bt[N]`: link with backtrace support and show up to `N` callers
+- `-g`, `-gdwarf[-x]`: generate stab or DWARF debug information
+- `-M`, `-MM`, `-MD`, `-MMD`, `-MF`: generate make dependency files
+- `-E`: preprocess only
+- `-ar`: create or inspect a static library
+- `-impdef`: create a Windows `.def` file from a DLL
+
+## Performance work
+
+The compiler has been profiled and optimized with hardware performance
+counters and Valgrind cachegrind.  Notable changes include:
+
+- SIMD-accelerated string-literal and line-comment scanning with
+  `memchr`
+- faster whitespace skipping and macro/non-macro dispatch in the
+  lexer, including branch-prediction hints
+- inlined token-string append operations
+- PGO builds with a 25-iteration training run as the sweet spot
+- `make pgo-bench` for repeatable throughput and instruction-count
+  measurements
+- `PT_GNU_STACK` program headers for non-executable stacks
+
+When changing compiler sources, the repository's verification sequence
+is:
+
+```sh
+./configure && make -j$(nproc) -B && make -j$(nproc) test
+make -j$(nproc) pgo PGO_CC=clang
+```
+
+## Project history and naming
+
+The project started as the *Tiny C Compiler* (TinyCC) by Fabrice
+Bellard.  This fork adds a broad set of D-inspired language features
+and C superset extensions, so it has been renamed to the **Tiny Poly
+Compiler** (TPC, also written TinyPC).  The rename covers user-visible
+documentation, help text, and comments; the `tcc` executable and the
+`TCC`/`TCC_*` internal identifiers are intentionally unchanged for
+compatibility with existing build scripts, bindings, and embedders.
+
+## License
+
+TPC is distributed under the GNU Lesser General Public License.  See
+[`COPYING`](COPYING) for the full license text.  Parts of the code
+have been relicensed under the MIT license; see
+[`RELICENSING`](RELICENSING) for details.
+
+Original author: Fabrice Bellard.  D-language extensions and other
+features in this fork: Per Nordlöw.

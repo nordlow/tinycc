@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler - Support for -run switch
+ *  TPC - Tiny Poly Compiler - Support for -run switch
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -1366,7 +1366,7 @@ static void sig_error(int signum, siginfo_t *siginf, void *puc)
 static void set_exception_handler(void)
 {
     struct sigaction sigact;
-    /* install TCC signal handlers to print debug info on fatal
+    /* install TPC signal handlers to print debug info on fatal
        runtime errors */
     sigemptyset (&sigact.sa_mask);
     sigact.sa_flags = SA_SIGINFO; //| SA_RESETHAND;

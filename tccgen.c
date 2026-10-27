@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -2557,7 +2557,7 @@ void gen_negf(int op)
     /* In IEEE negate(x) isn't subtract(0,x).  Without NaNs it's
        subtract(-0, x), but with them it's really a sign flip
        operation.  We implement this with bit manipulation and have
-       to do some type reinterpretation for this, which TCC can do
+       to do some type reinterpretation for this, which TPC can do
        only via memory.  */
     int align, size, bt;
     size = type_size(&vtop->type, &align);
@@ -7279,7 +7279,7 @@ special_math_val:
                 }
 
                 /* Promote char/short return values. This is matters only
-                   for calling function that were not compiled by TCC and
+                   for calling function that were not compiled by TPC and
                    only on some architectures.  For those where it doesn't
                    matter we expect things to be already promoted to int,
                    but not larger.  */
@@ -10295,12 +10295,14 @@ static int d_version_id_is_defined(const char *id)
 {
     TCCState *s = tcc_state;
 
-    if (d_id_is_defined(s->d_version_ids, s->nb_d_version_ids, id))
-        return 1;
-    if (!strcmp(id, "all"))
-        return 1;
+    /* "none" and "all" are special version identifiers that cannot be
+       overridden by a version specification or a command-line option.  */
     if (!strcmp(id, "none"))
         return 0;
+    if (!strcmp(id, "all"))
+        return 1;
+    if (d_id_is_defined(s->d_version_ids, s->nb_d_version_ids, id))
+        return 1;
     if (!strcmp(id, "D_Version2"))
         return 1;
     if (!strcmp(id, "unittest"))

@@ -31,7 +31,7 @@
 #define CHAR_IS_UNSIGNED
 
 /* define if return values need to be extended explicitely
-   at caller side (for interfacing with non-TCC compilers) */
+   at caller side (for interfacing with non-TPC compilers) */
 #define PROMOTE_RET
 
 #else

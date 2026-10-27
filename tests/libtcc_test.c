@@ -23,7 +23,7 @@ int add(int a, int b)
 const char hello[] = "Hello World!";
 
 char my_program[] =
-"#include <tcclib.h>\n" /* include the "Simple libc header for TCC" */
+"#include <tcclib.h>\n" /* include the "Simple libc header for TPC" */
 "extern int add(int a, int b);\n"
 "#ifdef _WIN32\n" /* dynamically linked data needs 'dllimport' */
 " __attribute__((dllimport))\n"

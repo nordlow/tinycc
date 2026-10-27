@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-// MinGW has 80-bit rather than 64-bit long double which isn't compatible with TCC or MSVC
+// MinGW has 80-bit rather than 64-bit long double which isn't compatible with TPC or MSVC
 #if defined(_WIN32) && defined(__GNUC__)
 #define LONG_DOUBLE double
 #define LONG_DOUBLE_LITERAL(x) x
@@ -152,7 +152,7 @@ static int ret_2double_test(void) {
  *
  * Note that the purpose of the 10th argument is to avoid a situation
  * in which gcc would accidentally put the double at the right
- * address, thus causing a success message even though TCC actually
+ * address, thus causing a success message even though TPC actually
  * generated incorrect code.
  */
 typedef ret_2double_test_type (*ret_8plus2double_test_function_type) (double, double, double, double, double, double, double, ret_2double_test_type, double, double);
@@ -320,7 +320,7 @@ static int reg_pack_longlong_test(void) {
  *
  * Note that the purpose of the 10th argument is to avoid a situation
  * in which gcc would accidentally put the longlong at the right
- * address, thus causing a success message even though TCC actually
+ * address, thus causing a success message even though TPC actually
  * generated incorrect code.
  */
 typedef reg_pack_longlong_test_type (*ret_6plus2longlong_test_function_type) (long long, long long, long long, long long, long long, reg_pack_longlong_test_type, long long, long long);

@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------- */
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  *
  *  tcctools.c - extra tools and and -m32/64 support
  *
@@ -464,7 +464,7 @@ the_end:
 
 /* -------------------------------------------------------------- */
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *

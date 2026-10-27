@@ -4,7 +4,7 @@
 #include "../math.h"
 #include "../stdint.h"
 
-/* TCC uses 8 bytes for double and long double, so effectively the l variants
+/* TPC uses 8 bytes for double and long double, so effectively the l variants
  * are never used. For now, they just run the normal (double) variant.
  */
 

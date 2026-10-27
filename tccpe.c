@@ -1,5 +1,5 @@
 /*
- *  TCCPE.C - PE file output for the Tiny C Compiler
+ *  TCCPE.C - PE file output for the Tiny Poly Compiler
  *
  *  Copyright (c) 2005-2007 grischka
  *

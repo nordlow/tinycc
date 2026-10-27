@@ -557,7 +557,7 @@ fcho() { if test -n "$2"; then echo "$1$2"; fi }
 
 if test -z "$quiet"; then
 fcho "Binary directory    " "$bindir"
-fcho "TinyCC directory    " "$tccdir"
+fcho "TinyPC directory    " "$tccdir"
 fcho "Library directory   " "$libdir"
 fcho "Include directory   " "$includedir"
 fcho "Manual directory    " "$mandir"

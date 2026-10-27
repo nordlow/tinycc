@@ -1,6 +1,6 @@
 /*************************************************************/
 /*
- *  RISCV64 assembler for TCC
+ *  RISCV64 assembler for TPC
  *
  */
 
@@ -2196,7 +2196,7 @@ ST_FUNC void subst_asm_operand(CString *add_str, SValue *sv, int modifier)
     }
 }
 
-/* TCC does not use RISC-V register numbers internally, it uses 0-8 for
+/* TPC does not use RISC-V register numbers internally, it uses 0-8 for
  * integers and 8-16 for floats instead */
 static int tcc_ireg(int r){
     return REG_VALUE(r) - 10;

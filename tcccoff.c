@@ -1,5 +1,5 @@
 /*
- *  COFF file handling for TCC
+ *  COFF file handling for TPC
  * 
  *  Copyright (c) 2003, 2004 TK
  *  Copyright (c) 2004 Fabrice Bellard

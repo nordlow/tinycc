@@ -1,4 +1,4 @@
-/* TCC runtime library. 
+/* TPC runtime library.
    Parts of this code are (c) 2002 Fabrice Bellard 
 
    Copyright (C) 1987, 1988, 1992, 1994, 1995 Free Software Foundation, Inc.

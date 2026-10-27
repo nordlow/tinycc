@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  * 
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *

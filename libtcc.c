@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -1549,6 +1549,7 @@ enum {
     TCC_OPTION_ignored = 0,
     TCC_OPTION_HELP,
     TCC_OPTION_HELP2,
+    TCC_OPTION_style,
     TCC_OPTION_v,
     TCC_OPTION_I,
     TCC_OPTION_D,
@@ -1622,6 +1623,7 @@ static const TCCOption tcc_options[] = {
     { "-help", TCC_OPTION_HELP, 0 },
     { "?", TCC_OPTION_HELP, 0 },
     { "hh", TCC_OPTION_HELP2, 0 },
+    { "style", TCC_OPTION_style, 0 },
     { "version", TCC_OPTION_d_version, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "debug", TCC_OPTION_d_debug, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "v", TCC_OPTION_v, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
@@ -2270,6 +2272,9 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
             goto extra_action;
         case TCC_OPTION_HELP2:
             x = OPT_HELP2;
+            goto extra_action;
+        case TCC_OPTION_style:
+            x = OPT_STYLE;
             goto extra_action;
         case TCC_OPTION_print_search_dirs:
             x = OPT_PRINT_DIRS;

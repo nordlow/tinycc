@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  *
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -810,7 +810,7 @@ struct TCCState {
     unsigned char dump_vstack;
     /* use GNU C extensions */
     unsigned char gnu_ext;
-    /* use TinyCC extensions */
+    /* use TinyPC extensions */
     unsigned char tcc_ext;
 
     unsigned char dflag; /* -dX value */
@@ -1358,6 +1358,7 @@ ST_FUNC int normalized_PATHCMP(const char *f1, const char *f2);
 #define OPT_PRINT_DIRS 4
 #define OPT_AR 5
 #define OPT_IMPDEF 6
+#define OPT_STYLE 7
 #define OPT_M32 32
 #define OPT_M64 64
 

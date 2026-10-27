@@ -9,7 +9,7 @@
     Note that line indent matters:
 
     - in lines starting at column 1, platform macros are replaced by
-      corresponding TCC target compile-time macros.  See conftest.c for
+      corresponding TPC target compile-time macros.  See conftest.c for
       the list of platform macros supported in lines starting at column 1.
 
     - only lines indented >= 4 are actually included into the executable,
@@ -254,7 +254,7 @@
     # define __builtin_va_copy(dest, src) (dest) = (src)
     #endif
 
-    /* TCC BBUILTIN AND BOUNDS ALIASES */
+    /* TPC BBUILTIN AND BOUNDS ALIASES */
     #ifdef __leading_underscore
     # define __RENAME(X) __asm__("_"X)
     #else

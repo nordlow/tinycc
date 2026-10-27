@@ -1422,15 +1422,15 @@ typedef DWORD LCID;
 #if defined(__TINYC__) && (defined(__aarch64__) || defined(__arm64__)) && !defined(RC_INVOKED)
 
 #define __TCC_WINNT_ATOMIC_SEQ_CST 5
-/* TCC lowers __atomic_compare_exchange's fourth argument as weak, but the
+/* TPC lowers __atomic_compare_exchange's fourth argument as weak, but the
    ARM64 helper reads it as success_memorder.  Strong CAS passes weak == 0,
    so keep Interlocked's barriers explicit here. */
 #define __TCC_WINNT_MEMORY_BARRIER() __asm__ __volatile__("dmb ish" : : : "memory")
 
-/* This covers the LONG operations needed by TCC's semaphore code and the
+/* This covers the LONG operations needed by TPC's semaphore code and the
    pointer helpers that winbase.h exposes through Interlocked pointer macros.
    Add local helpers before relying on increment/decrement, add/exchange-add,
-   bitwise, or 64-bit Interlocked forms on Windows ARM64 with TCC. */
+   bitwise, or 64-bit Interlocked forms on Windows ARM64 with TPC. */
 
     __CRT_INLINE LONG InterlockedExchange(LONG volatile *Target,LONG Value) {
       LONG Old;

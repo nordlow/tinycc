@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* ARM64 (AArch64) assembler token definitions for TCC                */
+/* ARM64 (AArch64) assembler token definitions for TPC                */
 
 /* General purpose registers - 64-bit */
  DEF_ASM(x0)

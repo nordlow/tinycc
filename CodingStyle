@@ -14,12 +14,21 @@ Remove tabs and trailing spaces from any lines that are modified.
 Note that some files are indented with 2 spaces (when they
 have large indentation) while most are indented with 4 spaces.
 
+    Spacing
+
+Do not put a space between a function-like keyword and its
+parenthesized operand.  In particular, write version(...) and
+debug(...), not version (...) or debug (...).
+
+Put one space after control-flow keywords: if (...), for (...),
+while (...) and switch (...).
+
     Language
 
-TCC is mostly implemented in C90. Do not use any non-C90 features
+TPC is mostly implemented in C90. Do not use any non-C90 features
 that are not already in use.
 
-C11 is the minimum C standard required to build TCC: the sources use
+C11 is the minimum C standard required to build TPC: the sources use
 unnamed struct and union members, a C11 feature.  The Makefile passes
 -std=gnu11 (see CSTD) to the host compiler so that features from later
 C standards are not used by accident.  Do not raise this requirement
@@ -48,8 +57,8 @@ additional tests:
 - Build with ./configure --enable-cross.
 
 - If the generation of relocations has been changed, try compiling
-  with TCC and linking with GCC/Clang. If the linker has been
-  modified, try compiling with GCC/Clang and linking with TCC.
+  with TPC and linking with GCC/Clang. If the linker has been
+  modified, try compiling with GCC/Clang and linking with TPC.
 
 - Test with ASan/UBSan to detect memory corruption and undefined behaviour:
 

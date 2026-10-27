@@ -1,5 +1,5 @@
 /*
- *  CIL code generator for TCC
+ *  CIL code generator for TPC
  * 
  *  Copyright (c) 2002 Fabrice Bellard
  *

@@ -1,5 +1,5 @@
 /*
- *  ARM specific functions for TCC assembler
+ *  ARM specific functions for TPC assembler
  *
  *  Copyright (c) 2001, 2002 Fabrice Bellard
  *  Copyright (c) 2020 Danny Milosavljevic

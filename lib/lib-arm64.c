@@ -1,5 +1,5 @@
 /*
- *  TCC runtime library for arm64.
+ *  TPC runtime library for arm64.
  *
  *  Copyright (c) 2015 Edmund Grimley Evans
  *

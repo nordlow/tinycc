@@ -85,9 +85,9 @@ void __bt_init_dll(int bcheck)
                 "Error: function '%s()' not found in executable. "
                 "(Need -bt or -b for linking the exe.)", s);
             if (GetStdHandle(STD_ERROR_HANDLE))
-                fprintf(stderr, "TCC/BCHECK: %s\n", buf), fflush(stderr);
+                fprintf(stderr, "TPC/BCHECK: %s\n", buf), fflush(stderr);
             else
-                MessageBox(NULL, buf, "TCC/BCHECK", MB_ICONERROR);
+                MessageBox(NULL, buf, "TPC/BCHECK", MB_ICONERROR);
             ExitProcess(1);
         }
         s = strchr(s,'\0') + 1, ++p;

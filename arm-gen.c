@@ -1,5 +1,5 @@
 /*
- *  ARMv4 code generator for TCC
+ *  ARMv4 code generator for TPC
  *
  *  Copyright (c) 2003 Daniel Glöckner
  *  Copyright (c) 2012 Thomas Preud'homme
@@ -24,7 +24,7 @@
 #ifdef TARGET_DEFS_ONLY
 
 #if defined(TCC_ARM_EABI) && !defined(TCC_ARM_VFP)
-#error "Currently TinyCC only supports float computation with VFP instructions"
+#error "Currently TinyPC only supports float computation with VFP instructions"
 #endif
 
 /* number of available registers */

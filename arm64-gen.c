@@ -1,5 +1,5 @@
 /*
- *  A64 code generator for TCC
+ *  A64 code generator for TPC
  *
  *  Copyright (c) 2014-2015 Edmund Grimley Evans
  *
@@ -43,7 +43,7 @@
 #endif
 
 /* define if return values need to be extended explicitely
-   at caller side (for interfacing with non-TCC compilers) */
+   at caller side (for interfacing with non-TPC compilers) */
 #define PROMOTE_RET
 /******************************************************/
 #else /* ! TARGET_DEFS_ONLY */

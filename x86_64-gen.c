@@ -1,5 +1,5 @@
 /*
- *  x86-64 code generator for TCC
+ *  x86-64 code generator for TPC
  *
  *  Copyright (c) 2008 Shinichiro Hamaji
  *
@@ -105,7 +105,7 @@ enum {
 #define MAX_ALIGN     16
 
 /* define if return values need to be extended explicitely
-   at caller side (for interfacing with non-TCC compilers) */
+   at caller side (for interfacing with non-TPC compilers) */
 #define PROMOTE_RET
 
 #define TCC_TARGET_NATIVE_STRUCT_COPY

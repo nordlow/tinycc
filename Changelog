@@ -63,7 +63,7 @@ Features:
 _ _Generic(...) supported (Matthias Gatto)
 
 Licensing:
-- TinyCC partly relicensed to MIT license (See RELICENSING file).
+- TinyPC partly relicensed to MIT license (See RELICENSING file).
 
 version 0.9.26:
 
@@ -120,7 +120,7 @@ version 0.9.24:
   otherwise define __unix / __linux (Detlef Riekenberg)
 - Import changesets (part 3) 409,410: ARM EABI by Daniel Glöckner
 - Some in-between fixes:
-  TCC -E no longer hangs with macro calls involving newlines.
+  TPC -E no longer hangs with macro calls involving newlines.
   (next_nomacro1 now advances the read-pointer with TOK_LINEFEED)
   Global cast (int g_i = 1LL;) no longer crashes tcc.
   (nocode_wanted is initially 1, and only 0 for gen_function)
@@ -381,7 +381,7 @@ version 0.9.8:
   patches in symbol exporting).
 - First version of ELF loader for object (.o) and archive (.a) files.
 - Support of simple GNU ld scripts (GROUP and FILE commands)
-- Separated runtime library and bound check code from TCC (smaller
+- Separated runtime library and bound check code from TPC (smaller
   compiler core).
 - fixed register reload in float compare.
 - fixed implicit char/short to int casting.

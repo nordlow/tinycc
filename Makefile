@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------
-# Tiny Code Compiler Makefile
+# Tiny Poly Compiler Makefile
 
 
 ifndef TOP
@@ -275,11 +275,11 @@ $(X)%.o : %.c $(LIBTCC_INC)
 $(X)tcc.o : tcctools.c
 $(X)tcc.o : DEFINES += $(DEF_GITHASH)
 
-# Host Tiny C Compiler
+# Host Tiny Poly Compiler
 tcc$(EXESUF): tcc.o $(LIBTCC)
 	$S$(CC) -o $@ $^ $(addsuffix ,$(LIBS) $(LDFLAGS) $(LINK_LIBTCC))
 
-# Cross Tiny C Compilers
+# Cross Tiny Poly Compilers
 # (the TCCDEFS_H dependency is only necessary for parallel makes,
 # ala 'make -j x86_64-tcc i386-tcc tcc', which would create multiple
 # c2str.exe and tccdefs_.h files in parallel, leading to access errors.
@@ -330,7 +330,7 @@ libtcc.def : libtcc.dll tcc$(EXESUF)
 	$S$(XTCC) -impdef $< -o $@
 XTCC ?= ./tcc$(EXESUF)
 
-# TinyCC runtime libraries
+# TinyPC runtime libraries
 libtcc1.a : tcc$(EXESUF) FORCE
 	@$(MAKE) -C lib
 
@@ -437,7 +437,7 @@ tcc-doc.info: tcc-doc.texi
 	$(call run-if,makeinfo,$< || true)
 
 tcc.1 : tcc-doc.pod
-	$(call run-if,pod2man,--section=1 --center="Tiny C Compiler" \
+	$(call run-if,pod2man,--section=1 --center="Tiny Poly Compiler" \
 		--release="$(VERSION)" $< >$@)
 %.pod : %.texi
 	$(call run-if,perl,$(TOPSRC)/texi2pod.pl $< $@)

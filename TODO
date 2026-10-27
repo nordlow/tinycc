@@ -2,17 +2,10 @@
 
 # TODO list
 
-## Trivial Refactorings
-
-### Rename
-- "Tiny C Compiler" => "Tiny Poly Compiler"
-- "TCC" => "TPC"
-- "TinyCC" => "TinyPC"
-
 ## Proposal: Signature Elision Rules (the "Rust" approach)
 
 The goal is to avoid annotations in function bodies while still
-working in TinyCC and across header files, using **convention-based
+working in TinyPC and across header files, using **convention-based
 elision**.
 
 Instead of inspecting the function body, the compiler infers the
@@ -35,16 +28,16 @@ char *strchr(const char *s, int c);
 void *memcpy(void *dest, const void *src, size_t n);
 ```
 
-TCC would infer:
+TPC would infer:
 
 - `strchr`: has only one pointer parameter (`s`), so the return
   qualifier is inherited from `s`.
 - `memcpy`: has several pointer parameters. The mapping is ambiguous,
   so it falls back to standard C behavior.
 
-### Why this works well in TCC
+### Why this works well in TPC
 
-- **Works across headers:** TCC only needs the function declaration
+- **Works across headers:** TPC only needs the function declaration
   from the `.h` file, not the body.
 - **Easy to implement:** in `tccgen.c`, when parsing a function
   prototype, count the pointer parameters. If `pointer_arg_count == 1`
@@ -96,7 +89,7 @@ Remaining caveats:
 
 ## Proposal: inout-style qualifier inference
 
-D's `inout(T *) f(inout(T) *x)` is qualifier polymorphism.  TCC has no
+D's `inout(T *) f(inout(T) *x)` is qualifier polymorphism.  TPC has no
 generics and no AST, but the useful case is local to the call site:
 
 - Store an `inout_arg` index in `struct FuncAttr` (the `f` bitfield of
@@ -121,7 +114,7 @@ return check, much less after the attribute-table refactoring below.
 
 ## Proposal: Single-Pass Effect System with Source-Code Emission
 
-Extend TCC's single-pass parser to infer function effects (purity,
+Extend TPC's single-pass parser to infer function effects (purity,
 immutability, mutation, allocation, error/exception throws) on the fly
 and emit annotated declarations and definitions back into source files
 or generated headers once inferred.
@@ -139,7 +132,7 @@ or generated headers once inferred.
 2. **Source/Header Emission Hook:**
    - At the closing brace `}` of a function definition, symbol resolution
      and type/effect inference are fully complete for that scope.
-   - Using TCC's buffered source file pointers and line tracking
+   - Using TPC's buffered source file pointers and line tracking
      (`BufferedFile`), output an updated declaration or definition
      containing the inferred effect annotations (e.g.,
      `__attribute__((pure))` or `@pure`, inferred `const` /
@@ -147,7 +140,7 @@ or generated headers once inferred.
      (`-fwrite-effects`) or in-place file patch.
 
 3. **Tradeoffs & Scope:**
-   - **Advantage:** Preserves TCC's linear $O(N)$ single-pass speed while
+   - **Advantage:** Preserves TPC's linear $O(N)$ single-pass speed while
      providing automated annotation of legacy C codebases without
      manual overhead.
    - **Limitation:** Forward references without prior declarations
@@ -221,7 +214,7 @@ serialization and graph traversal.
 
 - It is assumed that `int` is 32-bit and `sizeof(int) == 4`.
 - `int` is used where host or target `size_t` would make more sense.
-- TCC handles target floating-point (fp) values using the host's fp
+- TPC handles target floating-point (fp) values using the host's fp
   arithmetic. This is simple and fast, but may lead to exceptions,
   inaccuracy and wrong representations when cross-compiling.
 
@@ -243,13 +236,13 @@ serialization and graph traversal.
 
 ## Missing Features
 
-- `TCC`: `--disable-asm` and `--disable-bcheck` options.
+- `TPC`: `--disable-asm` and `--disable-bcheck` options.
 - `C / GCC`: `__builtin_expect()`.
 - `C`: `atexit` (Nigel Horne).
 - `C99`: Add complex types (gcc 3.2 testsuite issue).
 - `C99`: Postfix compound literals (see `20010124-1.c`).
-- `TCC`: Interactive mode / integrated debugger.
-- `C / TCC`: `@attribute` syntax: `@name` / `@name(args)` for builtin
+- `TPC`: Interactive mode / integrated debugger.
+- `C / TPC`: `@attribute` syntax: `@name` / `@name(args)` for builtin
   and user-defined attributes, e.g. `struct T @nocopy {}`.
 - `C, D`: **Attribute-Based Type/Storage Qualifiers (`@static`,
   `@const`, `@immutable`, etc.)**: Allow storage and type qualifiers
@@ -316,11 +309,11 @@ serialization and graph traversal.
     (using temporary variables).
 - `Zig, Go, D`: **Slice `.len` Property Alias**: Support `.len` as an
   alias for `.length` on slices and arrays.
-- `TCC`: Suppress specific anonymous symbol handling.
-- `TCC`: More parse optimizations (faster compilation).
-- `TCC`: Memory allocation optimizations.
-- `TCC`: Optimize `VT_LOCAL` + const.
-- `TCC`: Better local variables handling (needed for other targets).
+- `TPC`: Suppress specific anonymous symbol handling.
+- `TPC`: More parse optimizations (faster compilation).
+- `TPC`: Memory allocation optimizations.
+- `TPC`: Optimize `VT_LOCAL` + const.
+- `TPC`: Better local variables handling (needed for other targets).
 
 ## Architecture & Complexity Analysis
 
@@ -332,7 +325,7 @@ serialization and graph traversal.
     reconstruct function summaries from codegen side effects.
   - *Interprocedurality*: Purity, throws, and allocation depend on
     callees, requiring a call graph and fixpoint analysis—conflicting
-    with TCC's single-file separate compilation model. Function
+    with TPC's single-file separate compilation model. Function
     pointers, varargs, inline asm, and `setjmp`/`longjmp` complicate
     call graph construction.
   - *Aliasing & Emission*: Read/write effects require alias and escape
@@ -340,7 +333,7 @@ serialization and graph traversal.
     inference. Source emission faces macro expansion, `#line`
     directives, multi-file inputs, stdin, and system headers.
 - **Full AST / IR**:
-  - Highest architectural risk; invalidates TCC's core single-pass
+  - Highest architectural risk; invalidates TPC's core single-pass
     design philosophy that prioritizes speed and minimal memory
     footprint.
 - **Split the Overloaded `Sym` Struct**:
@@ -357,7 +350,7 @@ serialization and graph traversal.
 
 ## Proposal: Linear-Complexity ($O(N)$) Code Generation Improvements
 
-Enhance TCC's single-pass performance and code quality while strictly
+Enhance TPC's single-pass performance and code quality while strictly
 preserving linear time and space complexity:
 
 - **Sliding-Window Peephole Optimizer**: Fixed-size window (last 2-3
@@ -400,7 +393,7 @@ Ordered by (productivity gain) / (risk x effort):
 - **Split `tccgen.c` into modules** (about one week, higher risk):
   `decl` / `expr` / `stmt` / `func` / `attrs`.  Do this after the
   attribute table and the type-system extraction.
-- **Differential fuzzing** (about 1-2 days).  Compare TCC against GCC
+- **Differential fuzzing** (about 1-2 days).  Compare TPC against GCC
   on generated snippets; the `tests/tests2` suite is already good but
   only covers hand-written cases.
 - **Split the overloaded `Sym`** (large).  It doubles as struct field,
@@ -412,7 +405,7 @@ Ordered by (productivity gain) / (risk x effort):
   and type-system work.
 - **Full AST/IR** (weeks, high risk, not planned near-term).  It would
   unlock optimizations and flow analyses, but would invalidate the
-  single-pass design that makes TCC fast and small.  Prefer the debug
+  single-pass design that makes TPC fast and small.  Prefer the debug
   dumps above instead.
 
 # Not critical

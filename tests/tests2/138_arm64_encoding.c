@@ -113,7 +113,7 @@ static void test_cond_branches(void)
 
 static int cond_select(int a, int b)
 {
-    /* TCC should generate csel or equivalent */
+    /* TPC should generate csel or equivalent */
     return a > b ? a : b;
 }
 

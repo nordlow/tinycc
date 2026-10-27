@@ -20,7 +20,7 @@ void asm_for_target(void) __asm__(_"target");
 int asm_int __asm__(_"g_int");
 
 /* This is not supposed to compile, alias targets must be defined in the
-   same unit.  In TCC they even must be defined before the reference
+   same unit.  In TPC they even must be defined before the reference
 void alias_for_undef(void) __attribute__((alias("undefined")));
 */
 

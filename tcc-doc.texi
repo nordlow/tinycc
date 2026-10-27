@@ -1,10 +1,10 @@
 \input texinfo @c -*- texinfo -*-
 @c %**start of header
 @setfilename tcc-doc.info
-@settitle Tiny Code Compiler Reference Documentation
+@settitle Tiny Poly Compiler Reference Documentation
 @dircategory Software development
 @direntry
-* TCC: (tcc-doc).               The Tiny Code Compiler.
+* TPC: (tcc-doc).               The Tiny Poly Compiler.
 @end direntry
 @c %**end of header
 
@@ -14,7 +14,7 @@
 @titlepage
 @afourpaper
 @sp 7
-@center @titlefont{Tiny Code Compiler Reference Documentation}
+@center @titlefont{Tiny Poly Compiler Reference Documentation}
 @sp 3
 @end titlepage
 @headings double
@@ -23,9 +23,9 @@
 @contents
 
 @node Top, Introduction, (dir), (dir)
-@top Tiny Code Compiler Reference Documentation
+@top Tiny Poly Compiler Reference Documentation
 
-This manual documents version @value{VERSION} of the Tiny Code Compiler.
+This manual documents version @value{VERSION} of the Tiny Poly Compiler.
 
 @menu
 * Introduction::                Introduction to tcc.
@@ -42,25 +42,25 @@ This manual documents version @value{VERSION} of the Tiny Code Compiler.
 @node Introduction
 @chapter Introduction
 
-TinyCC (aka TCC) is a small and hyper-fast code compiler supporting C, D language extensions (slices, darrays, UFCS, foreach, defer), and multi-language features. Unlike other compilers, it is meant to be self-relying: you do not need an external assembler or linker because TCC does that for you.
-TCC compiles so @emph{fast} that even for big projects @code{Makefile}s may
+TinyPC (aka TPC) is a small and hyper-fast code compiler supporting C, D language extensions (slices, darrays, UFCS, foreach, defer), and multi-language features. Unlike other compilers, it is meant to be self-relying: you do not need an external assembler or linker because TPC does that for you.
+TPC compiles so @emph{fast} that even for big projects @code{Makefile}s may
 not be necessary.
 
-TCC not only supports ANSI C, but also most of the ISO C99 standard,
+TPC not only supports ANSI C, but also most of the ISO C99 standard,
 many ISO C11 features, and many GNUC extensions including inline assembly.
 
-TCC can also be used to make @emph{C scripts}, i.e. pieces of C source
+TPC can also be used to make @emph{C scripts}, i.e. pieces of C source
 that you run as a Perl or Python script. Compilation is so fast that
 your script will be as fast as if it was an executable.
 
-TCC can also automatically generate memory and bound checks
-(@pxref{Bounds}) while allowing all C pointers operations. TCC can do
+TPC can also automatically generate memory and bound checks
+(@pxref{Bounds}) while allowing all C pointers operations. TPC can do
 these checks even if non patched libraries are used.
 
-With @code{libtcc}, you can use TCC as a backend for dynamic code
+With @code{libtcc}, you can use TPC as a backend for dynamic code
 generation (@pxref{Libtcc}).
 
-TCC supports the following target and platform combinations:
+TPC supports the following target and platform combinations:
 
 @multitable @columnfractions .15 .10 .12 .11 .11 .18 .09
 @item @strong{OS} @tab @strong{i386} @tab @strong{x86-64} @tab @strong{ARM} @tab @strong{ARM64} @tab @strong{RISC-V 64} @tab @strong{C67}
@@ -93,7 +93,7 @@ usage: tcc [options] [@var{infile1} @var{infile2}@dots{}] [@option{-run} @var{in
 
 @noindent
 @c man begin DESCRIPTION
-TCC options are very much like gcc options. The main difference is that TCC
+TPC options are very much like gcc options. The main difference is that TPC
 can also execute directly the resulting program and give it runtime
 arguments.
 
@@ -116,7 +116,7 @@ Compile @file{a.c} and @file{b.c}, link them together and execute them. arg1 is 
 as first argument to the @code{main()} of the resulting program.
 @ignore
 Because multiple C files are specified, @option{--} are necessary to clearly
-separate the program arguments from the TCC options.
+separate the program arguments from the TPC options.
 @end ignore
 
 @item @samp{tcc -o myprog a.c b.c}
@@ -143,7 +143,7 @@ Compile @file{a.c} and @file{b.c}, link them together and generate the object fi
 
 Scripting:
 
-TCC can be invoked from @emph{scripts}, just as shell scripts. You just
+TPC can be invoked from @emph{scripts}, just as shell scripts. You just
 need to add @code{#!/usr/local/bin/tcc -run} at the start of your C source:
 
 @example
@@ -157,7 +157,7 @@ int main()
 @}
 @end example
 
-TCC can read C source code from @emph{standard input} when @option{-} is used in
+TPC can read C source code from @emph{standard input} when @option{-} is used in
 place of @option{infile}. Example:
 
 @example
@@ -180,7 +180,7 @@ Put object file, executable, or dll into output file @file{outfile}.
 @item -run source [args...]
 Compile file @var{source} and run it with the command line arguments
 @var{args}. In order to be able to give more than one argument to a
-script, several TCC options can be given @emph{after} the
+script, several TPC options can be given @emph{after} the
 @option{-run} option, separated by spaces:
 @example
 tcc "-run -L/usr/X11R6/lib -lX11" ex4.c
@@ -196,7 +196,7 @@ the program. This is mainly useful when the C source itself was read from
 standard input (see @option{-} above).
 
 @item -v
-Display TCC version.
+Display TPC version.
 
 @item -vv
 Show included files.  As sole argument, print search dirs.  -vvv shows tries too.
@@ -204,16 +204,21 @@ Show included files.  As sole argument, print search dirs.  -vvv shows tries too
 @item -bench
 Display compilation statistics.
 
+@item -style
+Display the preferred source formatting rules, including the rule that
+D conditional keywords are written without a space before the operand:
+@code{version(...)} and @code{debug(...)}.
+
 @item -dumpmachine
 Print target machine architecture triplet.
 
 @item -dumpversion
-Print TCC compiler version.
+Print TPC compiler version.
 
 @item -lang=c|d|D
 Select the language dialect.  The default is @code{c}.  @code{d} and
 @code{D} enable extended D-style semantics on top of the C language
-implemented by TCC: element-wise compound assignment on D slice ranges
+implemented by TPC: element-wise compound assignment on D slice ranges
 (for example @code{a[..] += 1}), and an empty subscript as an alias for
 a full slice (@code{a[]}, as in @code{a[] = b[]}).  The D-style
 @code{$assert(@var{expr}[, @var{msg}])} form is accepted as an alias
@@ -336,7 +341,7 @@ output while parsing.
 
 @item -fdump-vstack
 Dump the compiler's value stack after every push, pop, or reordering
-operation. Intended for debugging TCC itself; the output format is not
+operation. Intended for debugging TPC itself; the output format is not
 stable and may change between versions.
 
 @item -fslice-len-mismatch=@var{mode}
@@ -367,7 +372,7 @@ Warn about implicit function declaration (missing prototype).
 Warn when const is dropped.
 
 @item -Wunsupported
-Warn about unsupported GCC features that are ignored by TCC.
+Warn about unsupported GCC features that are ignored by TPC.
 
 @item -Wwrite-strings
 Make string constants be of type @code{const char *} instead of @code{char
@@ -470,7 +475,7 @@ Set or clear PE (Windows) executable header hardening flags.  The
 @option{-Wl,-high-entropy-va} option is supported on x86-64 and ARM64 PE
 targets and implies @option{-Wl,-dynamicbase}.  Clearing dynamicbase also
 clears high-entropy-va.  When @option{-Wl,-dynamicbase} is used for an
-executable, TCC also enables base relocation emission for Windows ASLR.
+executable, TPC also enables base relocation emission for Windows ASLR.
 
 @item -Wl,-Bsymbolic
 Set DT_SYMBOLIC tag.
@@ -596,7 +601,7 @@ Set the current version for a dynamic library.
 
 @table @option
 @item tcc -ar [crstvx] lib [files]
-Create a static library archive.  TCC can function as an @command{ar}
+Create a static library archive.  TPC can function as an @command{ar}
 replacement without requiring an external archiver tool.  The
 @code{[abdiopN]} keys are not supported.
 
@@ -608,7 +613,7 @@ Create a @file{.def} definition file from a DLL.
 Note: GCC options @option{-fx}, @option{-mx}, @option{-arch}, @option{-C},
 @option{--param}, @option{-pedantic}, @option{-pie}, @option{-no-pie},
 @option{-pipe}, @option{-s}, and @option{-traditional} are ignored.
-@option{-Wunsupported} makes TCC warn about them.
+@option{-Wunsupported} makes TPC warn about them.
 @c man end
 
 @c man begin ENVIRONMENT
@@ -632,7 +637,7 @@ A colon-separated list of directories searched for libraries for the
 @ignore
 
 @setfilename tcc
-@settitle Tiny C Compiler
+@settitle Tiny Poly Compiler
 
 @c man begin SEEALSO
 cpp(1),
@@ -650,13 +655,13 @@ Fabrice Bellard
 
 @section ANSI C
 
-TCC implements all the ANSI C standard, including structure bit fields
+TPC implements all the ANSI C standard, including structure bit fields
 and floating point numbers (@code{long double}, @code{double}, and
 @code{float} fully supported).
 
 @section ISOC99 extensions
 
-TCC implements many features of the new C standard: ISO C99. Currently
+TPC implements many features of the new C standard: ISO C99. Currently
 missing items are: complex and imaginary numbers.
 
 Currently implemented ISOC99 features:
@@ -713,14 +718,14 @@ is the same as writing
 emitted at the end of the compilation unit only if used.  The behavior
 of @code{extern inline} depends on @option{-fgnu89-inline} (@pxref{Invoke}).
 
-@item @code{restrict} type qualifier. TCC retains the qualifier and checks
+@item @code{restrict} type qualifier. TPC retains the qualifier and checks
 that it is applied only to pointers to object or incomplete types. It is not
 currently used for alias analysis or optimization.
 @end itemize
 
 @section ISO C11 extensions
 
-TCC implements several features of the ISO C11 standard:
+TPC implements several features of the ISO C11 standard:
 
 @itemize
 
@@ -754,7 +759,7 @@ expression.
 
 @section GNU C extensions
 
-TCC implements some GNU C extensions:
+TPC implements some GNU C extensions:
 
 @itemize
 
@@ -878,7 +883,7 @@ is before the declarator:
 
   @item @code{format(archetype, fmt_idx, chk_idx)}: marks functions that
 take @code{printf}- or @code{scanf}-style format strings.  Accepted but
-currently ignored (not checked by TCC).
+currently ignored (not checked by TPC).
 
   @item @code{used}: indicates that the symbol must be retained even if it
 appears unreferenced.  Accepted but currently ignored.
@@ -977,7 +982,7 @@ return (to);
 
 @noindent
 @cindex gas
-TCC includes its own x86 inline assembler with a @code{gas}-like (GNU
+TPC includes its own x86 inline assembler with a @code{gas}-like (GNU
 assembler) syntax. No intermediate files are generated. GCC 3.x named
 operands are supported.  @code{asm goto} is also supported for
 control-flow transfer to C labels:
@@ -1021,7 +1026,7 @@ control-flow transfer to C labels:
 @code{__atomic_add_fetch} variants.
   @end itemize
 
-@item Pragmas supported by TinyCC:
+@item Pragmas supported by TinyPC:
   @itemize
   @item @code{#pragma pack(n)}, @code{#pragma pack()}, @code{#pragma pack(push)}, @code{#pragma pack(push, n)}, @code{#pragma pack(pop)}: set structure alignment or manipulate the packing alignment stack.
   @item @code{#pragma push_macro("MACRO")} and @code{#pragma pop_macro("MACRO")}: push and pop macro definitions to/from a macro stack.
@@ -1041,11 +1046,11 @@ control-flow transfer to C labels:
 
 @end itemize
 
-@section TinyCC extensions
+@section TinyPC extensions
 
 @itemize
 
-@item @code{__TINYC__} is a predefined macro to indicate that you use TCC.
+@item @code{__TINYC__} is a predefined macro to indicate that you use TPC.
 
 @item @code{#!} at the start of a line is ignored to allow scripting.
 
@@ -1055,20 +1060,20 @@ control-flow transfer to C labels:
 @end itemize
 
 @node asm
-@chapter TinyCC Assembler
+@chapter TinyPC Assembler
 
-Since version 0.9.16, TinyCC integrates its own assembler. TinyCC
+Since version 0.9.16, TinyPC integrates its own assembler. TinyPC
 assembler supports a gas-like syntax (GNU assembler). You can
-deactivate assembler support if you want a smaller TinyCC executable
+deactivate assembler support if you want a smaller TinyPC executable
 (the C compiler does not rely on the assembler).
 
-TinyCC Assembler is used to handle files with @file{.S} (C
+TinyPC Assembler is used to handle files with @file{.S} (C
 preprocessed assembler) and @file{.s} extensions. It is also used to
 handle the GNU inline assembler with the @code{asm} keyword.
 
 @section Syntax
 
-TinyCC Assembler supports most of the gas syntax. The tokens are the
+TinyPC Assembler supports most of the gas syntax. The tokens are the
 same as C.
 
 @itemize
@@ -1202,7 +1207,7 @@ All i386 opcodes are supported.  Most common x86_64 opcodes are
 supported, including MMX and a subset of the SSE instruction set; SSE2
 support is limited to a couple of instructions.  Only AT&T syntax is
 supported (source then destination operand order).  If no size suffix is
-given, TinyCC tries to guess it from the operand sizes.  Note that more
+given, TinyPC tries to guess it from the operand sizes.  Note that more
 recent extensions such as AVX, AVX2, and AVX-512 are @emph{not}
 supported.
 
@@ -1216,36 +1221,36 @@ Enforcement).
 @section ARM, ARM64 and RISC-V Assemblers
 @cindex assembler
 
-TCC also includes assemblers for the ARM (32-bit), ARM64 (AArch64) and
+TPC also includes assemblers for the ARM (32-bit), ARM64 (AArch64) and
 RISC-V 64 targets.  These handle the same @file{.S} and @file{.s} file
 extensions and support the same inline assembly mechanism as the x86
 assemblers.
 
 @node linker
-@chapter TinyCC Linker
+@chapter TinyPC Linker
 @cindex linker
 
-TCC includes its own linker and can directly output executables,
+TPC includes its own linker and can directly output executables,
 shared libraries, and object files without relying on an external
 linker.
 
 @section ELF file generation
 @cindex ELF
 
-TCC can directly output relocatable ELF files (object files),
+TPC can directly output relocatable ELF files (object files),
 executable ELF files and dynamic ELF libraries without relying on an
 external linker.
 
 Dynamic ELF libraries can be output but the C compiler does not generate
 position independent code (PIC). It means that the dynamic library
-code generated by TCC cannot be factorized among processes yet.
+code generated by TPC cannot be factorized among processes yet.
 
-TCC linker eliminates unreferenced object code in libraries. A single pass is
+TPC linker eliminates unreferenced object code in libraries. A single pass is
 done on the object and library list, so the order in which object files and
 libraries are specified is important (same constraint as GNU ld). No grouping
 options (@option{--start-group} and @option{--end-group}) are supported.
 
-TCC generates standard ELF sections including @code{.text}, @code{.data},
+TPC generates standard ELF sections including @code{.text}, @code{.data},
 @code{.data.ro} (read only data), @code{.bss}, @code{.plt}, @code{.got},
 and @code{.eh_frame}.
 Shared libraries additionally get @code{.gnu.hash}, @code{.gnu.version},
@@ -1255,7 +1260,7 @@ Shared libraries additionally get @code{.gnu.hash}, @code{.gnu.version},
 @cindex section boundary symbols
 @cindex __start_SEC
 @cindex __stop_SEC
-TCC automatically defines @emph{section boundary symbols}
+TPC automatically defines @emph{section boundary symbols}
 @code{__start_SEC} and @code{__stop_SEC} for every allocated section
 whose name, without the leading dot, is a valid C identifier.  These are
 useful for iterating over section contents from C code:
@@ -1268,7 +1273,7 @@ size_t text_size = __stop_text - __start_text;
 @section ELF file loader
 @cindex ELF loader
 
-TCC can load ELF object files, archives (@code{.a} files) and dynamic
+TPC can load ELF object files, archives (@code{.a} files) and dynamic
 libraries (@code{.so}).
 
 @section PE file generation
@@ -1276,9 +1281,9 @@ libraries (@code{.so}).
 @cindex PE-i386
 @cindex PE32+
 
-TCC for Windows supports the native Win32 executable file format
+TPC for Windows supports the native Win32 executable file format
 (PE-i386).  It generates PE32 (i386) and PE32+ (x86-64) executables,
-as well as DLL files.  TCC also supports PE with ARM64 machine type,
+as well as DLL files.  TPC also supports PE with ARM64 machine type,
 including @code{.pdata} unwind information for structured exception
 handling.
 
@@ -1293,11 +1298,11 @@ the target.  Standard PE sections are emitted (@code{.text},
 @cindex Mach-O
 @cindex macOS
 
-TCC on macOS produces Mach-O executables and dynamic libraries
-(@code{.dylib}) for x86-64 and ARM64 (AArch64).  The files TCC writes
+TPC on macOS produces Mach-O executables and dynamic libraries
+(@code{.dylib}) for x86-64 and ARM64 (AArch64).  The files TPC writes
 always contain a single architecture.
 
-TCC can load Mach-O dynamic libraries and text-based stub files
+TPC can load Mach-O dynamic libraries and text-based stub files
 (@code{.tbd}) for linking against system frameworks.  Fat (universal)
 libraries are accepted, the slice matching the target being selected.
 
@@ -1307,7 +1312,7 @@ Mach-O output uses dyld chained fixups on both x86-64 and ARM64.
 @cindex binary output
 @cindex COFF
 
-In addition to the platform-native container formats, TCC supports:
+In addition to the platform-native container formats, TPC supports:
 
 @table @code
 @item Binary image
@@ -1330,7 +1335,7 @@ always written as ELF.
 
 Because on many Linux systems some dynamic libraries (such as
 @file{/usr/lib/libc.so}) are in fact GNU ld link scripts (horrible!),
-the TCC linker also supports a subset of GNU ld scripts.
+the TPC linker also supports a subset of GNU ld scripts.
 
 The @code{GROUP} and @code{FILE} commands are supported. @code{OUTPUT_FORMAT}
 and @code{TARGET} are ignored.
@@ -1344,7 +1349,7 @@ GROUP ( /lib/libc.so.6 /usr/lib/libc_nonshared.a )
 @end example
 
 @node Bounds
-@chapter TinyCC Memory and Bound checks
+@chapter TinyPC Memory and Bound checks
 @cindex bound checks
 @cindex memory checks
 
@@ -1432,7 +1437,7 @@ Here are some examples of caught errors:
 @end example
 @end table
 
-The checks are not limited to the code generated by TCC: the bound
+The checks are not limited to the code generated by TPC: the bound
 checking runtime also replaces the memory allocation functions
 (@code{malloc}, @code{calloc}, @code{realloc}, @code{memalign},
 @code{free}) and the most common memory and string functions
@@ -1445,7 +1450,7 @@ on Windows) by @code{mmap} are tracked as well.  @code{setjmp} and
 @code{longjmp} (and @code{sigsetjmp} and @code{siglongjmp}) are handled
 so that the regions of the abandoned stack frames are released.
 
-TCC defines @code{__TCC_BCHECK__} if activated.
+TPC defines @code{__TCC_BCHECK__} if activated.
 
 There are five environment variables that can be used to control the behavior:
 @itemize
@@ -1466,7 +1471,7 @@ checking from usercode (see below).
 
 Notes:
 @itemize
-@item Available for all targets and platforms supported by TCC, except
+@item Available for all targets and platforms supported by TPC, except
 the TMS320C67xx target. The checking code is only built for the native
 compiler, and can be left out with @option{--config-bcheck=no} at
 configure time.
@@ -1510,7 +1515,7 @@ For more information about the ideas behind this method, see
 @node Libtcc
 @chapter The @code{libtcc} library
 
-The @code{libtcc} library enables you to use TCC as a backend for
+The @code{libtcc} library enables you to use TPC as a backend for
 dynamic code generation.
 
 Read the @file{libtcc.h} to have an overview of the API. Read
@@ -1543,13 +1548,13 @@ compiled with @option{-b} or @option{-bt}.
 @node devel
 @chapter Developer's guide
 
-This chapter gives some hints to understand how TCC works. You can skip
-it if you do not intend to modify the TCC code.
+This chapter gives some hints to understand how TPC works. You can skip
+it if you do not intend to modify the TPC code.
 
-@section Building TCC
+@section Building TPC
 
-The TCC sources are written mostly in C90 style and use a few widely
-supported extensions (see @file{CodingStyle}).  Building TCC requires a
+The TPC sources are written mostly in C90 style and use a few widely
+supported extensions (see @file{CodingStyle}).  Building TPC requires a
 C11 compiler because the sources use unnamed structure and union
 members; the @file{Makefile} passes @option{-std=gnu11} to the host
 compiler so that features from later C standards are not used by
@@ -1762,7 +1767,7 @@ contains uninitialized data
 receives the tentative definitions when @option{-fcommon} is given. Its
 symbols are @code{SHN_COMMON}, with the alignment in the symbol value,
 and @code{resolve_common_syms()} allocates them in @code{bss_section} at
-link time. By default TCC does not use common symbols and puts tentative
+link time. By default TPC does not use common symbols and puts tentative
 definitions directly in @code{bss_section}
 
 @item bounds_section
@@ -1797,12 +1802,12 @@ It is needed for linking, not only for debugging.
 
 @subsection Introduction
 
-The TCC code generator directly generates linked binary code in one
+The TPC code generator directly generates linked binary code in one
 pass. It is rather unusual these days (see gcc for example which
 generates text assembly), but it can be very fast and surprisingly
 little complicated.
 
-The TCC code generator is register based. Optimization is only done at
+The TPC code generator is register based. Optimization is only done at
 the expression level. No intermediate representation of expression is
 kept except the current values stored in the @emph{value stack}.
 
@@ -1889,7 +1894,7 @@ an assignment). It means that the value stored is actually a pointer to
 the wanted value.
 
 Understanding the use @code{VT_LVAL} is very important if you want to
-understand how TCC works.
+understand how TPC works.
 
 @item VT_LLOCAL
 is a saved lvalue on the stack. @code{VT_LVAL} must also be set with

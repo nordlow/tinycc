@@ -17,10 +17,10 @@ LIBTCCAPI void tcc_set_realloc(TCCReallocFunc *my_realloc);
 /*****************************/
 typedef struct TCCState TCCState;
 
-/* create a new TCC compilation context */
+/* create a new TPC compilation context */
 LIBTCCAPI TCCState *tcc_new(void);
 
-/* free a TCC compilation context */
+/* free a TPC compilation context */
 LIBTCCAPI void tcc_delete(TCCState *s);
 
 /* set CONFIG_TCCDIR at runtime */

@@ -1,6 +1,7 @@
 version id
 version level 2
 no version level 3
+no version none
 debug on
 debug id
 debug level 2

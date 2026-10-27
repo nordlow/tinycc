@@ -1,4 +1,4 @@
-# Tiny Code Compiler Makefile - tests
+# Tiny Poly Compiler Makefile - tests
 
 
 TOP = ..

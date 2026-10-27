@@ -1,4 +1,4 @@
-# Tiny Code Compiler Makefile for libtcc1.a
+# Tiny Poly Compiler Makefile for libtcc1.a
 
 
 TOP = ..

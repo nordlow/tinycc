@@ -1,5 +1,5 @@
 /*
- *  TMS320C67xx code generator for TCC
+ *  TMS320C67xx code generator for TPC
  * 
  *  Copyright (c) 2001, 2002 Fabrice Bellard
  *
@@ -253,7 +253,7 @@ int ConvertRegToRegClass(int r)
 }
 
 
-// map TCC reg to C67 reg number
+// map TPC reg to C67 reg number
 
 int C67_map_regn(int r)
 {
@@ -315,7 +315,7 @@ int C67_map_regc(int r)
 }
 
 
-// map TCC reg to C67 reg side A or B
+// map TPC reg to C67 reg side A or B
 
 int C67_map_regs(int r)
 {

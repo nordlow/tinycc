@@ -1,6 +1,6 @@
 /*************************************************************/
 /*
- *  ARM64 (AArch64) assembler for TCC
+ *  ARM64 (AArch64) assembler for TPC
  *
  *  Based on ARM64 Architecture Reference Manual
  *  Supports AArch64 assembler parsing and extended inline asm

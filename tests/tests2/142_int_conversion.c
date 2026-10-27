@@ -52,7 +52,7 @@ int promote_main(void)
 }
 
 /* gen_cvt_csti test: verify narrow-type conversions in expressions.
-   Without the fix, TCC's riscv64 backend could miss the conversion
+   Without the fix, TPC's riscv64 backend could miss the conversion
    step when promoting a narrow result back to int, producing wrong
    values (e.g., treating a char as still 32-bit).  */
 

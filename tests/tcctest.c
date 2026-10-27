@@ -1,5 +1,5 @@
 /*
- * TCC auto test program
+ * TPC auto test program
  */
 #include "config.h"
 
@@ -357,7 +357,7 @@ int ret(a)
 #endif
 char str_ag1[] = "b";
 char str_ag2[] = { "b" };
-/*char str_bg1[] = ("cccc"); GCC accepts this with pedantic warning, TCC not */
+/*char str_bg1[] = ("cccc"); GCC accepts this with pedantic warning, TPC not */
 #ifdef CONSTANTINDEXEDSTRLIT
 char str_ag3[] = { "ab"[1], 0 };
 char str_x[2] = { "xy" "z"[2], 0 };
@@ -1000,7 +1000,7 @@ struct aligntest7
 struct aligntest5 altest5[2];
 struct aligntest6 altest6[2];
 int pad1;
-/* altest7 is correctly aligned to 16 bytes also with TCC,
+/* altest7 is correctly aligned to 16 bytes also with TPC,
    but __alignof__ returns the wrong result (4) because we
    can't store the alignment yet when specified on symbols
    directly (it's stored in the type so we'd need to make
@@ -2910,7 +2910,7 @@ long __pa_symbol(void)
 {
     /* This 64bit constant was handled incorrectly, it was used as addend
        (which can hold 64bit just fine) in connection with a symbol,
-       and TCC generates wrong code for that (displacements are 32bit only).
+       and TPC generates wrong code for that (displacements are 32bit only).
        This effectively is "+ 0x80000000", and if addresses of globals
        are below 2GB the result should be a number without high 32 bits set.  */
        return ((long)(((unsigned long)(&rel1))) - (0xffffffff80000000UL));
@@ -4405,7 +4405,7 @@ void func_arg_test(void)
 #define CORRECT_CR_HANDLING
 
 /* deprecated and no longer supported in gcc 3.3 */
-/* no longer supported by default in TinyCC */
+/* no longer supported by default in TinyPC */
 #ifdef __TINYC__
 /* # define ACCEPT_LF_IN_STRINGS */
 #endif

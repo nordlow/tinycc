@@ -215,8 +215,8 @@ ST_FUNC void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr,
         case R_X86_64_32:
         case R_X86_64_32S:
             if (s1->output_type & TCC_OUTPUT_DYN) {
-                /* XXX: this logic may depend on TCC's codegen
-                   now TCC uses R_X86_64_32 even for a 64bit pointer */
+                /* XXX: this logic may depend on TPC's codegen
+                   now TPC uses R_X86_64_32 even for a 64bit pointer */
                 qrel->r_offset = rel->r_offset;
                 qrel->r_info = ELFW(R_INFO)(0, R_X86_64_RELATIVE);
                 /* Use sign extension! */

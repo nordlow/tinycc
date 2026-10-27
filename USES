@@ -37,7 +37,7 @@ Transputer target
  by David Smith <agentdavo@mac.com>
  https://github.com/agentdavo/tinycc-transputer
 
-tcc-65816 -  Tiny C Compiler for 65816 CPU (based on V0.9.23) from SNES-SDK
+tcc-65816 -  Tiny Poly Compiler for 65816 CPU (based on V0.9.23) from SNES-SDK
  https://github.com/nArnoSNES/tcc-65816
 
 PE-UEFI arm64

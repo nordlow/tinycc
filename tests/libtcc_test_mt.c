@@ -73,7 +73,7 @@ int add(int a, int b)
     char lbl[] = "#line " str(__LINE__) " " str(__FILE__) "\n\n"
 
 PROG(my_program)
-"#include <tcclib.h>\n" /* include the "Simple libc header for TCC" */
+"#include <tcclib.h>\n" /* include the "Simple libc header for TPC" */
 "int add(int a, int b);\n"
 "int fib(int n)\n"
 "{\n"

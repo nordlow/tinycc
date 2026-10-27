@@ -1,5 +1,5 @@
 /*
- *  TCC - Tiny C Compiler
+ *  TPC - Tiny Poly Compiler
  * 
  *  Copyright (c) 2001-2004 Fabrice Bellard
  *
@@ -29,7 +29,7 @@
 #include "tcctools.c"
 
 static const char help[] =
-    "Tiny Code Compiler "TCC_VERSION" - Copyright (C) 2001-2006 Fabrice Bellard\n"
+    "Tiny Poly Compiler "TCC_VERSION" - Copyright (C) 2001-2006 Fabrice Bellard\n"
     "Usage: tcc [options...] [-o outfile] [-c] infile(s)...\n"
     "       tcc [options...] -run infile (or --) [arguments...]\n"
     "General options:\n"
@@ -42,6 +42,7 @@ static const char help[] =
     "  -v --version show version\n"
     "  -vv          show search paths or loaded files\n"
     "  -h -hh       show this, show more help\n"
+    "  -style       show preferred source formatting rules\n"
     "  -bench       show compilation statistics\n"
     "  -            use stdin pipe as infile\n"
     "  @listfile    read arguments from listfile\n"
@@ -92,7 +93,7 @@ static const char help[] =
     ;
 
 static const char help2[] =
-    "Tiny C Compiler "TCC_VERSION" - More Options\n"
+    "Tiny Poly Compiler "TCC_VERSION" - More Options\n"
     "Special options:\n"
     "  -P -P1                        with -E: no/alternative #line output\n"
     "  -dD -dM                       with -E: output #define directives\n"
@@ -177,6 +178,24 @@ static const char help2[] =
 #endif
     "See also the manual for more details.\n"
     ;
+
+static const char style_rules[] =
+    "Tiny Poly Compiler preferred source formatting rules\n"
+    "----------------------------------------------------\n"
+    "\n"
+    "  Indentation\n"
+    "    Use 4 spaces per level (2 in files that already use 2).  Do not\n"
+    "    use tabs and do not leave trailing whitespace.\n"
+    "\n"
+    "  Braces\n"
+    "    Put the opening brace on the same line as the statement.\n"
+    "\n"
+    "  Spacing\n"
+    "    Do not put a space between a function-like keyword and its\n"
+    "    parenthesized operand.  In particular, write version(...) and\n"
+    "    debug(...), not version (...) or debug (...).\n"
+    "    Put one space after control-flow keywords: if (...), for (...),\n"
+    "    while (...) and switch (...).\n";
 
 static const char version[] =
     "tcc version "TCC_VERSION
@@ -319,6 +338,8 @@ redo:
                 goto help2;
         } else if (opt == OPT_HELP2) {
             help2: fputs(help2, stdout);
+        } else if (opt == OPT_STYLE) {
+            fputs(style_rules, stdout);
         } else if (opt == OPT_M32 || opt == OPT_M64) {
             ret = tcc_tool_cross(argv, opt);
         } else if (s->verbose)
