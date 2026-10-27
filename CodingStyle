@@ -19,6 +19,13 @@ have large indentation) while most are indented with 4 spaces.
 TCC is mostly implemented in C90. Do not use any non-C90 features
 that are not already in use.
 
+C11 is the minimum C standard required to build TCC: the sources use
+unnamed struct and union members, a C11 feature.  The Makefile passes
+-std=gnu11 (see CSTD) to the host compiler so that features from later
+C standards are not used by accident.  Do not raise this requirement
+or use newer C standard features without updating this file and the
+build documentation.
+
 Non-C90 features currently in use, as revealed by
 ./configure --extra-cflags="-std=c90 -Wpedantic":
 

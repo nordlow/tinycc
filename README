@@ -37,6 +37,13 @@ Documentation:
    Notes: On BSD hosts, gmake should be used instead of make.
    For Windows read tcc-win32.txt.
 
+   The TCC sources require a C11 compiler and are built with the GNU
+   C11 dialect (-std=gnu11) so that features from later C standards
+   are not used by accident.  See CodingStyle for the accepted
+   language extensions and language rules.  If the host compiler does
+   not support -std=gnu11, override it on the make command line, for
+   example: make CSTD=-std=gnu99
+
 makeinfo must be installed to compile the doc.  By default, tcc is
 installed in /usr/local/bin.  ./configure --help  shows configuration
 options.

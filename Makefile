@@ -12,6 +12,13 @@ ifeq ($(findstring $(MAKECMDGOALS),clean distclean pgo),)
  include $(TOP)/config.mak
 endif
 
+# Minimum C standard required to build TCC: C11, because the sources
+# use unnamed struct and union members.  Use the GNU dialect so that
+# the POSIX/GNU extensions used by the sources and tests remain
+# available.  Keep in sync with the "Language" section of CodingStyle.
+CSTD ?= -std=gnu11
+CFLAGS += $(CSTD)
+
 ifeq (-$(GCC_MAJOR)-$(findstring $(GCC_MINOR),56789)-,-4--)
  CFLAGS += -D_FORTIFY_SOURCE=0
 endif
