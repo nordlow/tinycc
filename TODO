@@ -261,8 +261,10 @@ serialization and graph traversal.
 
 - **Built-in Associative Arrays (`V[K]`)**: Syntax and runtime support
   for hash maps, `.keys`, `.values`, `.remove()`, and the `in` operator.
-- **`in` Operator**: Membership test for arrays and associative arrays
-  returning a pointer to the element or boolean.
+- **Built-in UTF-8 `string` Type**: Support a dedicated UTF-8 `string`
+  type that does *not* implicitly convert to `char[]` (unlike D), and
+  provides a property (e.g. `.bytes` or `.raw`) to access its raw
+  underlying form as a slice of `ubyte`, `byte`, or `void` elements.
 - **`with` Statement**: `with (expression) { ... }` or `with (symbol) { ... }`
   scope block opening member access without qualification.
 - **`version` and `debug` Blocks**: Declarative conditional
