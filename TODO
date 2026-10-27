@@ -253,9 +253,10 @@ or generated headers once inferred.
 
 - Add optimizations to the `__darray...` so that each, when possible,
   lowers to a single call to `memcpy`/`memmove`/`memset/...` without
-  the need for a for-loop over the elements. Describe reasoning for
-  when this is possible.  As C currently doesn't have constructors
-  maybe it's never needed (until constructors will become supported).
+  the need for a `for`-loop over the elements. Describe reasoning for
+  when this is possible; As C currently doesn't have constructors
+  maybe it's never needed in C but will become needed for D when
+  constructors become supported.
 - Suppress specific anonymous symbol handling.
 - More parse optimizations (i.e. even faster compilation).
 - Memory allocation optimizations (i.e. even faster compilation).
