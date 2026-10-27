@@ -345,6 +345,7 @@ S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 PGO_CC ?= clang
 PGO_MARCH ?= native
 PREFIX ?= /usr/local
+export PREFIX
 # Valgrind cannot decode some AVX-512 instructions emitted by
 # -march=native on recent CPUs, so disable them for the PGO build.
 ifneq (,$(filter i386 x86_64,$(ARCH)))
