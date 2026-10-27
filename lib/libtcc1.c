@@ -687,6 +687,27 @@ void __darray_dup(void *dst, const void *src, __SIZE_TYPE__ elemsize)
         memcpy(d->ptr, s->ptr, s->length * elemsize);
 }
 
+void __darray_copy(void *dst_slice, const void *src_slice, __SIZE_TYPE__ elemsize)
+{
+    const struct darray_header *d = dst_slice;
+    const struct darray_header *s = src_slice;
+    if (d->length == s->length && d->length && d->ptr && s->ptr) {
+        memcpy(d->ptr, s->ptr, d->length * elemsize);
+    }
+}
+
+void __darray_fill(void *dst_slice, const void *elem, __SIZE_TYPE__ elemsize)
+{
+    const struct darray_header *d = dst_slice;
+    __SIZE_TYPE__ i;
+    char *p = d->ptr;
+    if (d->length && p) {
+        for (i = 0; i < d->length; ++i) {
+            memcpy(p + i * elemsize, elem, elemsize);
+        }
+    }
+}
+
 void __darray_concat(void *dst, const void *asrc, const void *bsrc,
                      __SIZE_TYPE__ elemsize)
 {

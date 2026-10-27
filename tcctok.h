@@ -357,8 +357,9 @@
      DEF(TOK___darray_resize, "__darray_resize")
      DEF(TOK___darray_append, "__darray_append")
      DEF(TOK___darray_dup, "__darray_dup")
+     DEF(TOK___darray_copy, "__darray_copy")
+     DEF(TOK___darray_fill, "__darray_fill")
      DEF(TOK___darray_concat, "__darray_concat")
-
 /* bound checking symbols */
 #ifdef CONFIG_TCC_BCHECK
      DEF(TOK___bound_ptr_add, "__bound_ptr_add")

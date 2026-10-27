@@ -177,6 +177,9 @@ static void end_switch(void);
 static int check_d_static_assert(void);
 static void do_Static_assert(void);
 static int check_d_manifest_constant(int l);
+static void gen_slice_assign(void);
+static void expr_cond(void);
+static int slice_range_target;
 /* Automagical code suppression */
 
 /* Clear 'nocode_wanted' at forward label if it was used */
@@ -7020,6 +7023,7 @@ special_math_val:
                 } else {
                     tcc_error("cannot slice a pointer without bounds");
                 }
+                slice_range_target = 1;
                 continue;
             }
 
@@ -7060,6 +7064,7 @@ special_math_val:
                 gen_op('+');        /* [len, base + lo] */
                 vswap();            /* [ptr, len] */
                 gen_slice_value(&elem_type);
+                slice_range_target = 1;
             } else {
                 gen_op('+');
                 indir();
@@ -7602,8 +7607,17 @@ static void expr_eq(void)
 {
     int t;
     
+    slice_range_target = 0;
     expr_cond();
     if ((t = tok) == '=' || TOK_ASSIGN(t)) {
+        if (is_slice_type(&vtop->type) && slice_range_target) {
+            if (t != '=')
+                tcc_error("only '=' assignment is supported for slices");
+            slice_range_target = 0;
+            gen_slice_assign();
+            return;
+        }
+        slice_range_target = 0;
         test_lvalue();
         if (t == TOK_A_CAT) {
             gen_slice_append();
@@ -10426,6 +10440,48 @@ static int decl(int l)
         }
     }
     return 0;
+}
+
+static void gen_slice_assign(void)
+{
+    CType elem, *lt = &vtop->type;
+    int esize, ealign, l, r2;
+
+    if (!is_slice_type(lt))
+        tcc_error("left operand of slice assignment must be a D slice");
+    elem = *pointed_type(&lt->ref->next->next->type);
+    esize = type_size(&elem, &ealign);
+
+    l = copy_slice_to_temp(lt);
+
+    next(); /* consume '=' */
+
+    expr_cond();
+
+    if (is_slice_type(&vtop->type)) {
+        int r_slice = copy_slice_to_temp(&vtop->type);
+
+        vpush_helper_func(TOK___darray_copy);
+        vset(&char_pointer_type, VT_LOCAL, l);
+        vset(&char_pointer_type, VT_LOCAL, r_slice);
+        vpushs(esize);
+        gfunc_call(3);
+    } else {
+        int elem_addr = get_temp_local_var(esize, ealign, &r2);
+        vset(&elem, VT_LOCAL | VT_LVAL, elem_addr);
+        vswap();
+        vstore();
+        vpop();
+
+        vpush_helper_func(TOK___darray_fill);
+        vset(&char_pointer_type, VT_LOCAL, l);
+        vset(&elem, VT_LOCAL | VT_LVAL, elem_addr);
+        gaddrof();
+        vtop->type = char_pointer_type;
+        vpushs(esize);
+        gfunc_call(3);
+    }
+    vset(lt, VT_LOCAL | VT_LVAL, l);
 }
 
 /* ------------------------------------------------------------------------- */
