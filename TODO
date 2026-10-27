@@ -307,19 +307,33 @@ serialization and graph traversal.
   overflow), using Zig-inspired syntax (`+|`, `-|`, `*|`, `<<|`).
 - **Slice `.len` Property Alias**: Support `.len` as an alias for the
   existing `.length` property on slices and arrays (matching Zig, Go,
-  and other modern static languages).  lowers to a single call to
-  `memcpy`/`memmove`/`memset/...` without the need for a `for`-loop
-  over the elements. Describe reasoning for when this is possible; As
-  C currently doesn't have constructors maybe it's never needed in C
-  but will become needed for D when constructors become supported.
+  and other modern static languages).
 - Suppress specific anonymous symbol handling.
 - More parse optimizations (i.e. even faster compilation).
 - Memory allocation optimizations (i.e. even faster compilation).
 - Optimize `VT_LOCAL` + const.
 - Better local variables handling (needed for other targets).
 
-# Refactorings for development speed
+## Architecture & Complexity Analysis
 
+### High-Complexity Proposals
+- **Single-Pass Effect System with Source-Code Emission**:
+  - *Semantic Challenges*: Lacks an AST; expression structure is discarded immediately upon value pushing. Requires hooking `gfunc_call()`, `vstore()`, `indir()`, and assignments to reconstruct function summaries from codegen side effects.
+  - *Interprocedurality*: Purity, throws, and allocation depend on callees, requiring a call graph and fixpoint analysis—conflicting with TCC's single-file separate compilation model. Function pointers, varargs, inline asm, and `setjmp`/`longjmp` complicate call graph construction.
+  - *Aliasing & Emission*: Read/write effects require alias and escape analysis, interoperating with `immutable`/`inout` inference. Source emission faces macro expansion, `#line` directives, multi-file inputs, stdin, and system headers.
+- **Full AST / IR**:
+  - Highest architectural risk; invalidates TCC's core single-pass design philosophy that prioritizes speed and minimal memory footprint.
+- **Split the Overloaded `Sym` Struct**:
+  - Multi-subsystem refactor touching every part of the compiler (struct fields, variables, types, enum values, slice headers, temp-locals), carrying high regression risk.
+- **Compile-Time & Run-Time Reflection (`$fields`, `$members`, traits, RTTI)**:
+  - Equivalent to adding a metaprogramming subsystem (compile-time tuples, control flow constructs, traits, RTTI tables, serialization).
+- **`inout` & Signature-Elision Inference**:
+  - A compact surface area, but functions as a type-and-effect system, requiring strict semantic soundness per line of code.
+
+### Low-Complexity Quick Wins
+- `.len` alias, saturating operators (`+|`, `-|`), `with` statement, property call syntax, and automatic pointer-to-struct member access (`x.field` sugar for `x->field`) operate purely as local parser and codegen enhancements.
+
+# Refactorings for development speed
 Ordered by (productivity gain) / (risk x effort):
 
 - **Attribute table** (about one day, low risk).  `parse_attribute()`
