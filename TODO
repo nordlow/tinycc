@@ -345,10 +345,8 @@ serialization and graph traversal.
     requiring strict semantic soundness per line of code.
 
 ### Low-Complexity Quick Wins
-- `.len` alias, saturating operators (`+|`, `-|`), `with` statement,
-  property call syntax, and automatic pointer-to-struct member access
-  (`x.field` sugar for `x->field`) operate purely as local parser and
-  codegen enhancements.
+- Automatic pointer-to-struct member access (`x.field` sugar for
+  `x->field`) operate purely as local parser and codegen enhancements.
 
 # Refactorings for development speed
 
