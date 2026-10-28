@@ -3241,6 +3241,7 @@ redo:
         int align;
         if (op_class == CMP_OP)
             goto std_op;
+        /* TODO: Activate these safety checks in @safe functions in all language modes (not just -lang=d) when func_safety is FUNC_SAFETY_UNKNOWN */
         if (func_safety == FUNC_SAFETY_SAFE)
             tcc_error("pointer arithmetic not allowed in @safe scope");
         /* if both pointers, then it must be the '-' op */
