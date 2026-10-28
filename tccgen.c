@@ -72,7 +72,6 @@ ST_DATA int nocode_wanted; /* no code generation wanted */
 ST_DATA int global_expr;  /* true if compound literals must be allocated globally (used during initializers parsing */
 ST_DATA CType func_vt; /* current function return type (used by return instruction) */
 ST_DATA int func_var; /* true if current function is variadic (used by return instruction) */
-/* TODO: Place compiler state globals (like func_safety, func_vt, etc.) into thread-local storage (TLS) for multi-threaded compilation */
 ST_DATA int func_safety; /* current function safety level (FUNC_SAFETY_...) */
 ST_DATA int func_vc; /* stack address for implicit struct return storage */
 ST_DATA int func_ind; /* function start address */
@@ -3242,7 +3241,6 @@ redo:
         int align;
         if (op_class == CMP_OP)
             goto std_op;
-        /* TODO: Activate these safety checks in @safe functions in all language modes (not just -lang=d) when func_safety is FUNC_SAFETY_UNKNOWN */
         if (func_safety == FUNC_SAFETY_SAFE)
             tcc_error("pointer arithmetic not allowed in @safe scope");
         /* if both pointers, then it must be the '-' op */
