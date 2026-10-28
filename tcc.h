@@ -524,7 +524,10 @@ struct FuncAttr {
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
     func_pure   : 1, /* @pure or attribute((pure)) */
-    xxxx        : 14;
+    func_safe   : 1, /* @safe */
+    func_system : 1, /* @system */
+    func_trusted : 1, /* @trusted */
+    xxxx        : 11;
 };
 
 /* symbol management */
