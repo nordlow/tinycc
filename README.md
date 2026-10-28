@@ -97,6 +97,39 @@ throughput in Mlines/s and the Valgrind cachegrind instruction count
 (`I refs`).  `PGO_MARCH` defaults to `native`; on x86, `-mno-avx512f`
 is added so that Valgrind can decode the generated code.
 
+### Host compiler choice matters for runtime speed
+
+The compiler used to *build* TPC strongly affects the speed of the
+resulting `tcc` binary.  On an AMD Ryzen AI 7 350 (Linux x64), full
+`make pgo` builds of the same sources measure:
+
+- `PGO_CC=gcc`: about 5.6 Mlines/s and 207 M executed instructions
+- `PGO_CC=clang`: about 4.8 Mlines/s and 235 M executed instructions
+- `PGO_CC=clang` with `-ftls-model=initial-exec`: about 4.8 Mlines/s
+  and 223 M executed instructions
+
+The reason is thread-local storage.  Since commit `bc86ac3c` the
+mutable compiler state lives in TLS (`TCC_TLS`); Clang compiles this
+position-independent executable with the general-dynamic TLS model, so
+nearly every access to preprocessor or generator state becomes a
+`__tls_get_addr` call.  That costs roughly 11% more instructions on a
+fixed input, concentrated in the lexer and expression parser hot spots
+(`next_nomacro`, `next`, `next_argstream`, `unary`), whereas GCC picks
+a cheaper TLS model and pays only about 1%.  Building with
+`-ftls-model=initial-exec` removes the calls and brings a fixed input
+back to within about 2% of its pre-TLS instruction count.
+
+Until the hot thread-local state is made cheaper to access, **use GCC
+as the host compiler when the speed of the resulting binary matters**:
+
+```sh
+make pgo PGO_CC=gcc
+```
+
+Numbers are machine specific; compare on your own host with
+`make pgo-bench`.  Every recorded result is kept in
+[`bench/pgo-history.tsv`](bench/pgo-history.tsv).
+
 ## Using TPC
 
 Compile and link a program:
