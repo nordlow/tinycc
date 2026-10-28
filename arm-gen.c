@@ -142,7 +142,7 @@ enum {
 #define USING_GLOBALS
 #include "tcc.h"
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__arm__\0"
     "__arm\0"
     "arm\0"
@@ -157,7 +157,7 @@ ST_DATA const char * const target_machine_defs =
 #endif
     ;
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
     /* r0 */ RC_INT | RC_R0,
     /* r1 */ RC_INT | RC_R1,
     /* r2 */ RC_INT | RC_R2,
@@ -175,18 +175,18 @@ ST_DATA const int reg_classes[NB_REGS] = {
 #endif
 };
 
-static int float_abi;
-static int func_sub_sp_offset, last_itod_magic;
-static int leaffunc;
+static TCC_TLS int float_abi;
+static TCC_TLS int func_sub_sp_offset, last_itod_magic;
+static TCC_TLS int leaffunc;
 
 #if defined(CONFIG_TCC_BCHECK)
-static addr_t func_bound_offset;
-static unsigned long func_bound_ind;
+static TCC_TLS addr_t func_bound_offset;
+static TCC_TLS unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 #endif
 
 #if defined(TCC_ARM_EABI) && defined(TCC_ARM_VFP)
-static CType float_type, double_type, func_float_type, func_double_type;
+static TCC_TLS CType float_type, double_type, func_float_type, func_double_type;
 ST_FUNC void arm_init(struct TCCState *s)
 {
     float_type.t = VT_FLOAT;

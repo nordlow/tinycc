@@ -185,6 +185,24 @@ extern long double strtold (const char *__nptr, char **__endptr);
 # endif
 #endif
 
+/* Thread-local storage for per-thread compiler state.  This is the
+   groundwork for compiling in multiple threads.  TLS is not used on
+   targets whose code generator or runtime does not support it yet.
+   Define TCC_TLS as empty (for example with -DTCC_TLS=) to build
+   without TLS, which is required when the result is to be used with
+   tcc's -run mode. */
+#ifndef TCC_TLS
+# if defined TCC_TARGET_ARM || defined TCC_TARGET_C67 || defined TCC_TARGET_MACHO
+#  define TCC_TLS
+# elif defined _MSC_VER
+#  define TCC_TLS __declspec(thread)
+# elif defined __GNUC__ || defined __clang__ || defined __TINYC__
+#  define TCC_TLS __thread
+# else
+#  define TCC_TLS
+# endif
+#endif
+
 /* only native compiler supports -run */
 #if defined _WIN32 == defined TCC_TARGET_PE \
     && defined __APPLE__ == defined TCC_TARGET_MACHO
@@ -348,11 +366,13 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #if ONE_SOURCE
 #define ST_INLN static inline
 #define ST_FUNC static
-#define ST_DATA static
+#define ST_DATA static TCC_TLS
+#define ST_CONST static
 #else
 #define ST_INLN
 #define ST_FUNC
-#define ST_DATA extern
+#define ST_DATA extern TCC_TLS
+#define ST_CONST extern
 #endif
 
 #ifdef TCC_PROFILE /* profile all functions */
@@ -1662,8 +1682,8 @@ ST_FUNC void build_got_entries(TCCState *s1, int got_sym); /* in tccelf.c */
 ST_FUNC void relocate(TCCState *s1, ElfW_Rel *rel, int type, unsigned char *ptr, addr_t addr, addr_t val);
 
 /* ------------ xxx-gen.c ------------ */
-ST_DATA const char * const target_machine_defs;
-ST_DATA const int reg_classes[NB_REGS];
+ST_CONST const char * const target_machine_defs;
+ST_CONST const int reg_classes[NB_REGS];
 
 ST_FUNC void gsym_addr(int t, int a);
 ST_FUNC void gsym(int t);
@@ -2016,9 +2036,9 @@ static inline void post_sem(TCCSem *p) {
 /********************************************************/
 #undef ST_DATA
 #if ONE_SOURCE
-#define ST_DATA static
+#define ST_DATA static TCC_TLS
 #else
-#define ST_DATA
+#define ST_DATA TCC_TLS
 #endif
 /********************************************************/
 

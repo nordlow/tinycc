@@ -52,7 +52,7 @@
 #include "tcc.h"
 #include <assert.h>
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__aarch64__\0"
 #if defined(TCC_TARGET_MACHO)
     "__arm64__\0"
@@ -60,7 +60,7 @@ ST_DATA const char * const target_machine_defs =
     "__AARCH64EL__\0"
     ;
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
   RC_INT | RC_R(0),
   RC_INT | RC_R(1),
   RC_INT | RC_R(2),
@@ -92,8 +92,8 @@ ST_DATA const int reg_classes[NB_REGS] = {
 };
 
 #if defined(CONFIG_TCC_BCHECK)
-static addr_t func_bound_offset;
-static unsigned long func_bound_ind;
+static TCC_TLS addr_t func_bound_offset;
+static TCC_TLS unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 #endif
 
@@ -1213,12 +1213,12 @@ ST_FUNC void gfunc_call(int nb_args)
     tcc_free(t);
 }
 
-static unsigned long arm64_func_va_list_stack;
-static int arm64_func_va_list_gr_offs;
-static int arm64_func_va_list_vr_offs;
-static int arm64_func_sub_sp_offset;
+static TCC_TLS unsigned long arm64_func_va_list_stack;
+static TCC_TLS int arm64_func_va_list_gr_offs;
+static TCC_TLS int arm64_func_va_list_vr_offs;
+static TCC_TLS int arm64_func_sub_sp_offset;
 
-static unsigned arm64_func_start_offset;
+static TCC_TLS unsigned arm64_func_start_offset;
 #define ARM64_FUNC_STACK_SETUP_SLOTS 6
 
 #ifdef TCC_TARGET_PE

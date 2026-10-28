@@ -44,7 +44,7 @@
 #define SIGN7(x)	((((x) & 0xff) ^ 0x80) - 0x80)
 #define SIGN11(x)	((((x) & 0xfff) ^ 0x800) - 0x800)
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__riscv\0"
     "__riscv_xlen 64\0"
     "__riscv_flen 64\0"
@@ -60,7 +60,7 @@ ST_DATA const char * const target_machine_defs =
 #define TREG_RA 17
 #define TREG_SP 18
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
   RC_INT | RC_R(0),
   RC_INT | RC_R(1),
   RC_INT | RC_R(2),
@@ -83,8 +83,8 @@ ST_DATA const int reg_classes[NB_REGS] = {
 };
 
 #if defined(CONFIG_TCC_BCHECK)
-static addr_t func_bound_offset;
-static unsigned long func_bound_ind;
+static TCC_TLS addr_t func_bound_offset;
+static TCC_TLS unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 #endif
 
@@ -802,7 +802,7 @@ done:
    tcc_free(info);
 }
 
-static int func_sub_sp_offset, num_va_regs, func_va_list_ofs;
+static TCC_TLS int func_sub_sp_offset, num_va_regs, func_va_list_ofs;
 
 ST_FUNC void gfunc_prolog(Sym *func_sym)
 {

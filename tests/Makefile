@@ -67,7 +67,7 @@ ifneq (,$(filter FreeBSD NetBSD,$(TARGETOS)))
   TESTS += test1
 endif
 
-RUN_TCC = -run $(TOPSRC)/tcc.c $(TCCFLAGS)
+RUN_TCC = -DTCC_TLS= -run $(TOPSRC)/tcc.c $(TCCFLAGS)
 DISAS = objdump -d
 ifdef CONFIG_OSX
 DUMPTCC = (set -x; $(TCC_LOCAL) -vv; otool -L $(TCC_LOCAL); exit 1)
@@ -94,7 +94,7 @@ hello-run: ../examples/ex1.c
 
 libtes%: libtcc_tes%$(EXESUF)
 	@echo ------------ $@ ------------
-	./libtcc_tes$*$(EXESUF) $(TOPSRC)/tcc.c $(TCCFLAGS)
+	./libtcc_tes$*$(EXESUF) $(TOPSRC)/tcc.c $(TCCFLAGS) -DTCC_TLS=
 
 libtcc_test$(EXESUF): libtcc_test.c
 	$(CC) -o $@ $< $(CFLAGS) $(-LTCC) $(LIBS)
@@ -176,7 +176,7 @@ memtest:
 	@echo ------------ $@ ------------
 	$(CC) $(CFLAGS) -DMEM_DEBUG=2 $(TOPSRC)/tcc.c $(LIBS) -o memtest-tcc$(EXESUF)
 	./memtest-tcc$(EXESUF) $(TCCFLAGS) $(TOPSRC)/tcc.c $(LIBS)
-	./memtest-tcc$(EXESUF) $(TCCFLAGS) -run $(TOPSRC)/tcc.c $(TCCFLAGS) -w $(TOPSRC)/tests/tcctest.c
+	./memtest-tcc$(EXESUF) $(TCCFLAGS) -DTCC_TLS= -run $(TOPSRC)/tcc.c $(TCCFLAGS) -w $(TOPSRC)/tests/tcctest.c
 	@echo OK
 
 # memory and bound check auto test
@@ -318,7 +318,7 @@ CROSS-TGTS = \
 
 define CROSS-COMPILE
  @echo " . $(1)"
- $(TCC) $(DEF-$1) -DTCC_CROSS_TEST -run $(TOPSRC)/tcc.c \
+ $(TCC) $(DEF-$1) -DTCC_CROSS_TEST -DTCC_TLS= -run $(TOPSRC)/tcc.c \
     -c $(if $(findstring c67,$1),$(filter %/ex3.c,$^),$<) -w $(TCCFLAGS)
 
 endef

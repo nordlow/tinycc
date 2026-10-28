@@ -22,8 +22,8 @@
 #include "tcc.h"
 #ifdef CONFIG_TCC_ASM
 
-static Section *last_text_section; /* to handle .previous asm directive */
-static int asmgoto_n;
+static TCC_TLS Section *last_text_section; /* to handle .previous asm directive */
+static TCC_TLS int asmgoto_n;
 
 static int tcc_assemble_internal(TCCState *s1, int do_preprocess, int global);
 static Sym* asm_new_label(TCCState *s1, int label, int is_local);

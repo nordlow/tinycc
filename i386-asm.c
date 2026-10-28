@@ -644,7 +644,7 @@ static void asm_rex(int width64, Operand *ops, int nb_ops, int *op_type,
 
 static void maybe_print_stats (void)
 {
-    static int already;
+    static TCC_TLS int already;
 
     if (0 && !already)
     /* print stats about opcodes */

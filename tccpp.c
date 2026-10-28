@@ -43,23 +43,23 @@ ST_DATA int pp_expr;
 
 /* ------------------------------------------------------------------------- */
 
-static TokenSym *hash_ident[TOK_HASH_SIZE];
-static char token_buf[STRING_MAX_SIZE + 1];
-static CString cstr_buf;
-static TokenString tokstr_buf;
-static TokenString unget_buf;
-static unsigned char isidnum_table[256 - CH_EOF];
-static int pp_debug_tok, pp_debug_symv;
-static int pp_counter;
+static TCC_TLS TokenSym *hash_ident[TOK_HASH_SIZE];
+static TCC_TLS char token_buf[STRING_MAX_SIZE + 1];
+static TCC_TLS CString cstr_buf;
+static TCC_TLS TokenString tokstr_buf;
+static TCC_TLS TokenString unget_buf;
+static TCC_TLS unsigned char isidnum_table[256 - CH_EOF];
+static TCC_TLS int pp_debug_tok, pp_debug_symv;
+static TCC_TLS int pp_counter;
 static void tok_print(const int *str, const char *msg, ...);
 static void next_nomacro(void);
 static void parse_number(const char *p);
 static void parse_string(const char *p, int len);
 
-static struct TinyAlloc *toksym_alloc;
-static struct TinyAlloc *tokstr_alloc;
+static TCC_TLS struct TinyAlloc *toksym_alloc;
+static TCC_TLS struct TinyAlloc *tokstr_alloc;
 
-static TokenString *macro_stack;
+static TCC_TLS TokenString *macro_stack;
 
 static const char tcc_keywords[] = 
 #define DEF(id, str) str "\0"
@@ -753,8 +753,22 @@ static uint8_t *parse_line_comment(uint8_t *p)
     int c, ch;
     for(;;) {
         rem = file->buf_end - (p + 1);
-        if (rem == 0)
-            break;
+        if (rem == 0) {
+            /* the comment starts at the end of the buffer: refill it */
+            file->buf_ptr = p + 1;
+            ch = handle_eob();
+            if (ch == CH_EOF)
+                break;
+            p = file->buf_ptr;
+            if (ch == '\n')
+                break;
+            if (ch == '\\') {
+                ch = handle_bs(&p);
+                if (ch == CH_EOF)
+                    break;
+            }
+            continue;
+        }
         p_nl = (uint8_t *)memchr(p + 1, '\n', rem);
         p_bs = (uint8_t *)memchr(p + 1, '\\', rem);
         stop = p + 1 + rem;
@@ -2996,7 +3010,7 @@ keep_tok_flags:
 }
 
 #ifdef PP_DEBUG
-static int indent;
+static TCC_TLS int indent;
 static void define_print(TCCState *s1, int v);
 static void pp_print(const char *msg, int v, const int *str)
 {

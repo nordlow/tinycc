@@ -116,11 +116,11 @@ enum {
 #define USING_GLOBALS
 #include "tcc.h"
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__C67__\0"
     ;
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
     /* eax */ RC_INT | RC_FLOAT | RC_EAX,
     // only allow even regs for floats (allow for doubles)
     /* ecx */ RC_INT | RC_ECX,
@@ -156,10 +156,10 @@ ST_DATA const int reg_classes[NB_REGS] = {
 // reg (pair)
 
 #define NoCallArgsPassedOnStack 10
-int NoOfCurFuncArgs;
-int TranslateStackToReg[NoCallArgsPassedOnStack];
-int ParamLocOnStack[NoCallArgsPassedOnStack];
-int TotalBytesPushedOnStack;
+TCC_TLS int NoOfCurFuncArgs;
+TCC_TLS int TranslateStackToReg[NoCallArgsPassedOnStack];
+TCC_TLS int ParamLocOnStack[NoCallArgsPassedOnStack];
+TCC_TLS int TotalBytesPushedOnStack;
 
 #ifndef FALSE
 # define FALSE 0
@@ -176,11 +176,11 @@ do {\
 } while (0)
 
 /******************************************************/
-static unsigned long func_sub_sp_offset;
-static int func_ret_sub;
+static TCC_TLS unsigned long func_sub_sp_offset;
+static TCC_TLS int func_ret_sub;
 
-static BOOL C67_invert_test;
-static int C67_compare_reg;
+static TCC_TLS BOOL C67_invert_test;
+static TCC_TLS int C67_compare_reg;
 
 #ifdef ASSEMBLY_LISTING_C67
 FILE *f = NULL;

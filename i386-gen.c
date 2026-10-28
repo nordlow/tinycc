@@ -84,7 +84,7 @@ enum {
 #define USING_GLOBALS
 #include "tcc.h"
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__i386__\0"
     "__i386\0"
     ;
@@ -95,7 +95,7 @@ ST_DATA const char * const target_machine_defs =
 # define USE_EBX 0 /* define to 1 to have EBX as 4th register */
 #endif
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
     /* eax */ RC_INT | RC_EAX,
     /* ecx */ RC_INT | RC_ECX,
     /* edx */ RC_INT | RC_EDX,
@@ -103,11 +103,11 @@ ST_DATA const int reg_classes[NB_REGS] = {
     /* st0 */ RC_FLOAT | RC_ST0,
 };
 
-static unsigned long func_sub_sp_offset;
-static int func_ret_sub;
+static TCC_TLS unsigned long func_sub_sp_offset;
+static TCC_TLS int func_ret_sub;
 #ifdef CONFIG_TCC_BCHECK
-static addr_t func_bound_offset;
-static unsigned long func_bound_ind;
+static TCC_TLS addr_t func_bound_offset;
+static TCC_TLS unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 static void gen_bounds_prolog(void);
 static void gen_bounds_epilog(void);

@@ -26,30 +26,30 @@
 
 #define MAXNSCNS 255		/* MAXIMUM NUMBER OF SECTIONS         */
 #define MAX_STR_TABLE 1000000
-AOUTHDR o_filehdr;		/* OPTIONAL (A.OUT) FILE HEADER       */
+TCC_TLS AOUTHDR o_filehdr;		/* OPTIONAL (A.OUT) FILE HEADER       */
 
-SCNHDR section_header[MAXNSCNS];
+TCC_TLS SCNHDR section_header[MAXNSCNS];
 
 #define MAX_FUNCS 1000
 #define MAX_FUNC_NAME_LENGTH 128
 
-int nFuncs;
-char Func[MAX_FUNCS][MAX_FUNC_NAME_LENGTH];
-char AssociatedFile[MAX_FUNCS][MAX_FUNC_NAME_LENGTH];
-int LineNoFilePtr[MAX_FUNCS];
-int EndAddress[MAX_FUNCS];
-int LastLineNo[MAX_FUNCS];
-int FuncEntries[MAX_FUNCS];
+TCC_TLS int nFuncs;
+TCC_TLS char Func[MAX_FUNCS][MAX_FUNC_NAME_LENGTH];
+TCC_TLS char AssociatedFile[MAX_FUNCS][MAX_FUNC_NAME_LENGTH];
+TCC_TLS int LineNoFilePtr[MAX_FUNCS];
+TCC_TLS int EndAddress[MAX_FUNCS];
+TCC_TLS int LastLineNo[MAX_FUNCS];
+TCC_TLS int FuncEntries[MAX_FUNCS];
 
 int OutputTheSection(Section * sect);
 short int GetCoffFlags(const char *s);
 void SortSymbolTable(TCCState *s1);
 Section *FindSection(TCCState * s1, const char *sname);
 
-int C67_main_entry_point;
+TCC_TLS int C67_main_entry_point;
 
 int FindCoffSymbolIndex(TCCState * s1, const char *func_name);
-int nb_syms;
+TCC_TLS int nb_syms;
 
 typedef struct {
     long tag;

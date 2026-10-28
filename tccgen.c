@@ -37,18 +37,18 @@ ST_DATA Sym *define_stack;
 ST_DATA Sym *global_label_stack;
 ST_DATA Sym *local_label_stack;
 
-static Sym *sym_free_first;
-static void **sym_pools;
-static int nb_sym_pools;
-static TCCState *cur_tcc_state;
+static TCC_TLS Sym *sym_free_first;
+static TCC_TLS void **sym_pools;
+static TCC_TLS int nb_sym_pools;
+static TCC_TLS TCCState *cur_tcc_state;
 
 
-static Sym *all_cleanups, *pending_gotos;
-static int local_scope;
+static TCC_TLS Sym *all_cleanups, *pending_gotos;
+static TCC_TLS int local_scope;
 ST_DATA char debug_modes;
 
 ST_DATA SValue *vtop;
-static SValue _vstack[1 + VSTACK_SIZE];
+static TCC_TLS SValue _vstack[1 + VSTACK_SIZE];
 #define vstack (_vstack + 1)
 
 ST_DATA int nocode_wanted; /* no code generation wanted */
@@ -75,10 +75,10 @@ ST_DATA int func_var; /* true if current function is variadic (used by return in
 ST_DATA int func_safety; /* current function safety level (FUNC_SAFETY_...) */
 ST_DATA int func_vc; /* stack address for implicit struct return storage */
 ST_DATA int func_ind; /* function start address */
-static int func_old;
+static TCC_TLS int func_old;
 ST_DATA const char *funcname;
 ST_DATA CType int_type, func_old_type, char_type, char_pointer_type;
-static CString initstr;
+static TCC_TLS CString initstr;
 
 #if PTR_SIZE == 4
 #define VT_SIZE_T (VT_INT | VT_UNSIGNED)
@@ -91,7 +91,7 @@ static CString initstr;
 #define VT_PTRDIFF_T (VT_LONG | VT_LLONG)
 #endif
 
-static struct switch_t {
+static TCC_TLS struct switch_t {
     struct case_t {
         int64_t v1, v2;
         int ind, line;
@@ -106,12 +106,12 @@ static struct switch_t {
 
 #define MAX_TEMP_LOCAL_VARIABLE_NUMBER 8
 /*list of temporary local variables on the stack in current function. */
-static struct temp_local_variable {
+static TCC_TLS struct temp_local_variable {
 	int location; //offset on stack. Svalue.c.i
 	short size;
 	short align;
 } arr_temp_local_vars[MAX_TEMP_LOCAL_VARIABLE_NUMBER];
-static int nb_temp_local_vars;
+static TCC_TLS int nb_temp_local_vars;
 
 /* '$' inside a subscript expression denotes the length of the
    subscripted array or slice.  */
@@ -119,10 +119,10 @@ struct dollar_ctx {
     CType type;
     SValue sv;
 };
-static struct dollar_ctx dollar_ctx_stack[16];
-static int nb_dollar_ctx;
+static TCC_TLS struct dollar_ctx dollar_ctx_stack[16];
+static TCC_TLS int nb_dollar_ctx;
 
-static struct scope {
+static TCC_TLS struct scope {
     struct scope *prev;
     struct { int loc, locorig, num; } vla;
     struct { Sym *s; int n; } cl;
@@ -185,7 +185,7 @@ static int check_d_manifest_constant(int l);
 static int check_d_conditional(int l, int flags);
 static void gen_slice_assign(int assign_tok);
 static void expr_cond(void);
-static int slice_range_target;
+static TCC_TLS int slice_range_target;
 /* Automagical code suppression */
 
 /* Clear 'nocode_wanted' at forward label if it was used */
@@ -4437,8 +4437,8 @@ static Sym * find_field_opt (CType *type, int v, int *cumofs)
     Sym *s;
     int v1 = v | SYM_FIELD;
     int tok_ptr, tok_len;
-    static Sym f_ptr;
-    static Sym f_len;
+    static TCC_TLS Sym f_ptr;
+    static TCC_TLS Sym f_len;
 
     if (bt == VT_SLICE) {
         tok_ptr = TOK_ptr | SYM_FIELD;
@@ -4487,8 +4487,8 @@ static Sym * find_field (CType *type, int v, int *cumofs)
     Sym *s = type->ref;
     int v1 = v | SYM_FIELD;
     int tok_ptr, tok_len;
-    static Sym f_ptr;
-    static Sym f_len;
+    static TCC_TLS Sym f_ptr;
+    static TCC_TLS Sym f_len;
 
     if (bt == VT_SLICE) {
         tok_ptr = TOK_ptr | SYM_FIELD;
@@ -7622,7 +7622,7 @@ static int precedence(int tok)
 	    return 0;
     }
 }
-static unsigned char prec[256];
+static TCC_TLS unsigned char prec[256];
 static void init_prec(void)
 {
     int i;
@@ -10468,7 +10468,7 @@ static void do_d_alias(void)
 /* D-style 'unittest { ... }' block.  With -unittest it becomes a
    constructor function that runs before main.  The current token must
    be the opening '{'.  */
-static int nb_unittest;
+static TCC_TLS int nb_unittest;
 
 static void do_unittest(void)
 {

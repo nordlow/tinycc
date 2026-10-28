@@ -118,13 +118,13 @@ ST_FUNC void gen_struct_copy(int size);
 #include "tcc.h"
 #include <assert.h>
 
-ST_DATA const char * const target_machine_defs =
+ST_CONST const char * const target_machine_defs =
     "__x86_64__\0"
     "__x86_64\0"
     "__amd64__\0"
     ;
 
-ST_DATA const int reg_classes[NB_REGS] = {
+ST_CONST const int reg_classes[NB_REGS] = {
     /* eax */ RC_INT | RC_RAX,
     /* ecx */ RC_INT | RC_RCX,
     /* edx */ RC_INT | RC_RDX,
@@ -155,17 +155,17 @@ ST_DATA const int reg_classes[NB_REGS] = {
     /* st0 */ RC_ST0
 };
 
-static unsigned long func_sub_sp_offset;
-static int func_ret_sub;
+static TCC_TLS unsigned long func_sub_sp_offset;
+static TCC_TLS int func_ret_sub;
 
 #if defined(CONFIG_TCC_BCHECK)
-static addr_t func_bound_offset;
-static unsigned long func_bound_ind;
+static TCC_TLS addr_t func_bound_offset;
+static TCC_TLS unsigned long func_bound_ind;
 ST_DATA int func_bound_add_epilog;
 #endif
 
 #ifdef TCC_TARGET_PE
-static int func_scratch, func_alloca;
+static TCC_TLS int func_scratch, func_alloca;
 #endif
 
 /* XXX: make it faster ? */

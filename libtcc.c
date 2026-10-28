@@ -802,10 +802,9 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
 {
     /* Here we enter the code section where we use the global variables for
        parsing and code generation (tccpp.c, tccgen.c, <target>-gen.c).
-       Other threads need to wait until we're done.
-
-       Alternatively we could use thread local storage for those global
-       variables, which may or may not have advantages */
+       Those variables are thread-local (see TCC_TLS), but compilation is
+       still serialized because some state, such as the library list and
+       the reallocator hook, is shared. */
 
     tcc_enter_state(s1);
     s1->error_set_jmp_enabled = 1;
