@@ -9,6 +9,11 @@ endif
 
 ifeq ($(findstring $(MAKECMDGOALS),clean distclean pgo),)
  include $(TOP)/config.mak
+else
+ # These goals must work in an unconfigured tree, so config.mak (which
+ # defines ARCH) may not exist yet.  PGO_CFLAGS_ARCH below needs it to
+ # decide on -mno-avx512f.
+ ARCH ?= $(patsubst i%86,i386,$(shell uname -m))
 endif
 
 # Minimum C standard required to build TCC: C11, because the sources
@@ -398,12 +403,14 @@ pgo-bench:
 	      print "Throughput: (no -bench data)"; \
 	  }'
 	@if command -v valgrind >/dev/null 2>&1; then \
-	  vg=$$(valgrind --tool=cachegrind --cachegrind-out-file=/dev/null \
-	    ./tcc -B. -Iinclude -I. tcc.c -o /dev/null 2>&1); \
-	  echo "$$vg" | sed -n \
-	    's/.*I *refs: *\([0-9,][0-9,]*\).*/Instructions (Valgrind): \1/p'; \
-	  echo "$$vg" | grep -q "I *refs:" || \
+	  if vg=$$(valgrind --tool=cachegrind --cachegrind-out-file=/dev/null \
+	    ./tcc -B. -Iinclude -I. tcc.c -o /dev/null 2>&1); then \
+	    echo "$$vg" | sed -n \
+	      's/.*I *refs: *\([0-9,][0-9,]*\).*/Instructions (Valgrind): \1/p' | \
+	      grep . || echo "Instructions (Valgrind): measurement failed"; \
+	  else \
 	    echo "Instructions (Valgrind): measurement failed"; \
+	  fi; \
 	else \
 	  echo "Instructions (Valgrind): skipped (valgrind not found)"; \
 	fi
@@ -437,6 +444,18 @@ endif
 	@echo "PGO build complete using $(PGO_CC)!"
 	@$(MAKE) --no-print-directory pgo-bench
 	@$(PGO_CLEAN)
+
+# Append `pgo-bench` results to the shared history file, one row per
+# commit and host compiler.  Each commit is built in a throw-away
+# worktree, so the current tree and its build artifacts are untouched.
+# Usage: make pgo-record [PGO_HISTORY_RANGE=A..B]
+#                         [PGO_HISTORY_CC="clang gcc"]
+PGO_HISTORY = bench/pgo-history.tsv
+PGO_HISTORY_RANGE ?= HEAD^..HEAD
+PGO_HISTORY_CC ?= clang gcc
+pgo-record:
+	@tools/pgo-history.sh -o $(PGO_HISTORY) -c "$(PGO_HISTORY_CC)" \
+		"$(PGO_HISTORY_RANGE)"
 
 
 

@@ -1,0 +1,175 @@
+#!/bin/sh
+# Record `make pgo-bench` results for a range of commits.
+#
+# Every commit is built with Profile-Guided Optimization in a throw-away
+# worktree, so neither the current working tree nor its build artifacts
+# are touched, and one row per commit and host compiler is appended to a
+# tab-separated history file:
+#
+#     commit <TAB> date <TAB> host_cc <TAB> Mlines/s <TAB> instructions
+#
+# The numbers are obtained with exactly the same commands that
+# `make pgo-bench` uses (best of 5 self-compiles with `-bench`, then
+# `valgrind --tool=cachegrind`), which also makes the target usable for
+# commits that predate `pgo-bench`.  A "-" in either numeric column means
+# that the build or the measurement failed for that commit and compiler.
+#
+# Usage: tools/pgo-history.sh [OPTIONS] [REV-RANGE]
+#
+#   -c COMPILERS  host compilers to record, default "clang gcc"
+#   -o FILE       history file, default bench/pgo-history.tsv
+#   -w DIR        scratch directory, default ${TMPDIR:-/tmp}/pgo-history
+#   -a            record every commit in the range, not only the ones
+#                 that touch the compiler sources
+#   -h            show this help
+#
+# REV-RANGE defaults to HEAD^..HEAD.  A single revision REV is understood
+# as REV^..REV.  The first commit of the range (the base revision) is
+# always recorded, since it is the pre-change reference point.
+#
+# Commits that already have a row for a given host compiler are skipped,
+# so an interrupted run can simply be restarted to fill in the gaps.
+
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+comps="clang gcc"
+out=bench/pgo-history.tsv
+workdir=${TMPDIR:-/tmp}/pgo-history
+all_commits=no
+range=
+
+usage() {
+    sed -n '2,32p' "$0" | sed 's/^# \{0,1\}//'
+    exit "${1:-0}"
+}
+
+while getopts c:o:w:ah opt; do
+    case $opt in
+    c) comps=$OPTARG ;;
+    o) out=$OPTARG ;;
+    w) workdir=$OPTARG ;;
+    a) all_commits=yes ;;
+    h) usage 0 ;;
+    *) usage 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+[ $# -gt 0 ] && range=$1
+[ -n "$range" ] || range=HEAD^..HEAD
+
+case $range in
+*..*) left=${range%%..*} ;;
+*) left=$range^ ;;
+esac
+base=$(git rev-parse --verify "$left")
+
+if [ "$all_commits" = yes ]; then
+    commits=$(git rev-list --reverse "$range")
+else
+    commits=$(git rev-list --reverse "$range" -- \
+        'tcc*.c' 'tcc*.h' 'lib/*' 'Makefile' 'configure')
+fi
+
+# Always benchmark the pre-change reference point as well.
+case " $(echo $commits) " in
+*" $base "*) ;;
+*) commits="$base $commits" ;;
+esac
+
+mkdir -p "$workdir"
+log=$workdir/pgo-history.log
+[ -f "$out" ] || printf 'commit\tdate\thost_cc\tMlines/s\tinstructions\n' > "$out"
+
+say() {
+    printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >> "$log"
+    printf '%s\n' "$*"
+}
+
+recorded() { # commit compiler
+    awk -F '\t' -v c="$1" -v h="$2" \
+        '$1 == c && $3 == h { found = 1 } END { exit !found }' "$out"
+}
+
+# Same commands as the `pgo-bench` Makefile target.
+bench() { # worktree
+    (cd "$1" &&
+        i=0
+        while [ $i -lt 5 ]; do
+            ./tcc -B. -Iinclude -I. -bench tcc.c -o /dev/null 2>&1
+            i=$((i + 1))
+        done |
+        awk '/lines\/s/ {
+                for (i = 1; i <= NF; i++)
+                    if ($i == "lines/s,") {
+                        l = $(i - 1) + 0
+                        if (l > best) best = l
+                    }
+             }
+             END { if (best) printf "%d\n", best }')
+}
+
+instr() { # worktree
+    (cd "$1" &&
+        valgrind --tool=cachegrind --cachegrind-out-file=/dev/null \
+            ./tcc -B. -Iinclude -I. tcc.c -o /dev/null 2>&1)
+}
+
+for sha in $commits; do
+    short=$(git rev-parse --short "$sha")
+    date=$(git show -s --format=%ad --date=short "$sha")
+    for cc in $comps; do
+        if recorded "$short" "$cc"; then
+            say "skip $short $cc (already recorded)"
+            continue
+        fi
+        wt=$workdir/$short-$cc
+        git worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
+        say "build $short ($cc)"
+        if ! git worktree add -f --detach "$wt" "$sha" >/dev/null 2>&1; then
+            say "  worktree add failed"
+            printf '%s\t%s\t%s\t-\t-\n' "$short" "$date" "$cc" >> "$out"
+            continue
+        fi
+        if ! (cd "$wt" &&
+                timeout -k 5 300 ./configure >.pgo-configure.log 2>&1 &&
+                timeout -k 5 3600 make pgo PGO_CC="$cc" >.pgo-build.log 2>&1); then
+            cp "$wt"/.pgo-*.log "$workdir/$short-$cc.failed.log" 2>/dev/null ||
+                true
+            say "  FAILED (see $workdir/$short-$cc.failed.log)"
+            printf '%s\t%s\t%s\t-\t-\n' "$short" "$date" "$cc" >> "$out"
+            git worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
+            continue
+        fi
+
+        thr=$(bench "$wt" || true)
+        [ -n "$thr" ] && [ "$thr" -gt 0 ] 2>/dev/null || thr=-
+        if vg=$(instr "$wt"); then
+            ins=$(printf '%s\n' "$vg" |
+                sed -n 's/.*I *refs: *\([0-9][0-9,]*\).*/\1/p' | tail -1)
+            case $ins in
+            '' | *[!0-9,]*) ins=- ;;
+            *) ins=$(printf '%s' "$ins" | tr -d ,) ;;
+            esac
+        else
+            ins=-
+            say "  valgrind could not measure this build"
+        fi
+
+        if [ "$thr" = - ]; then
+            printf '%s\t%s\t%s\t-\t%s\n' "$short" "$date" "$cc" \
+                "$ins" >> "$out"
+            say "  $cc: throughput measurement failed"
+        else
+            printf '%s\t%s\t%s\t%s\t%s\n' "$short" "$date" "$cc" \
+                "$(awk -v l="$thr" 'BEGIN { printf "%.3f", l / 1e6 }')" \
+                "$ins" >> "$out"
+            say "  $cc: $(awk -v l="$thr" 'BEGIN { printf "%.3f", l / 1e6 }') Mlines/s, $ins instructions"
+        fi
+        git worktree remove --force "$wt" >/dev/null 2>&1 || rm -rf "$wt"
+    done
+done
+
+say "history written to $out"

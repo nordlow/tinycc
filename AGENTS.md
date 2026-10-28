@@ -287,6 +287,28 @@ code. Run `make pgo-bench` on its own to benchmark an already-built
  make pgo`, ~4.62M lines/sec) by ~11% due to LLVM's aggressive
  profile-guided inlining and optimizer passes.
 
+### Recording benchmark results
+
+Every `pgo-bench` result is recorded, one row per commit and host
+compiler (`commit`, `date`, `host_cc`, `Mlines/s`, `instructions`), in
+`bench/pgo-history.tsv`:
+
+```bash
+make pgo-record PGO_HISTORY_RANGE=HEAD^..HEAD
+make pgo-record PGO_HISTORY_CC=gcc PGO_HISTORY_RANGE=a1b2d9c9..HEAD
+```
+
+`make pgo` and `make pgo-bench` never write that file themselves, so
+scratch builds cannot pollute it. `pgo-record` builds each commit in a
+throw-away worktree under `${TMPDIR:-/tmp}/pgo-history`, skips the
+(commit, compiler) pairs that already have a row, and always records
+the base commit of the range as the pre-change reference point. A `-`
+in a numeric column means that the build or the benchmark failed.
+Numbers are only comparable on the same machine with the same PGO
+settings, so keep `PGO_MARCH` and the compiler versions stable. Until
+the current performance work settles, record every commit that touches
+the compiler sources.
+
 ## Profiling Strategy (`perf` & Valgrind Cachegrind)
 
 When analyzing and optimizing performance hot spots:
@@ -321,3 +343,22 @@ When analyzing and optimizing performance hot spots:
 - **Compiler Performance:** Clang PGO (`~5.43M lines/sec`) outperforms
   GCC PGO (`~4.86M lines/sec`) by ~11% due to LLVM's advanced
   profile-guided inlining passes.
+
+## Key Session Takeaways (2026-10-28)
+
+- **Thread-local compiler state is expensive for Clang:** `bc86ac3c`
+  moved the mutable compiler state into TLS (`TCC_TLS`). Clang compiles
+  the resulting PIE with the general-dynamic TLS model, so almost every
+  access to preprocessor/generator state turns into a `__tls_get_addr`
+  call: +11% executed instructions and +6% cycles for
+  self-compilation, concentrated in `next_nomacro`, `next`,
+  `next_argstream` and `unary`. GCC picks a cheaper TLS model (no
+  `__tls_get_addr`) and pays only ~1%. Building with
+  `-ftls-model=initial-exec` removes those calls and recovers ~8% of
+  the 11%.
+- **`pgo-bench` throughput has 1 ms resolution**, which is ~5% of a
+  ~20 ms self-compile: single readings cannot resolve smaller changes.
+  Use the Valgrind instruction count (exact) or `perf stat -e cycles`
+  for finer comparisons, and compare commits on a fixed input tree,
+  since `tcc.c` itself keeps growing.
+
