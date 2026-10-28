@@ -1,0 +1,6 @@
+slice eq: 1
+slice ne: 0
+slice ne diff: 1
+arr slice eq: 1
+slice arr eq: 1
+zero len eq: 1

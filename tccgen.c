@@ -172,6 +172,9 @@ static void gv_dup(void);
 static int get_temp_local_var(int size,int align,int *r2);
 static void cast_error(CType *st, CType *dt);
 static int is_slice_type(CType *type);
+static Sym *make_slice_type(CType *elem);
+static int convert_array_to_slice(CType *dt);
+static int copy_slice_to_temp(CType *type);
 static void d_array_suffix(CType *type, int storage);
 static void end_switch(void);
 static int check_d_static_assert(void);
@@ -2970,6 +2973,25 @@ static int compare_types(CType *type1, CType *type2, int unqualified)
         return 1;
     }
 }
+static int can_compare_array_or_slice_content(CType *type)
+{
+    if (is_slice_type(type))
+        return 1;
+    if (type->t & (VT_ARRAY | VT_VLA)) {
+        if (type->ref && type->ref->c > 0)
+            return 1;
+    }
+     return 0;
+ }
+ static void get_array_or_slice_elem(CType *type, CType *elem)
+ {
+    if (type->t & (VT_ARRAY | VT_VLA))
+        *elem = type->ref->type;
+    else if (is_slice_type(type))
+        *elem = *pointed_type(&type->ref->next->next->type);
+    else
+        elem->t = VT_VOID;
+}
 
 #define CMP_OP 'C'
 #define SHIFT_OP 'S'
@@ -2993,12 +3015,23 @@ static int combine_types(CType *dest, SValue *op1, SValue *op2, int op)
     type.t = VT_VOID;
     type.ref = NULL;
 
-    if (bt1 == VT_VOID || bt2 == VT_VOID) {
-        if (op != '?')
-            tcc_error("operation on void value");
-        /* NOTE: as an extension, we accept void on only one side */
-        type.t = VT_VOID;
-    } else if (bt1 == VT_PTR || bt2 == VT_PTR) {
+     if (bt1 == VT_VOID || bt2 == VT_VOID) {
+         if (op != '?')
+             tcc_error("operation on void value");
+         /* NOTE: as an extension, we accept void on only one side */
+         type.t = VT_VOID;
+     } else if (op == CMP_OP && (is_slice_type(type1) || is_slice_type(type2)) && can_compare_array_or_slice_content(type1) && can_compare_array_or_slice_content(type2)) {
+         CType elem1, elem2;
+         get_array_or_slice_elem(type1, &elem1);
+         get_array_or_slice_elem(type2, &elem2);
+         if (!is_compatible_unqualified_types(&elem1, &elem2))
+             ret = 0;
+         if ((type1->t & VT_ARRAY) && (type2->t & VT_ARRAY)
+             && type1->ref->c > 0 && type2->ref->c > 0
+             && type1->ref->c != type2->ref->c)
+             ret = 0;
+         type.t = VT_INT;
+     } else if (bt1 == VT_PTR || bt2 == VT_PTR) {
         if (op == '+') {
           if (!is_integer_btype(bt1 == VT_PTR ? bt2 : bt1))
             ret = 0;
@@ -3135,11 +3168,70 @@ redo:
 	    vswap();
 	}
 	goto redo;
-    } else if (!combine_types(&combtype, vtop - 1, vtop, op_class)) {
-op_err:
-        tcc_error("invalid operand types for binary operation");
-    } else if (bt1 == VT_PTR || bt2 == VT_PTR) {
-        /* at least one operand is a pointer */
+     } else if (!combine_types(&combtype, vtop - 1, vtop, op_class)) {
+ op_err:
+         tcc_error("invalid operand types for binary operation");
+     } else if ((op == TOK_EQ || op == TOK_NE) &&
+              (is_slice_type(&vtop[-1].type) || is_slice_type(&vtop[0].type)) &&
+              can_compare_array_or_slice_content(&vtop[-1].type) &&
+              can_compare_array_or_slice_content(&vtop[0].type) &&
+              !is_null_pointer(vtop) && !is_null_pointer(vtop - 1)) {
+         CType elem, slice_type;
+         int esize, ealign, la, lb;
+ 
+         get_array_or_slice_elem(&vtop[-1].type, &elem);
+         slice_type.t = VT_STRUCT;
+         slice_type.ref = make_slice_type(&elem);
+         esize = type_size(&elem, &ealign);
+ 
+         /* Right operand is at vtop */
+         if (is_slice_type(&vtop->type)) {
+             CType re;
+             get_array_or_slice_elem(&vtop->type, &re);
+             if (!is_compatible_unqualified_types(&re, &elem))
+                 cast_error(&vtop->type, &slice_type);
+             lb = copy_slice_to_temp(&vtop->type);
+         } else if (vtop->type.t & (VT_ARRAY | VT_VLA)) {
+             if (!is_compatible_unqualified_types(&vtop->type.ref->type, &elem))
+                 cast_error(&vtop->type, &slice_type);
+             convert_array_to_slice(&slice_type);
+             lb = copy_slice_to_temp(&slice_type);
+         } else {
+             tcc_error("cannot compare array/slice with non-array/non-slice");
+         }
+ 
+         /* Left operand is now at vtop */
+         if (is_slice_type(&vtop->type)) {
+             CType le;
+             get_array_or_slice_elem(&vtop->type, &le);
+             if (!is_compatible_unqualified_types(&le, &elem))
+                 cast_error(&vtop->type, &slice_type);
+             la = copy_slice_to_temp(&vtop->type);
+         } else if (vtop->type.t & (VT_ARRAY | VT_VLA)) {
+             if (!is_compatible_unqualified_types(&vtop->type.ref->type, &elem))
+                 cast_error(&vtop->type, &slice_type);
+             convert_array_to_slice(&slice_type);
+             la = copy_slice_to_temp(&slice_type);
+         } else {
+             tcc_error("cannot compare array/slice with non-array/non-slice");
+         }
+ 
+         vpush_helper_func(TOK___darray_eq);
+         vset(&char_pointer_type, VT_LOCAL, la);
+         vset(&char_pointer_type, VT_LOCAL, lb);
+         vpushs(esize);
+         gfunc_call(3);
+         vpushi(0);
+         vtop->type.t = VT_INT;
+         vtop->r = REG_IRET;
+         if (op == TOK_NE) {
+             vpushi(0);
+             gen_op(TOK_EQ);
+         }
+     } else if (op_class == CMP_OP &&
+              is_slice_type(&vtop[-1].type) && is_slice_type(&vtop[0].type)) {
+         tcc_error("relational operators not supported for arrays/slices");
+     } else if (bt1 == VT_PTR || bt2 == VT_PTR) {
         /* relational op: must be both pointers */
         int align;
         if (op_class == CMP_OP)

@@ -640,6 +640,7 @@ extern void *realloc(void *, size_t);
 extern void free(void *);
 extern void *memcpy(void *, const void *, size_t);
 extern void *memmove(void *, const void *, size_t);
+extern int memcmp(const void *, const void *, size_t);
 extern int printf(const char *, ...);
 extern void exit(int);
 
@@ -757,6 +758,20 @@ void __darray_concat(void *dst, const void *asrc, const void *bsrc,
         memcpy(d->ptr, a->ptr, na * elemsize);
     if (nb)
         memcpy((char *)d->ptr + na * elemsize, b->ptr, nb * elemsize);
+}
+int __darray_eq(const void *s1, const void *s2, size_t elemsize)
+{
+    const struct darray_header *a = s1;
+    const struct darray_header *b = s2;
+    if (a->length != b->length)
+        return 0;
+    if (a->length == 0)
+        return 1;
+    if (a->ptr == b->ptr)
+        return 1;
+    if (!a->ptr || !b->ptr)
+        return a->ptr == b->ptr;
+    return memcmp(a->ptr, b->ptr, a->length * elemsize) == 0;
 }
 void __d_assert(const char *msg)
 {
