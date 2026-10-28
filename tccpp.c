@@ -3530,6 +3530,7 @@ static int macro_subst(
 ST_FUNC void next(void)
 {
     int t;
+    ++total_tokens;
     if (__builtin_expect(macro_ptr != NULL, 0)) {
         while (macro_ptr) {
         redo:

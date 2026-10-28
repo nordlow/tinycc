@@ -2332,11 +2332,12 @@ PUB_FUNC void tcc_print_stats(TCCState *s1, unsigned total_time)
 {
     if (!total_time)
         total_time = 1;
-    fprintf(stderr, "# %d idents, %d lines, %u bytes\n"
-                    "# %0.3f s, %u lines/s, %0.1f MB/s\n",
-           total_idents, total_lines, total_bytes,
+    fprintf(stderr, "# %d idents, %d tokens, %d lines, %u bytes\n"
+                    "# %0.3f s, %u lines/s, %u tokens/s, %0.1f MB/s\n",
+           total_idents, total_tokens, total_lines, total_bytes,
            (double)total_time/1000,
            (unsigned)total_lines*1000/total_time,
+           (unsigned)((double)total_tokens*1000/total_time),
            (double)total_bytes/1000/total_time);
     fprintf(stderr, "# text %u, data.rw %u, data.ro %u, bss %u bytes\n",
            s1->total_output[0],

@@ -1045,6 +1045,7 @@ struct TCCState {
 
     /* benchmark info */
     int total_idents;
+    int total_tokens;
     int total_lines;
     unsigned int total_bytes;
     unsigned int total_output[4];
@@ -2057,6 +2058,7 @@ static inline void post_sem(TCCSem *p) {
 #define tcc_warning         TCC_SET_STATE(_tcc_warning)
 
 #define total_idents        TCC_STATE_VAR(total_idents)
+#define total_tokens        TCC_STATE_VAR(total_tokens)
 #define total_lines         TCC_STATE_VAR(total_lines)
 #define total_bytes         TCC_STATE_VAR(total_bytes)
 
