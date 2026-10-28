@@ -346,6 +346,16 @@ serialization and graph traversal.
   - Equivalent to adding a metaprogramming subsystem (compile-time
     tuples, control flow constructs, traits, RTTI tables,
     serialization).
+- **Formatting**:
+  - TCC already has some support for printing values and types in
+    diagnostics. Extend this to an API that returns lazy evaluated
+    conversion from types and values to string and binary
+    representations over various form such string, language itself,
+    JSON, BSON, custom binary etc. API should look something like
+    - @str(x), @s(x)
+    - @fmt(x, ".3"), @f(x)
+    - @as(x, json), $json(x)
+    where UFCS is supported aswell say as `x.$s`.
 - **`inout` & Signature-Elision Inference**:
   - A compact surface area, but functions as a type-and-effect system,
     requiring strict semantic soundness per line of code.
