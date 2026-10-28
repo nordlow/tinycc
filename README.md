@@ -108,7 +108,7 @@ The compiler used to *build* TPC strongly affects the speed of the
 resulting `tcc` binary.  On an AMD Ryzen AI 7 350 (Linux x64), full
 `make pgo` builds of commit `faa148ff` measure:
 
-- `PGO_CC=gcc`: about 5.6 Mlines/s and 207 M executed instructions
+- `PGO_CC=gcc`: about 5.3 Mlines/s and 207 M executed instructions
 - `PGO_CC=clang`: about 4.8 Mlines/s and 235 M executed instructions
 - `PGO_CC=clang` with `-ftls-model=initial-exec`: about 4.8 Mlines/s
   and 223 M executed instructions
@@ -469,7 +469,9 @@ from those checks.  Attributes are also accepted on statements and
 blocks, but only function-level safety is enforced so far.  `@pure`
 is recorded on the function type; it does not enable optimisations
 yet.  The planned semantics are documented in
-[todo/pure_attribute_semantics.md](todo/pure_attribute_semantics.md).
+[todo/pure_attribute_semantics.md](todo/pure_attribute_semantics.md)
+and, for the intended purity/determinism/`@nodet` relationship, in
+[todo/deterministic_attribute.md](todo/deterministic_attribute.md).
 
 ### Defer and scope(exit)
 
