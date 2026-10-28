@@ -101,7 +101,7 @@ is added so that Valgrind can decode the generated code.
 
 The compiler used to *build* TPC strongly affects the speed of the
 resulting `tcc` binary.  On an AMD Ryzen AI 7 350 (Linux x64), full
-`make pgo` builds of the same sources measure:
+`make pgo` builds of commit `faa148ff` measure:
 
 - `PGO_CC=gcc`: about 5.6 Mlines/s and 207 M executed instructions
 - `PGO_CC=clang`: about 4.8 Mlines/s and 235 M executed instructions
