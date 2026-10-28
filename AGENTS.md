@@ -306,6 +306,10 @@ When analyzing and optimizing performance hot spots:
    perf report -i perf.data --stdio -n --no-children
    ```
 
+## Code style
+- **Prose/Comments in Markdown & Org-Mode:** wrap at 70 columns (Emacs
+  `fill-column`, compatible with `fill-paragraph`).
+
 ## Key Session Takeaways (2026-10-24)
 
 - **Frontend SIMD Parsing:** Replacing byte-by-byte loops in
