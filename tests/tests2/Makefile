@@ -172,6 +172,8 @@ endif
 373_scope_guards_error.test : GEN = $(GEN-TCC)
 374_d_assert.test : FLAGS += -lang=d
 374_d_assert.test : GEN = $(GEN-TCC)
+381_d_safety_pointer_arith.test : FLAGS += -dt -lang=d
+381_d_safety_pointer_arith.test : GEN = $(GEN-TCC)
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)

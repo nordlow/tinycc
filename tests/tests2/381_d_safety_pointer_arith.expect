@@ -1,0 +1,20 @@
+[test_safe_add]
+381_d_safety_pointer_arith.c:5: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_sub]
+381_d_safety_pointer_arith.c:11: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_diff]
+381_d_safety_pointer_arith.c:17: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_inc]
+381_d_safety_pointer_arith.c:23: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_index]
+381_d_safety_pointer_arith.c:30: error: pointer indexing not allowed in @safe scope
+
+[test_trusted_add]
+20
+
+[test_system_add]
+40

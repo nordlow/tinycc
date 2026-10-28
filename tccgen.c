@@ -72,6 +72,7 @@ ST_DATA int nocode_wanted; /* no code generation wanted */
 ST_DATA int global_expr;  /* true if compound literals must be allocated globally (used during initializers parsing */
 ST_DATA CType func_vt; /* current function return type (used by return instruction) */
 ST_DATA int func_var; /* true if current function is variadic (used by return instruction) */
+ST_DATA int func_safety; /* current function safety level (FUNC_SAFETY_...) */
 ST_DATA int func_vc; /* stack address for implicit struct return storage */
 ST_DATA int func_ind; /* function start address */
 static int func_old;
@@ -3240,6 +3241,8 @@ redo:
         int align;
         if (op_class == CMP_OP)
             goto std_op;
+        if (func_safety == FUNC_SAFETY_SAFE)
+            tcc_error("pointer arithmetic not allowed in @safe scope");
         /* if both pointers, then it must be the '-' op */
         if (bt1 == VT_PTR && bt2 == VT_PTR) {
             if (op != '-')
@@ -4148,6 +4151,8 @@ ST_FUNC void vstore(void)
 ST_FUNC void inc(int post, int c)
 {
     test_lvalue();
+    if (func_safety == FUNC_SAFETY_SAFE && ((vtop->type.t & VT_BTYPE) == VT_PTR))
+        tcc_error("pointer arithmetic not allowed in @safe scope");
     vdup(); /* save lvalue */
     if (post) {
         gv_dup(); /* duplicate value */
@@ -7231,7 +7236,8 @@ special_math_val:
             base_type = vtop->type;
             base_sv = vtop;
             base_is_slice = is_slice_type(&base_type);
-
+            if ((base_type.t & VT_BTYPE) == VT_PTR && func_safety == FUNC_SAFETY_SAFE)
+                tcc_error("pointer indexing not allowed in @safe scope");
             if (tok == TOK_TWODOTS || tok == TOK_DOTS
                 || (tcc_state->lang_d && tok == ']')) {
                 /* full slice: a[..], or a[] in D mode */
@@ -10152,6 +10158,7 @@ static void gen_function(Sym *sym)
     func_ind = ind;
     func_vt = sym->type.ref->type;
     func_var = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
+    func_safety = sym->type.ref->f.func_safety;
     func_old = sym->type.ref->f.func_type == FUNC_OLD;
 
     /* NOTE: we patch the symbol size later */
@@ -10202,6 +10209,7 @@ static void gen_function(Sym *sym)
     funcname = ""; /* for safety */
     func_vt.t = VT_VOID; /* for safety */
     func_var = 0; /* for safety */
+    func_safety = FUNC_SAFETY_UNKNOWN; /* for safety */
     ind = 0; /* for safety */
     func_ind = -1;
     nocode_wanted = DATA_ONLY_WANTED;
