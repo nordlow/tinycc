@@ -1251,21 +1251,8 @@ static void merge_funcattr(struct FuncAttr *fa, struct FuncAttr *fa1)
       fa->func_dtor = 1;
     if (fa1->func_pure)
       fa->func_pure = 1;
-    if (fa1->func_safe) {
-      fa->func_safe = 1;
-      fa->func_system = 0;
-      fa->func_trusted = 0;
-    }
-    if (fa1->func_system) {
-      fa->func_safe = 0;
-      fa->func_system = 1;
-      fa->func_trusted = 0;
-    }
-    if (fa1->func_trusted) {
-      fa->func_safe = 0;
-      fa->func_system = 0;
-      fa->func_trusted = 1;
-    }
+    if (fa1->func_safety)
+      fa->func_safety = fa1->func_safety;
 }
 
 /* Merge attributes.  */
@@ -5627,19 +5614,13 @@ static void parse_d_attributes(AttributeDef *ad)
                 ad->f.func_pure = 1;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "safe")) {
-                ad->f.func_safe = 1;
-                ad->f.func_system = 0;
-                ad->f.func_trusted = 0;
+                ad->f.func_safety = FUNC_SAFETY_SAFE;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "system")) {
-                ad->f.func_safe = 0;
-                ad->f.func_system = 1;
-                ad->f.func_trusted = 0;
+                ad->f.func_safety = FUNC_SAFETY_SYSTEM;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
-                ad->f.func_safe = 0;
-                ad->f.func_system = 0;
-                ad->f.func_trusted = 1;
+                ad->f.func_safety = FUNC_SAFETY_TRUSTED;
                 next();
             } else {
                 int t = tok;

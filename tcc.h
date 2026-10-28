@@ -513,6 +513,13 @@ struct SymAttr {
                         includes the terminating null character */
 };
 
+enum {
+    FUNC_SAFETY_UNKNOWN = 0,
+    FUNC_SAFETY_SYSTEM,
+    FUNC_SAFETY_TRUSTED,
+    FUNC_SAFETY_SAFE
+};
+
 /* function attributes or temporary attributes for parsing */
 struct FuncAttr {
     unsigned
@@ -524,10 +531,8 @@ struct FuncAttr {
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
     func_pure   : 1, /* @pure or attribute((pure)) */
-    func_safe   : 1, /* @safe */
-    func_system : 1, /* @system */
-    func_trusted : 1, /* @trusted */
-    xxxx        : 11;
+    func_safety : 2, /* FUNC_SAFETY_... */
+    xxxx        : 10;
 };
 
 /* symbol management */
