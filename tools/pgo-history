@@ -14,7 +14,7 @@
 # commits that predate `pgo-bench`.  A "-" in either numeric column means
 # that the build or the measurement failed for that commit and compiler.
 #
-# Usage: tools/pgo-history.sh [OPTIONS] [REV-RANGE]
+# Usage: tools/pgo-history [OPTIONS] [REV-RANGE]
 #
 #   -c COMPILERS  host compilers to record, default "clang gcc"
 #   -o FILE       history file, default bench/pgo-history.tsv

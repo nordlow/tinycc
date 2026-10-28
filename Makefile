@@ -454,7 +454,7 @@ PGO_HISTORY = bench/pgo-history.tsv
 PGO_HISTORY_RANGE ?= HEAD^..HEAD
 PGO_HISTORY_CC ?= clang gcc
 pgo-record:
-	@tools/pgo-history.sh -o $(PGO_HISTORY) -c "$(PGO_HISTORY_CC)" \
+	@tools/pgo-history -o $(PGO_HISTORY) -c "$(PGO_HISTORY_CC)" \
 		"$(PGO_HISTORY_RANGE)"
 
 
