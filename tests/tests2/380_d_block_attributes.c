@@ -7,13 +7,9 @@ void f(void) {
 }
 
 int main(void) {
-    @safe {
-        @system {
-            @pure {
-                f();
-            }
-        }
-    }
-    printf("OK\n");
+    int x = 0;
+    @trusted f();
+    @trusted x = 42;
+    printf("%d OK\n", x);
     return 0;
 }

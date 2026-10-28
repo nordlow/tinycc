@@ -8658,11 +8658,19 @@ again:
         memset(&ad, 0, sizeof(ad));
         unget_tok('@');
         parse_d_attributes(&ad);
-        if (tok != '{')
-            expect("'{'");
-        t = tok;
-        next();
-        goto parse_compound_block;
+        if (tok == '{') {
+            t = tok;
+            next();
+            goto parse_compound_block;
+        }
+        if (flags & STMT_EXPR) {
+            vpop();
+            gexpr();
+        } else {
+            gexpr();
+            vpop();
+        }
+        skip(';');
 
     } else if (t == '{') {
     parse_compound_block:
