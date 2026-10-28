@@ -1249,6 +1249,8 @@ static void merge_funcattr(struct FuncAttr *fa, struct FuncAttr *fa1)
       fa->func_ctor = 1;
     if (fa1->func_dtor)
       fa->func_dtor = 1;
+    if (fa1->func_pure)
+      fa->func_pure = 1;
 }
 
 /* Merge attributes.  */
@@ -4318,7 +4320,7 @@ redo:
         case TOK_CONST3:
         case TOK_PURE1:
         case TOK_PURE2:
-	    /* ignored */
+            ad->f.func_pure = 1;
             break;
         case TOK_NOINLINE:
 	    /* ignored */
@@ -5601,6 +5603,30 @@ static void gen_slice_concat(void)
     vtop->r2 = r2;
 }
 
+static void parse_d_attributes(AttributeDef *ad)
+{
+    for (;;) {
+        if (tok == '@') {
+            next();
+            if (tok == TOK_PURE1 || tok == TOK_PURE2 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "pure"))) {
+                ad->f.func_pure = 1;
+                next();
+            } else {
+                int t = tok;
+                if (t >= TOK_IDENT) {
+                    tcc_error("unknown attribute '@%s'", get_tok_str(t, &tokc));
+                } else {
+                    tcc_error("expected attribute name after '@'");
+                }
+            }
+        } else if (tok == TOK_ATTRIBUTE1 || tok == TOK_ATTRIBUTE2) {
+            parse_attribute(ad);
+        } else {
+            break;
+        }
+    }
+}
+
 static int post_type(CType *type, AttributeDef *ad, int storage, int td)
 {
     int n, l, t1, arg_size, align;
@@ -5682,6 +5708,7 @@ static int post_type(CType *type, AttributeDef *ad, int storage, int td)
             /* if no parameters, then old type prototype */
             l = FUNC_OLD;
         skip(')');
+        parse_d_attributes(ad);
         /* A function return value has the unqualified version of its
            declared type. */
         type->t &= ~VT_QUAL;

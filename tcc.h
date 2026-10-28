@@ -523,7 +523,8 @@ struct FuncAttr {
     func_dtor   : 1, /* attribute((destructor)) */
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
-    xxxx        : 15;
+    func_pure   : 1, /* @pure or attribute((pure)) */
+    xxxx        : 14;
 };
 
 /* symbol management */
