@@ -1079,6 +1079,7 @@ struct filespec {
 #define VT_SLICE           12  /* D-style slice type */
 #define VT_QLONG           13  /* 128-bit integer. Only used for x86-64 ABI */
 #define VT_QFLOAT          14  /* 128-bit float. Only used for x86-64 ABI */
+#define VT_AUTO            15  /* auto type inference */
 
 #define VT_UNSIGNED    0x0010  /* unsigned type */
 #define VT_DEFSIGN     0x0020  /* explicitly signed or unsigned */

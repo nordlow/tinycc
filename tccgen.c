@@ -5164,9 +5164,11 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             next();
             break;
         case TOK_REGISTER:
-        case TOK_AUTO:
             next();
             break;
+        case TOK_AUTO:
+            u = VT_AUTO;
+            goto basic_type;
         case TOK_UNSIGNED:
             if ((t & (VT_DEFSIGN|VT_UNSIGNED)) == VT_DEFSIGN)
                 tcc_error("signed and unsigned modifier");
@@ -5833,6 +5835,27 @@ static void d_array_suffix(CType *type, int storage)
    type_decl().  If this (possibly abstract) declarator is a pointer chain
    it returns the innermost pointed to type (equals *type, but is a different
    pointer), otherwise returns type itself, that's used for recursive calls.  */
+static int has_auto_type(CType *t)
+{
+    if ((t->t & VT_BTYPE) == VT_AUTO)
+        return 1;
+    if ((t->t & VT_BTYPE) == VT_PTR || (t->t & VT_ARRAY))
+        return has_auto_type(pointed_type(t));
+    return 0;
+}
+
+static void subst_auto_type(CType *t, CType *deduced)
+{
+    if ((t->t & VT_BTYPE) == VT_AUTO) {
+        int quals = t->t & VT_QUAL;
+        int storage = t->t & VT_STORAGE;
+        t->t = (deduced->t & ~VT_QUAL) | quals | storage;
+        t->ref = deduced->ref;
+    } else if ((t->t & VT_BTYPE) == VT_PTR || (t->t & VT_ARRAY)) {
+        subst_auto_type(pointed_type(t), deduced);
+    }
+}
+
 static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
 {
     CType *post, *ret;
@@ -10712,7 +10735,8 @@ static int check_d_conditional(int l, int flags)
    or VT_JMP if parsing c99 for decl: for (int i = 0, ...) */
 static int decl(int l)
 {
-    int v, has_init, r, oldint;
+    int v, has_init, r, oldint, end_tok = 0;
+    TokenString *init_str;
     CType type, btype;
     Sym *sym, *sa;
     AttributeDef ad, adbase;
@@ -10798,9 +10822,48 @@ static int decl(int l)
         while (1) { /* iterate thru each declaration */
             type = btype;
 	    ad = adbase;
+            init_str = NULL;
+            has_init = 0;
             type_decl(&type, &ad, &v, l == VT_CMP ? TYPE_DIRECT | TYPE_PARAM : TYPE_DIRECT);
             if (cur_tcc_state && cur_tcc_state->dump_types)
                 ptype("TYPE", &type, v);
+
+            if (has_auto_type(&type)) {
+                if (tok != '=')
+                    tcc_error("declaration with 'auto' has no initializer");
+                next();
+                has_init = 1;
+                init_str = tok_str_alloc();
+                {
+                    int level = 0;
+                    while (tok != TOK_EOF) {
+                        int t = tok;
+                        if (level == 0 && (t == ';' || t == ',')) {
+                            end_tok = t;
+                            break;
+                        }
+                        tok_str_add_tok(init_str);
+                        if (t == '(' || t == '[' || t == '{')
+                            ++level;
+                        else if (t == ')' || t == ']' || t == '}') {
+                            if (level)
+                                --level;
+                        }
+                        next();
+                    }
+                    tok_str_add(init_str, TOK_EOF);
+                }
+
+                begin_macro(init_str, 1);
+                next();
+                {
+                    CType deduced_type;
+                    expr_type(&deduced_type, gexpr);
+                    convert_expression_type(&deduced_type);
+                    subst_auto_type(&type, &deduced_type);
+                }
+                end_macro();
+            }
             if ((type.t & VT_BTYPE) == VT_FUNC) {
                 if ((type.t & VT_STATIC) && (l != VT_CONST))
                     tcc_error("function without file scope cannot be static");
@@ -10941,12 +11004,20 @@ static int decl(int l)
                         else
                             r |= VT_LOCAL;
                         type.t &= ~VT_EXTERN;
-                        if (has_init)
+                        if (init_str) {
+                            begin_macro(init_str, 1);
+                            next();
+                        } else if (has_init)
                             next();
                         else if (l == VT_CONST)
                             /* uninitialized global variables may be overridden */
                             type.t |= VT_EXTERN;
-                        decl_initializer_alloc(&type, &ad, r, has_init, v, l);
+                        decl_initializer_alloc(&type, &ad, r, has_init || (init_str != NULL), v, l);
+                        if (init_str) {
+                            end_macro();
+                            unget_tok(end_tok);
+                            tok_str_free(init_str);
+                        }
                     }
 
                     if (ad.alias_target && l == VT_CONST) {
