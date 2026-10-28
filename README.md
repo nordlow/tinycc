@@ -470,9 +470,9 @@ from those checks.  Attributes are also accepted on statements and
 blocks, but only function-level safety is enforced so far.  `@pure`
 is recorded on the function type; it does not enable optimisations
 yet.  The planned semantics are documented in
-[todo/pure_attribute_semantics.md](todo/pure_attribute_semantics.md)
+[tasks/pure_attribute_semantics.md](tasks/pure_attribute_semantics.md)
 and, for the intended purity/determinism/`@nodet` relationship, in
-[todo/deterministic_attribute.md](todo/deterministic_attribute.md).
+[tasks/deterministic_attribute.md](tasks/deterministic_attribute.md).
 
 ### Defer and scope(exit)
 
