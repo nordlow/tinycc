@@ -7,6 +7,10 @@ TESTS = $(patsubst %.c,%.test,\
     $(sort $(notdir $(wildcard $(SRC)/??_*.c)))\
     $(sort $(notdir $(wildcard $(SRC)/???_*.c))))
 
+# The compiler accepts .d as a C source extension for D-style file
+# names, so test it outside the *.c wildcard above.
+TESTS += 383_d_source_extension.test
+
 # some tests do not pass on all platforms, remove them for now
 SKIP = 34_array_assignment.test # array assignment is not in C standard
 ifeq (-$(CONFIG_arm_eabi)-$(CONFIG_arm_vfp)-,-yes--)
@@ -174,6 +178,7 @@ endif
 374_d_assert.test : GEN = $(GEN-TCC)
 381_d_safety_pointer_arith.test : FLAGS += -dt -lang=d
 381_d_safety_pointer_arith.test : GEN = $(GEN-TCC)
+383_d_source_extension.test : FLAGS += -lang=d
 # GEN-ALWAYS += 95_bitfields.expect # does not work
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
@@ -254,6 +259,10 @@ all test tests2.all: $(filter-out $(SKIP),$(TESTS))
 	@$(MAKE) clean --no-print-directory -s
 
 %.test: %.c %.expect
+	@echo Test: $*...
+	@$(call T1,$<) $(T3)
+
+%.test: %.d %.expect
 	@echo Test: $*...
 	@$(call T1,$<) $(T3)
 
