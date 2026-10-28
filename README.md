@@ -97,6 +97,11 @@ throughput in Mlines/s and the Valgrind cachegrind instruction count
 (`I refs`).  `PGO_MARCH` defaults to `native`; on x86, `-mno-avx512f`
 is added so that Valgrind can decode the generated code.
 
+`pgo-bench` keeps the best of five runs.  `-bench` measures in whole
+milliseconds, which is about 5% of a ~20 ms self-compile, so the
+throughput figures move in steps of that size; the instruction count
+is exact and is the better signal for small changes.
+
 ### Host compiler choice matters for runtime speed
 
 The compiler used to *build* TPC strongly affects the speed of the
@@ -109,7 +114,8 @@ resulting `tcc` binary.  On an AMD Ryzen AI 7 350 (Linux x64), full
   and 223 M executed instructions
 
 The reason is thread-local storage.  Since commit `bc86ac3c` the
-mutable compiler state lives in TLS (`TCC_TLS`); Clang compiles this
+mutable compiler state lives in TLS (`TCC_TLS`) as groundwork for
+[multi-threaded compilation](#thread-safety); Clang compiles this
 position-independent executable with the general-dynamic TLS model, so
 nearly every access to preprocessor or generator state becomes a
 `__tls_get_addr` call.  That costs roughly 11% more instructions on a
@@ -192,6 +198,13 @@ tcc -lang=d ...    # enable D-specific grammar and semantics
 tcc -lang=D ...    # same as -lang=d
 ```
 
+`make` also builds a `tdc` wrapper (a symlink to `tcc`, or `tdc.bat`
+on Windows) that implies `-lang=d`, so D sources need no extra flag:
+
+```sh
+./tdc app.d       # same as tcc -lang=d app.d
+```
+
 The following features are available in all modes:
 
 - `defer` for scope-based cleanup in C functions
@@ -199,6 +212,8 @@ The following features are available in all modes:
 - `static assert(expr[, message])` and its `$assert(expr[, message])`
   alias
 - automatic `x.field` member access through a pointer to a struct
+- `auto` type inference for local variables from their initializer
+- D-style `@safe`, `@system`, `@trusted`, and `@pure` attributes
 - D-style slices, slice expressions, dynamic arrays, `foreach`,
   `alias`, manifest constants, `immutable`, and `unittest` blocks
 
@@ -210,6 +225,7 @@ identifiers:
 - empty subscripts as full slices (`a[] = b[]`)
 - `scope(exit)` as an alias for `defer`
 - `version(...)` and `debug(...)` conditional statements
+- the `.sizeof` property on types and expressions
 
 In C mode, names such as `version` and `debug` remain ordinary
 identifiers so that existing C code continues to compile unchanged.
@@ -252,6 +268,11 @@ size_t n = s.length;
 Arrays and string literals convert implicitly to slices; slice values
 can be stored in structs, passed to and returned from functions, and
 compared with `__builtin_types_compatible_p`.
+
+Slices compare by contents: `==` and `!=` first check that the lengths
+match and then compare element by element.  Plain arrays keep the C
+meaning and compare as pointers, so write `a[..] == b[..]` to compare
+two arrays element-wise.
 
 ### Slice assignment and element-wise operations
 
@@ -331,6 +352,22 @@ int[2] x, y;             /* the suffix applies to every declarator */
 int[2][3] matrix;
 ```
 
+### The `.sizeof` property
+
+In `-lang=d` mode, `.sizeof` yields the size of a type or of an
+expression, in the style of D:
+
+```c
+int.sizeof;              /* sizeof(int) */
+double.sizeof;
+struct Point.sizeof;
+int[10].sizeof;
+int*.sizeof;
+x.sizeof;                /* sizeof x */
+```
+
+C mode keeps the `sizeof` operator and does not accept this form.
+
 ### Uniform Function Call Syntax (UFCS)
 
 A call of the form `x.f(args)` is rewritten to `f(x, args)` when `f`
@@ -374,6 +411,19 @@ void f(void)
 }
 ```
 
+### Automatic type inference
+
+A local variable declared with `auto` and an initializer takes the
+type of that initializer:
+
+```c
+auto x = 42;       /* int */
+auto p = &x;       /* int * */
+```
+
+The initializer is mandatory; a declaration such as `auto x;` is
+rejected with `declaration with 'auto' has no initializer`.
+
 ### Immutable
 
 The `immutable` qualifier declares deeply immutable objects:
@@ -394,6 +444,32 @@ Immutability is transitive through aggregates, pointers, and arrays.
 Converting a mutable pointer to an immutable one is allowed; dropping
 `immutable` requires an explicit cast.  Assignments that would violate
 immutability are diagnosed at compile time.
+
+### Safety and purity attributes
+
+D-style attributes are accepted on function declarations and
+definitions in every language mode:
+
+```c
+int add(int x) @safe { return x + 1; }
+int twice(int x) @pure;
+
+void f(void)
+{
+    @trusted {
+        /* direct memory access is allowed here */
+    }
+    @trusted raw_call();
+}
+```
+
+`@safe` is enforced for functions: pointer arithmetic and pointer
+indexing are rejected.  `@trusted` and `@system` mark code as exempt
+from those checks.  Attributes are also accepted on statements and
+blocks, but only function-level safety is enforced so far.  `@pure`
+is recorded on the function type; it does not enable optimisations
+yet.  The planned semantics are documented in
+[todo/pure_attribute_semantics.md](todo/pure_attribute_semantics.md).
 
 ### Defer and scope(exit)
 
@@ -426,6 +502,9 @@ time:
 ```
 
 In `-lang=d` mode, `scope(exit)` is accepted as an alias for `defer`.
+`scope(success)` and `scope(failure)` are recognised but currently
+rejected with a diagnostic, because they need error-status tracking
+that the compiler does not implement yet.
 
 ### Unittest blocks
 
@@ -608,6 +687,30 @@ kept stable so that existing coverage tooling continues to work.
 - `-ar`: create or inspect a static library
 - `-impdef`: create a Windows `.def` file from a DLL
 
+## Thread safety
+
+The mutable state of the preprocessor, code generator, assembler, and
+target backends is thread-local (`TCC_TLS`) rather than global.  This
+is deliberate groundwork for multi-threaded compilation: an embedder
+that compiles independent `TCCState`s from several threads must not
+have those threads race on shared parser and generator globals, which
+is exactly what would happen if the state stayed global.
+
+Concurrency is not enabled end to end yet.  A little state is still
+process-global, notably the library list and the reallocator hook
+(`tcc_set_realloc()`), so `tcc_compile()` serialises compilations with
+a semaphore.  `TCC_TLS` can be overridden: it is empty on targets
+whose runtime does not support TLS (ARM, C67, Mach-O), and `tcc -run`
+does not support TLS, so the self-compilation tests pass `-DTCC_TLS=`
+when they run `tcc.c`.
+
+The design is not free.  Clang compiles the position-independent `tcc`
+binary with the general-dynamic TLS model, which turns hot accesses to
+the thread-local state into `__tls_get_addr` calls.  This is the
+performance difference described under [Host compiler choice matters
+for runtime speed](#host-compiler-choice-matters-for-runtime-speed);
+GCC and `-ftls-model=initial-exec` avoid most of that cost.
+
 ## Performance work
 
 The compiler has been profiled and optimized with hardware performance
@@ -620,7 +723,8 @@ counters and Valgrind cachegrind.  Notable changes include:
 - inlined token-string append operations
 - PGO builds with a 25-iteration training run as the sweet spot
 - `make pgo-bench` for repeatable throughput and instruction-count
-  measurements
+  measurements; `bench/pgo-history.tsv` records one row per commit and
+  host compiler
 - `PT_GNU_STACK` program headers for non-executable stacks
 
 When changing compiler sources, the repository's verification sequence
