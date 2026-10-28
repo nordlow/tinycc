@@ -60,8 +60,17 @@ mutates nothing" — would forbid most in-place algorithms and force
 allocation, which is the opposite of what a small C compiler should
 require.  It is also weaker in practice: copying a struct only to
 avoid writing through a pointer is not more pure, just more expensive.
-This is D's rule as well: a `pure` function may modify its arguments
-as long as it does not touch mutable global state.
+This definition of functional purity is inspired by D's: a `pure`
+function may modify its arguments (output parameters by reference,
+such as for algorithms like quick sort) as long as it does not touch
+mutable global state.
+
+This model distinguishes between:
+- **Weak purity**: a function qualified as `@pure` (may modify its
+  arguments/output parameters by reference).
+- **Strong purity**: a weakly pure function where all its
+  (`immutable`) parameters cannot change during the lifetime of the
+  function's execution.
 
 Two consequences:
 
@@ -70,7 +79,6 @@ Two consequences:
   observable.
 - Purity does not imply `const`: a `@pure` in-place algorithm takes
   `int *`, not `const int *`.
-
 ## Proposal
 
 - `@deterministic` (alias `@det`) demands determinism at function or
