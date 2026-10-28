@@ -69,8 +69,13 @@ base=$(git rev-parse --verify "$left")
 if [ "$all_commits" = yes ]; then
     commits=$(git rev-list --reverse "$range")
 else
+    # Everything that can change the compiler binary or the runtime
+    # libraries, minus the test and example programs.  A 'tcc*.c'
+    # pattern is not enough: libtcc.c and the *-gen.c, *-asm.c and
+    # *-link.c files matter as well.
     commits=$(git rev-list --reverse "$range" -- \
-        'tcc*.c' 'tcc*.h' 'lib/*' 'Makefile' 'configure')
+        '*.c' '*.h' 'lib/*' 'Makefile' 'configure' \
+        ':(exclude)tests/*' ':(exclude)examples/*')
 fi
 
 # Always benchmark the pre-change reference point as well.
