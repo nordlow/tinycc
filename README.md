@@ -211,7 +211,9 @@ The following features are available in all modes:
 - `__attribute__((nocopy))` for non-copyable struct types
 - `static assert(expr[, message])` and its `$assert(expr[, message])`
   alias
-- automatic `x.field` member access through a pointer to a struct
+- automatic `x.field` member access through a pointer to a struct to
+  ease transitioning between a passing a parameter by value vs
+  reference
 - `auto` type inference for local variables from their initializer
 - D-style `@safe`, `@system`, `@trusted`, and `@pure` attributes
 - D-style slices, slice expressions, dynamic arrays, `foreach`,
