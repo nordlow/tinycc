@@ -8653,7 +8653,19 @@ again:
         gsym(a);
         prev_scope_s(&o);
 
+    } else if (t == '@') {
+        AttributeDef ad;
+        memset(&ad, 0, sizeof(ad));
+        unget_tok('@');
+        parse_d_attributes(&ad);
+        if (tok != '{')
+            expect("'{'");
+        t = tok;
+        next();
+        goto parse_compound_block;
+
     } else if (t == '{') {
+    parse_compound_block:
         if (debug_modes)
             tcc_debug_stabn(tcc_state, N_LBRAC, ind - func_ind);
         new_scope(&o);
