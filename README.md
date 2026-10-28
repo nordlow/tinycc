@@ -195,7 +195,6 @@ always enabled.  Select the D-style dialect explicitly with:
 ```sh
 tcc -lang=c ...    # default C dialect
 tcc -lang=d ...    # enable D-specific grammar and semantics
-tcc -lang=D ...    # same as -lang=d
 ```
 
 `make` also builds a `tdc` wrapper (a symlink to `tcc`, or `tdc.bat`
@@ -219,7 +218,7 @@ The following features are available in all modes:
 - D-style slices, slice expressions, dynamic arrays, `foreach`,
   `alias`, manifest constants, `immutable`, and `unittest` blocks
 
-`-lang=d` or `-lang=D` additionally enables the D-specific forms that
+`-lang=d` additionally enables the D-specific forms that
 would otherwise change the meaning of valid C or reserve ordinary
 identifiers:
 

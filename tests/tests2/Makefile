@@ -150,7 +150,7 @@ endif
 353_d_slice_assign_mismatch_ignore.test : FLAGS += -fslice-len-mismatch=ignore
 354_d_slice_assign_error.test : FLAGS += -dt
 355_d_slice_op_assign.test : FLAGS += -lang=d
-356_d_slice_op_assign_error.test : FLAGS += -dt -lang=D
+356_d_slice_op_assign_error.test : FLAGS += -dt -lang=d
 357_d_slice_assign_mismatch_abort_flag.test : FLAGS += -fslice-len-mismatch=abort
 358_d_scope_exit.test : FLAGS += -lang=d
 358_d_scope_exit.test : GEN = $(GEN-TCC)
@@ -166,7 +166,7 @@ endif
 367_d_version_debug.test : FLAGS += -lang=d
 367_d_version_debug.test : GEN = $(GEN-TCC)
 368_d_version_debug_error.test : FLAGS += -dt -lang=d
-370_d_version_debug_options.test : FLAGS += -lang=D -version=CmdVersion -version=2 -version=none -debug -debug=CmdDebug -debug=2
+370_d_version_debug_options.test : FLAGS += -lang=d -version=CmdVersion -version=2 -version=none -debug -debug=CmdDebug -debug=2
 370_d_version_debug_options.test : GEN = $(GEN-TCC)
 371_d_version_debug_unittest.test : FLAGS += -lang=d -unittest
 371_d_version_debug_unittest.test : GEN = $(GEN-TCC)
