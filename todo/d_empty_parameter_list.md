@@ -1,8 +1,8 @@
 # Allow `void f()` in place of `void f(void)` when `-lang=d`
 
-When `-lang=d` is passed, `void f()` should be allowed in place of
-`void f(void)` (an empty parameter list in D means no parameters,
-whereas in ISO C it means an unspecified parameter list / old-style
-K&R function).
+When `-lang=d`, treat an empty parameter list `()` as taking no
+arguments (like C++ and D), rather than an unspecified K&R parameter
+list.
 
-Note that this might already be allowed in default mode.
+*Note:* Check if this is already default behavior in TCC. If so,
+ensure it isn't accidentally overridden by strict C modes.
