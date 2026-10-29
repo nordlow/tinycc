@@ -12,8 +12,9 @@ There are plans for syntactic extensions such as
 
 (`$if`), a shorter `static if`
 
-and tightening of functional purity semantics to not allow reading of
-pointer values (usually originating from dynamic memory allocators).
+and tightening of functional purity semantics to disallow reading of
+pointer/address values (usually originating from dynamic memory
+allocators).
 
 . The principal goal of TinyPC (TPC) is to become a compiler
 of multiple languages with modern features found in statically-typed
