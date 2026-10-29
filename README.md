@@ -24,6 +24,9 @@ performance inherited from TinyCC. Enabling outstandingly low-latency
 incremental development loops for both human engineers and AI agents
 compared to all other statically typed (system) languages including D.
 
+This ambitious scope has now become by the leverage of AI coding
+agents for a single developer.
+
 ## Highlights
 
 - **Small!** TPC can compile and execute C code almost everywhere, for
