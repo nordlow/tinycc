@@ -179,7 +179,10 @@ endif
 381_d_safety_pointer_arith.test : FLAGS += -dt -lang=d
 381_d_safety_pointer_arith.test : GEN = $(GEN-TCC)
 383_d_source_extension.test : FLAGS += -lang=d
-# GEN-ALWAYS += 95_bitfields.expect # does not work
+384_d_assert_cmp.test : FLAGS += -lang=d
+384_d_assert_cmp.test : GEN = $(GEN-TCC)
+385_d_assert_cmp_ne.test : FLAGS += -lang=d
+385_d_assert_cmp_ne.test : GEN = $(GEN-TCC)
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)

@@ -10368,32 +10368,168 @@ static void do_Static_assert(void)
         tcc_error("%s", msg);
     skip(';');
 }
+static void vpush_string(const char *str)
+{
+    int len = strlen(str) + 1;
+    unsigned long offset = section_add(rodata_section, len, 1);
+    if (!NODATA_WANTED)
+        memcpy(rodata_section->data + offset, str, len);
+    vpush_ref(&char_pointer_type, rodata_section, offset, len);
+    vtop->type.t = VT_PTR;
+}
+
+static void push_sym_value(Sym *s)
+{
+    int r = s->r;
+    if ((r & VT_VALMASK) < VT_CONST)
+        r = (r & ~VT_VALMASK) | VT_LOCAL;
+    vset(&s->type, r, s->c);
+    vtop->sym = s;
+    if (r & VT_SYM) {
+        vtop->c.i = 0;
+    } else if (r == VT_CONST && IS_ENUM_VAL(s->type.t)) {
+        vtop->c.i = s->enum_val;
+    }
+}
+
+/* evaluate the value of symbol 's' exactly once, by storing it into a
+   fresh temporary local variable, and leave the resulting rvalue on top
+   of the value stack */
+static void eval_sym_to_temp(Sym *s, int *offset, int *r2)
+{
+    CType type;
+    int size, align;
+
+    type.t = VT_LLONG;
+    type.ref = NULL;
+    size = type_size(&type, &align);
+    *offset = get_temp_local_var(size, align, r2);
+    vset(&type, VT_LOCAL | VT_LVAL, *offset);
+    vtop->r2 = *r2;
+    push_sym_value(s);
+    vstore();
+    vpop();
+}
+
 static void do_d_assert(void)
 {
+    TokenString *str;
     int a, b;
+    int depth = 1, t;
+    int saved_tok;
 
     if (!tcc_state->lang_d)
         tcc_error("'assert' requires -lang=d");
 
     skip('(');
-    gexpr();
-    a = gvtst(1, 0);
+    str = tok_str_alloc();
+    str->prev = NULL;
 
-    b = gjmp(0);
+    do {
+        t = tok;
+        if (t == TOK_EOF)
+            tcc_error("unexpected end of file in assert");
 
-    gsym(a);
-    vpush_helper_func(TOK___d_assert);
-    if (tok == ',') {
+        if (t == '(') depth++;
+        else if (t == ')') depth--;
+
+        if (depth > 1 || (depth == 1 && t != ')' && t != '(')) {
+            tok_str_add2(str, t, &tokc);
+        }
+        next();
+    } while (depth > 0);
+    tok_str_add(str, TOK_EOF);
+    saved_tok = tok;
+
+    if (str->len == 4 && str->str[0] >= TOK_IDENT && str->str[2] >= TOK_IDENT) {
+        /* simple binary comparison of two identifiers: ident OP ident */
+        int op = str->str[1];
+        int id_l = str->str[0];
+        int id_r = str->str[2];
+        int cmp_op = TOK_EQ;
+        const char *name_l = get_tok_str(id_l, NULL);
+        const char *name_r = get_tok_str(id_r, NULL);
+        const char *op_str = NULL;
+        const char *neg_str = NULL;
+        char assertion_buf[256];
+        Sym *s_l, *s_r;
+        int l_l = 0, r2_l = 0;
+        int l_r = 0, r2_r = 0;
+        CType type;
+        CType lltype;
+
+        switch (op) {
+        case TOK_EQ: op_str = "=="; neg_str = "!="; cmp_op = TOK_EQ; break;
+        case TOK_NE: op_str = "!="; neg_str = "=="; cmp_op = TOK_NE; break;
+        case TOK_LT: op_str = "<";  neg_str = ">="; cmp_op = TOK_LT; break;
+        case TOK_GE: op_str = ">="; neg_str = "<";  cmp_op = TOK_GE; break;
+        case TOK_LE: op_str = "<="; neg_str = ">";  cmp_op = TOK_LE; break;
+        case TOK_GT: op_str = ">";  neg_str = "<="; cmp_op = TOK_GT; break;
+        default:
+            tcc_error("unsupported operator in D assert: %s",
+                      get_tok_str(op, NULL));
+            break;
+        }
+        snprintf(assertion_buf, sizeof(assertion_buf), "%s %s %s",
+                 name_l, op_str, name_r);
+
+        s_l = sym_find(id_l);
+        if (!s_l)
+            tcc_error("undeclared identifier '%s'", name_l);
+        s_r = sym_find(id_r);
+        if (!s_r)
+            tcc_error("undeclared identifier '%s'", name_r);
+
+        /* evaluate each operand exactly once into a temporary local */
+        eval_sym_to_temp(s_l, &l_l, &r2_l);
+        /* keep the $L temporary allocated so that $R gets a distinct one */
+        vset(&lltype, VT_LOCAL | VT_LVAL, l_l);
+        vtop->r2 = r2_l;
+        eval_sym_to_temp(s_r, &l_r, &r2_r);
+        vpop(); /* discard placeholder marking the $L temporary as used */
+
+        /* generate the comparison over the evaluated temporaries */
+        type.t = VT_LLONG;
+        type.ref = NULL;
+        vset(&type, VT_LOCAL | VT_LVAL, l_l);
+        vtop->r2 = r2_l;
+        vset(&type, VT_LOCAL | VT_LVAL, l_r);
+        vtop->r2 = r2_r;
+        gen_op(cmp_op);
+        a = gvtst(1, 0);
+        b = gjmp(0);
+        gsym(a);
+        /* failure: pass the evaluated values to the runtime helper */
+        vpush_helper_func(tok_alloc_const("__d_assert_cmp"));
+        vpush_string(assertion_buf);
+        vpush_string(neg_str);
+        vset(&type, VT_LOCAL | VT_LVAL, l_l);
+        vtop->r2 = r2_l;
+        vset(&type, VT_LOCAL | VT_LVAL, l_r);
+        vtop->r2 = r2_r;
+        gfunc_call(4);
+        gsym(b);
+        tok = saved_tok;
+    } else {
+        begin_macro(str, 1);
         next();
         gexpr();
-    } else {
-        vpushi(0);
+        a = gvtst(1, 0);
+        b = gjmp(0);
+        gsym(a);
+        vpush_helper_func(TOK___d_assert);
+        if (tok == ',') {
+            next();
+            gexpr();
+        } else {
+            vpushi(0);
+        }
+        gfunc_call(1);
+        gsym(b);
+        end_macro();
+        tok = saved_tok;
     }
-    skip(')');
-    skip(';');
-    gfunc_call(1);
-
-    gsym(b);
+    tok_str_free(str);
 }
 
 #ifdef TCC_TARGET_PE

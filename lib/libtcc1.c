@@ -781,3 +781,9 @@ void __d_assert(const char *msg)
         printf("Assertion failure\n");
     exit(255);
 }
+
+void __d_assert_cmp(const char *assertion, const char *neg_op, long long a, long long b)
+{
+    printf("assert(%s) failed: %lld %s %lld\n", assertion, a, neg_op, b);
+    exit(255);
+}
