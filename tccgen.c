@@ -2729,6 +2729,8 @@ static void type_to_str(char *buf, int buf_size,
             pstrcat(buf, buf_size, "volatile ");
         if (t & VT_CONSTANT)
             pstrcat(buf, buf_size, "const ");
+        if (t & VT_IMMUTABLE)
+            pstrcat(buf, buf_size, "@immutable ");
     }
     if (((t & VT_DEFSIGN) && bt == VT_BYTE)
         || ((t & VT_UNSIGNED)
@@ -2836,6 +2838,8 @@ static void type_to_str(char *buf, int buf_size,
             pstrcat(buf1, sizeof(buf1), "restrict ");
         if (t & VT_CONSTANT)
             pstrcat(buf1, sizeof(buf1), "const ");
+        if (t & VT_IMMUTABLE)
+            pstrcat(buf1, sizeof(buf1), "@immutable ");
         if (t & VT_VOLATILE)
             pstrcat(buf1, sizeof(buf1), "volatile ");
         if (varstr)
