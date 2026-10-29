@@ -209,6 +209,9 @@ endif
 396_d_assert_cmp_long_double.test : GEN = $(GEN-TCC)
 397_d_assert_cmp_scalars_pass.test : FLAGS += -lang=d
 397_d_assert_cmp_scalars_pass.test : GEN = $(GEN-TCC)
+398_scope_attributes.test : FLAGS += -dt -lang=d
+398_scope_attributes.test : GEN = $(GEN-TCC)
+399_scope_depth_error.test : GEN = $(GEN-TCC)
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)

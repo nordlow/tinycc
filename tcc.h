@@ -804,6 +804,9 @@ struct TCCState {
     int d_debug_level;
     /* Runtime policy for slice copies whose lengths differ.  */
     unsigned char slice_len_mismatch;
+    /* Maximum nesting of lexical scopes (-fscope-depth=N).  Zero means
+       the built-in MAX_SCOPE_DEPTH.  */
+    int max_scope_depth;
 
     /* warning switches */
     unsigned char warn_none;
@@ -1488,6 +1491,41 @@ static inline int toup(int c) {
 
 #define SYM_POOL_NB (8192 / sizeof(Sym))
 
+/* Maximum nesting of lexical scopes.  The scope stack is a fixed
+   array; exceeding this limit is a compile error, not a crash.  */
+#define MAX_SCOPE_DEPTH 256
+
+/* Per-function state.  Every lexical scope inherits a copy from its
+   enclosing scope, so block-level attributes such as '@safe' apply to
+   the block and to everything nested in it.  */
+typedef struct FuncState {
+    CType vt;             /* return type */
+    const char *name;     /* for diagnostics and __func__ */
+    int vc;               /* stack address of implicit struct return */
+    int ind;              /* function start address */
+    unsigned char variadic;
+    unsigned char old_style;
+    unsigned char safety; /* FUNC_SAFETY_... */
+} FuncState;
+
+struct scope {
+    struct scope *prev;
+    struct { int loc, locorig, num; } vla;
+    struct { Sym *s; int n; } cl;
+    int *bsym, *csym;
+    Sym *lstk, *llstk;
+    FuncState fn;
+};
+
+ST_DATA struct scope *cur_scope, *loop_scope, *root_scope;
+
+#define func_vt     (cur_scope->fn.vt)
+#define func_var    (cur_scope->fn.variadic)
+#define func_vc     (cur_scope->fn.vc)
+#define func_ind    (cur_scope->fn.ind)
+#define func_old    (cur_scope->fn.old_style)
+#define funcname    (cur_scope->fn.name)
+
 ST_DATA Sym *global_stack;
 ST_DATA Sym *local_stack;
 ST_DATA Sym *local_label_stack;
@@ -1500,11 +1538,6 @@ ST_DATA char debug_modes;
 
 ST_DATA int nocode_wanted; /* true if no code generation wanted for an expression */
 ST_DATA int global_expr;  /* true if compound literals must be allocated globally (used during initializers parsing */
-ST_DATA CType func_vt; /* current function return type (used by return instruction) */
-ST_DATA int func_var; /* true if current function is variadic */
-ST_DATA int func_vc; /* stack address for implicit struct return storage */
-ST_DATA int func_ind; /* function start address */
-ST_DATA const char *funcname;
 
 ST_FUNC void tccgen_init(TCCState *s1);
 ST_FUNC int tccgen_compile(TCCState *s1);

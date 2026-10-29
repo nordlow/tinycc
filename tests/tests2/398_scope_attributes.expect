@@ -1,0 +1,33 @@
+[test_safe_block_arith]
+398_scope_attributes.c:8: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_block_inc]
+398_scope_attributes.c:18: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_block_index]
+398_scope_attributes.c:28: error: pointer indexing not allowed in @safe scope
+
+[test_safe_block_nested]
+398_scope_attributes.c:39: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_block_for]
+398_scope_attributes.c:52: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_block_foreach]
+398_scope_attributes.c:63: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_if_body]
+398_scope_attributes.c:75: error: pointer arithmetic not allowed in @safe scope
+
+[test_safe_system_override]
+20
+
+[test_safe_trusted_override]
+20
+
+[test_safe_no_leak]
+1
+20
+
+[test_function_safe_override]
+40

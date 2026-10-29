@@ -1,0 +1,1 @@
+399_scope_depth_error.c:31: error: too many nested scopes (max 256)

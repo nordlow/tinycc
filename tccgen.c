@@ -45,6 +45,11 @@ static TCC_TLS TCCState *cur_tcc_state;
 
 static TCC_TLS Sym *all_cleanups, *pending_gotos;
 static TCC_TLS int local_scope;
+/* function symbol whose K&R parameter list is being declared */
+static TCC_TLS Sym *kr_params;
+/* safety level of a compound block whose attributes were parsed by
+   decl() before the block itself was seen */
+static TCC_TLS int pending_block_safety;
 ST_DATA char debug_modes;
 
 ST_DATA SValue *vtop;
@@ -70,15 +75,16 @@ ST_DATA int nocode_wanted; /* no code generation wanted */
 #define CONST_WANTED  (nocode_wanted & CONST_WANTED_MASK)
 
 ST_DATA int global_expr;  /* true if compound literals must be allocated globally (used during initializers parsing */
-ST_DATA CType func_vt; /* current function return type (used by return instruction) */
-ST_DATA int func_var; /* true if current function is variadic (used by return instruction) */
-ST_DATA int func_safety; /* current function safety level (FUNC_SAFETY_...) */
-ST_DATA int func_vc; /* stack address for implicit struct return storage */
-ST_DATA int func_ind; /* function start address */
-static TCC_TLS int func_old;
-ST_DATA const char *funcname;
 ST_DATA CType int_type, func_old_type, char_type, char_pointer_type;
 static TCC_TLS CString initstr;
+
+/* The lexical scope stack.  Slot 0 is the file-scope sentinel so that
+   cur_scope is never NULL.  */
+static TCC_TLS struct scope scope_stack[MAX_SCOPE_DEPTH + 1];
+static TCC_TLS int scope_depth;
+/* effective limit, MAX_SCOPE_DEPTH unless lowered by -fscope-depth=N */
+static TCC_TLS int scope_depth_limit;
+ST_DATA struct scope *cur_scope, *loop_scope, *root_scope;
 
 #if PTR_SIZE == 4
 #define VT_SIZE_T (VT_INT | VT_UNSIGNED)
@@ -121,14 +127,6 @@ struct dollar_ctx {
 };
 static TCC_TLS struct dollar_ctx dollar_ctx_stack[16];
 static TCC_TLS int nb_dollar_ctx;
-
-static TCC_TLS struct scope {
-    struct scope *prev;
-    struct { int loc, locorig, num; } vla;
-    struct { Sym *s; int n; } cl;
-    int *bsym, *csym;
-    Sym *lstk, *llstk;
-} *cur_scope, *loop_scope, *root_scope;
 
 typedef struct {
     Section *sec;
@@ -413,6 +411,17 @@ ST_FUNC void tccgen_init(TCCState *s1)
     memset(vtop, 0, sizeof *vtop);
     nb_dollar_ctx = 0;
 
+    /* reset the scope stack; slot 0 is the file-scope sentinel */
+    scope_depth = 0;
+    scope_depth_limit = s1->max_scope_depth;
+    if (!scope_depth_limit)
+        scope_depth_limit = MAX_SCOPE_DEPTH;
+    cur_scope = root_scope = &scope_stack[0];
+    loop_scope = NULL;
+    memset(&scope_stack[0], 0, sizeof scope_stack[0]);
+    scope_stack[0].fn.name = "";
+    scope_stack[0].fn.ind = -1;
+
     /* define some often used types */
     int_type.t = VT_INT;
 
@@ -482,6 +491,10 @@ ST_FUNC void tccgen_finish(TCCState *s1)
     loop_scope = NULL;
     all_cleanups = NULL;
     pending_gotos = NULL;
+    kr_params = NULL;
+    pending_block_safety = 0;
+    scope_depth = 0;
+    cur_scope = root_scope = &scope_stack[0];
     nb_temp_local_vars = 0;
     global_label_stack = NULL;
     local_label_stack = NULL;
@@ -3245,7 +3258,7 @@ redo:
         int align;
         if (op_class == CMP_OP)
             goto std_op;
-        if (func_safety == FUNC_SAFETY_SAFE)
+        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
             tcc_error("pointer arithmetic not allowed in @safe scope");
         /* if both pointers, then it must be the '-' op */
         if (bt1 == VT_PTR && bt2 == VT_PTR) {
@@ -4170,7 +4183,7 @@ ST_FUNC void vstore(void)
 ST_FUNC void inc(int post, int c)
 {
     test_lvalue();
-    if (func_safety == FUNC_SAFETY_SAFE && ((vtop->type.t & VT_BTYPE) == VT_PTR))
+    if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && ((vtop->type.t & VT_BTYPE) == VT_PTR))
         tcc_error("pointer arithmetic not allowed in @safe scope");
     vdup(); /* save lvalue */
     if (post) {
@@ -7292,7 +7305,8 @@ special_math_val:
             base_type = vtop->type;
             base_sv = vtop;
             base_is_slice = is_slice_type(&base_type);
-            if ((base_type.t & VT_BTYPE) == VT_PTR && func_safety == FUNC_SAFETY_SAFE)
+            if ((base_type.t & VT_BTYPE) == VT_PTR
+                && cur_scope->fn.safety == FUNC_SAFETY_SAFE)
                 tcc_error("pointer indexing not allowed in @safe scope");
             if (tok == TOK_TWODOTS || tok == TOK_DOTS
                 || (tcc_state->lang_d && tok == ']')) {
@@ -8263,11 +8277,24 @@ static void vla_leave(struct scope *o)
 /* ------------------------------------------------------------------------- */
 /* local scopes */
 
-static void new_scope(struct scope *o)
+static struct scope *push_scope(void)
 {
+    struct scope *o;
+
+    if (scope_depth >= scope_depth_limit)
+        tcc_error("too many nested scopes (max %d)", scope_depth_limit);
+    o = &scope_stack[++scope_depth];
+    o->prev = &scope_stack[scope_depth - 1];
+    return o;
+}
+
+static struct scope *new_scope(void)
+{
+    struct scope *o = push_scope();
+
     /* copy and link previous scope */
     *o = *cur_scope;
-    o->prev = cur_scope;
+    o->prev = &scope_stack[scope_depth - 1];
     cur_scope = o;
     cur_scope->vla.num = 0;
 
@@ -8275,10 +8302,32 @@ static void new_scope(struct scope *o)
     o->lstk = local_stack;
     o->llstk = local_label_stack;
     ++local_scope;
+    return o;
+}
+
+/* a function frame does not inherit block state from its enclosing
+   scope, only the enclosing scope as its parent */
+static struct scope *new_function_scope(Sym *sym)
+{
+    struct scope *o = push_scope();
+
+    memset(o, 0, sizeof *o);
+    o->prev = &scope_stack[scope_depth - 1];
+    o->fn.vt = sym->type.ref->type;
+    o->fn.variadic = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
+    o->fn.old_style = sym->type.ref->f.func_type == FUNC_OLD;
+    o->fn.safety = sym->type.ref->f.func_safety;
+    o->fn.name = get_tok_str(sym->v, NULL);
+    o->fn.ind = ind;
+    cur_scope = o;
+    return o;
 }
 
 static void prev_scope(struct scope *o, int is_expr)
 {
+    if (o != cur_scope)
+        tcc_error("internal error: unbalanced scope");
+
     vla_leave(o->prev);
 
     if (o->cl.s != o->prev->cl.s)
@@ -8301,6 +8350,7 @@ static void prev_scope(struct scope *o, int is_expr)
     /* pop locally defined symbols */
     sym_pop(&local_stack, o->lstk, is_expr);
     cur_scope = o->prev;
+    --scope_depth;
     --local_scope;
 }
 
@@ -8357,7 +8407,7 @@ static void lblock(int *bsym, int *csym)
    arrays and slices are handled uniformly.  */
 static void do_foreach(int reverse)
 {
-    struct scope o;
+    struct scope *o;
     AttributeDef ad, adbase;
     CType btype, type, agg_type, slice_type, elem_type, len_type, ptr_type;
     CType vtypes[2];
@@ -8365,7 +8415,7 @@ static void do_foreach(int reverse)
     int slice_addr, len_addr, ptr_addr, idx_addr;
     int size, align, a, b, c, d, e;
 
-    new_scope(&o);
+    o = new_scope();
     skip('(');
 
     nvars = 0;
@@ -8480,7 +8530,7 @@ static void do_foreach(int reverse)
         gjmp_addr(d);
         gsym_addr(b, d);
         gsym(a);
-        prev_scope(&o, 0);
+        prev_scope(o, 0);
         return;
     }
 
@@ -8615,7 +8665,7 @@ static void do_foreach(int reverse)
     gjmp_addr(d);
     gsym_addr(b, d);
     gsym(a);
-    prev_scope(&o, 0);
+    prev_scope(o, 0);
 }
 
 /* c2y if/switch declaration */
@@ -8673,9 +8723,11 @@ static void do_defer(void)
 static void block(int flags)
 {
     int a, b, c, d, e, t;
-    struct scope o;
+    struct scope o, *p;
+    AttributeDef ad;
     Sym *s;
 again:
+    memset(&ad, 0, sizeof ad);
     if (check_d_conditional(VT_LOCAL, flags))
         return;
     t = tok;
@@ -8721,8 +8773,6 @@ again:
         prev_scope_s(&o);
 
     } else if (t == '@') {
-        AttributeDef ad;
-        memset(&ad, 0, sizeof(ad));
         unget_tok('@');
         parse_d_attributes(&ad);
         if (tok == '{') {
@@ -8743,7 +8793,13 @@ again:
     parse_compound_block:
         if (debug_modes)
             tcc_debug_stabn(tcc_state, N_LBRAC, ind - func_ind);
-        new_scope(&o);
+        p = new_scope();
+        if (pending_block_safety) {
+            cur_scope->fn.safety = pending_block_safety;
+            pending_block_safety = 0;
+        }
+        if (ad.f.func_safety)
+            cur_scope->fn.safety = ad.f.func_safety;
 
         /* handle local labels declarations */
         while (tok == TOK_LABEL) {
@@ -8764,7 +8820,7 @@ again:
             }
         }
 
-        prev_scope(&o, flags & STMT_EXPR);
+        prev_scope(p, flags & STMT_EXPR);
         if (debug_modes)
             tcc_debug_stabn(tcc_state, N_RBRAC, ind - func_ind);
         if (local_scope)
@@ -8843,7 +8899,7 @@ again:
     } else if (t == TOK_FOREACH || t == TOK_FOREACH_REVERSE) {
         do_foreach(t == TOK_FOREACH_REVERSE);
     } else if (t == TOK_FOR) {
-        new_scope(&o);
+        p = new_scope();
 
         skip('(');
         if (tok != ';') {
@@ -8875,7 +8931,7 @@ again:
         gjmp_addr(d);
         gsym_addr(b, d);
         gsym(a);
-        prev_scope(&o, 0);
+        prev_scope(p, 0);
 
     } else if (t == TOK_DO) {
         new_scope_s(&o);
@@ -10203,9 +10259,20 @@ static void sym_push_params(Sym *ref)
    'cur_text_section' */
 static void gen_function(Sym *sym)
 {
-    struct scope f = { 0 };
+    struct scope *saved_scope = cur_scope, *saved_root = root_scope;
+    struct scope *saved_loop = loop_scope;
+    struct switch_t *saved_switch = cur_switch;
+    Sym *saved_local_stack = local_stack;
+    Sym *saved_local_label_stack = local_label_stack;
+    Sym *saved_global_label_stack = global_label_stack;
+    Sym *saved_cleanups = all_cleanups;
+    Sym *saved_pending_gotos = pending_gotos;
+    Section *saved_text_section = cur_text_section;
+    int saved_local_scope = local_scope, saved_rsym = rsym;
+    int saved_nb_temp_local_vars = nb_temp_local_vars;
+    int saved_loc = loc, saved_ind = ind;
+    int saved_nocode_wanted = nocode_wanted;
 
-    cur_scope = root_scope = &f;
     nocode_wanted = 0;
 
     ind = cur_text_section->data_offset;
@@ -10215,12 +10282,7 @@ static void gen_function(Sym *sym)
 	gen_fill_nops(newoff - ind);
     }
 
-    funcname = get_tok_str(sym->v, NULL);
-    func_ind = ind;
-    func_vt = sym->type.ref->type;
-    func_var = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
-    func_safety = sym->type.ref->f.func_safety;
-    func_old = sym->type.ref->f.func_type == FUNC_OLD;
+    root_scope = new_function_scope(sym);
 
     /* NOTE: we patch the symbol size later */
     put_extern_sym(sym, cur_text_section, ind, 0);
@@ -10260,20 +10322,33 @@ static void gen_function(Sym *sym)
     elfsym(sym)->st_size = ind - func_ind;
     cur_text_section->data_offset = ind;
 
-    sym_pop(&local_stack, NULL, 0);
-    label_pop(&global_label_stack, NULL, 0);
-    sym_pop(&all_cleanups, NULL, 0);
-    local_scope = 0;
+    sym_pop(&local_stack, saved_local_stack, 0);
+    label_pop(&local_label_stack, saved_local_label_stack, 0);
+    label_pop(&global_label_stack, saved_global_label_stack, 0);
+    sym_pop(&all_cleanups, saved_cleanups, 0);
+    pending_gotos = saved_pending_gotos;
 
-    /* It's better to crash than to generate wrong code */
-    cur_text_section = NULL;
-    funcname = ""; /* for safety */
-    func_vt.t = VT_VOID; /* for safety */
-    func_var = 0; /* for safety */
-    func_safety = FUNC_SAFETY_UNKNOWN; /* for safety */
-    ind = 0; /* for safety */
-    func_ind = -1;
-    nocode_wanted = DATA_ONLY_WANTED;
+    /* pop the function scope and resume the enclosing function */
+    cur_scope = saved_scope;
+    root_scope = saved_root;
+    loop_scope = saved_loop;
+    cur_switch = saved_switch;
+    --scope_depth;
+    local_scope = saved_local_scope;
+    rsym = saved_rsym;
+    nb_temp_local_vars = saved_nb_temp_local_vars;
+    loc = saved_loc;
+
+    if (scope_depth) {
+        ind = saved_ind;
+        nocode_wanted = saved_nocode_wanted;
+        cur_text_section = saved_text_section;
+    } else {
+        /* It's better to crash than to generate wrong code */
+        cur_text_section = NULL;
+        ind = 0;
+        nocode_wanted = DATA_ONLY_WANTED;
+    }
     check_vstack();
 
     /* do this after funcend debug info */
@@ -11235,8 +11310,11 @@ static int decl(int l)
                 do_Static_assert();
                 continue;
             }
-            if (l != VT_CONST)
+            if (l != VT_CONST) {
+                if (tok == '{')
+                    pending_block_safety = adbase.f.func_safety;
                 break;
+            }
             if (tok == TOK_ASM1 || tok == TOK_ASM2 || tok == TOK_ASM3) {
                 /* global asm block */
                 asm_global_instr();
@@ -11325,10 +11403,12 @@ static int decl(int l)
                    declaration list */
                 sym = type.ref;
                 if (sym->f.func_type == FUNC_OLD && l == VT_CONST) {
-                    func_vt = type;
+                    Sym *saved_kr_params = kr_params;
+                    kr_params = sym;
 		    ++local_scope;
                     decl(VT_CMP);
 		    --local_scope;
+                    kr_params = saved_kr_params;
                 }
                 if ((type.t & (VT_EXTERN|VT_INLINE)) == (VT_EXTERN|VT_INLINE)) {
                     /* always_inline functions must be handled as if they
@@ -11409,7 +11489,7 @@ static int decl(int l)
                 has_init = 0;
 		if (l == VT_CMP) {
 		    /* find parameter in function parameter list */
-		    for (sym = func_vt.ref->next; sym; sym = sym->next)
+		    for (sym = kr_params->next; sym; sym = sym->next)
 			if ((sym->v & ~SYM_FIELD) == v)
 			    goto found;
 		    tcc_error("declaration for parameter '%s' but no such parameter",

@@ -1,71 +1,123 @@
-# Task: Add `struct Scope` Stack for Lexical and Function State
+# Task: Bounded Scope Stack for Lexical and Function State
 
 ## Goal
-Introduce a `struct Scope` type and a stack of scopes to
-encapsulate compiler state currently stored in flat global variables
-(such as `func_safety`, `func_var`, `func_vc`, `func_ind`, `func_vt`,
-and `funcname`), preparing for robust support of D-style nested
-functions and block-level attribute scoping.
 
-## Motivation
-Currently, function-level attributes and state (e.g., `func_safety`,
-`func_var`) are maintained via global variables in `tccgen.c`. When
-parsing nested functions or block-level scopes (such as compound
-statements with `@safe`, `@system`, or `@trusted` attributes), flat
-globals cannot represent nested lexical contexts or outer function
-environments. A stack of `struct Scope` frames will allow clean push
-and pop operations during function and block parsing.
+Replace the flat per-function TLS globals (`func_vt`, `func_var`,
+`func_safety`, `func_vc`, `func_ind`, `funcname`, `func_old`) with
+fields of a fixed-capacity stack of lexical scope frames, so that
 
-## Affected Symbols & Global State
-The refactoring will replace the following flat global variables in
-`tccgen.c` with fields inside `struct Scope`:
-- `func_vt` (`CType`): Current function return type.
-- `func_var` (`int`): Flag indicating if the current function is
-  variadic (ellipsis).
-- `func_safety` (`int`): Function safety level (`FUNC_SAFETY_SAFE`,
-  `FUNC_SAFETY_SYSTEM`, `FUNC_SAFETY_TRUSTED`).
-- `func_vc` (`int`): Stack address for implicit struct return storage.
-- `func_ind` (`int`): Function start address in the text section.
-- `funcname` (`const char *`): Name of the current function (used in
-  warnings and diagnostics).
-- `func_old` (`int`): Flag for old-style K&R parameter declarations.
+- block-level attributes (`@safe { ... }`) apply to exactly one
+  block and to everything nested in it,
+- nested functions can later push their own frame without
+  corrupting the enclosing function, and
+- scope nesting is bounded and exceeding the bound is diagnosed
+  instead of exhausting the C stack.
 
-## Compiler Parts to Refactor (`tccgen.c`)
+## Current state
 
-### 1. Function Definition & Generation (`gen_function`)
-- When starting a function compilation (`gen_function`), allocate or
-  push a new `Scope` frame, populating its fields from the function
-  symbol's attributes (`func_safety`, `func_type`, return type, etc.).
-- When finishing the function, pop the scope and restore the parent
-  scope.
+`tccgen.c` already has a lexical scope stack: `struct scope`
+(`tccgen.c:125`) with `cur_scope` / `loop_scope` / `root_scope`,
+pushed by `new_scope()` (`tccgen.c:8266`) for compound statements,
+`for` and `foreach`, and popped by `prev_scope()`
+(`tccgen.c:8280`).  `new_scope_s()` (`tccgen.c:8318`) only bumps
+`local_scope` for the `if` / `while` / `switch` / `do` conditions;
+it pushes no frame.
 
-### 2. Return Checking and Generation (`gfunc_return`, `check_func_return`, and `TOK_RETURN`)
-- Update return statement parsing, implicit return injection, and
-  return value generation to query `func_vt`, `func_var`, `func_vc`, and
-  `funcname` from the active scope rather than globals.
+The function state is still flat `ST_DATA` TLS
+(`tccgen.c:73-79`, declared in `tcc.h:1503-1507`).  Five of the
+seven variables are read by the target backends:
 
-### 3. Safety Check Enforcement (`tccgen.c`)
-- Update pointer arithmetic, pointer increment/decrement, and pointer
-  indexing checks (`func_safety == FUNC_SAFETY_SAFE`) to inspect the
-  safety level of the current enclosing scope.
+| Variable     | Backend readers                                            |
+|--------------|------------------------------------------------------------|
+| `func_vt`    | i386, x86_64, arm, arm64, riscv64, c67                      |
+| `func_var`   | arm                                                         |
+| `func_vc`    | i386, arm, arm64                                            |
+| `func_ind`   | none (debug info and ELF size only)                         |
+| `funcname`   | none (diagnostics and `__func__`)                           |
 
-### 4. Parameter Processing & K&R Declarations (`decl0`)
-- Update parameter lookup and type validation (e.g., checking
-  `func_vt.ref->next` during parameter declarations) to reference the
-  current scope's function return type and parameter list.
+`func_safety` has exactly three readers, all in `tccgen.c`:
+pointer arithmetic (`gen_op`, `tccgen.c:3248`), `++` / `--`
+(`inc`, `tccgen.c:4173`) and pointer indexing (`[`,
+`tccgen.c:7295`).
 
-### 5. Preparation for Nested Functions (`tasks/support_nested_functions.md`)
-- Allow block-level and nested function definitions to push new
-  `Scope` instances onto the scope stack, permitting inner functions to
-  lexically shadow or coexist with outer function states without
-  corrupting enclosing function contexts.
+`block()` already parses D attributes in statement position
+(`tccgen.c:8723`) but drops the `AttributeDef` as soon as the block
+starts, which is why `@safe { ... }` currently has no effect.
 
-## Acceptance Criteria
-- `struct Scope` is defined and managed as a stack.
-- All flat global state variables (`func_vt`, `func_var`,
-  `func_safety`, `func_vc`, `func_ind`, `funcname`, `func_old`) are
-  encapsulated in `struct Scope`.
-- All existing tests (including `@safe` safety checks) pass without
-  regression.
-- Clean foundation established for nested function static chains and
-  block-level attribute scoping.
+`func_vt` is overloaded: `decl0()` assigns the *function* type to it
+(`tccgen.c:11328`) so that the K&R parameter list can be found
+again at `tccgen.c:11412` via `func_vt.ref->next`.
+
+## Design
+
+1. **One stack, not two.**  Extend the existing `struct scope`
+   instead of adding a parallel `struct Scope`; the lowercase
+   struct already is the lexical scope stack.
+2. **Fixed capacity.**  `MAX_SCOPE_DEPTH` (256) frames in a TLS
+   array; slot 0 is a file-scope sentinel so `cur_scope` is never
+   NULL and `func_*` is always readable.  Exceeding the limit is a
+   normal `tcc_error`, not a stack overflow.
+3. **Inheritance by copy.**  `new_scope()` copies its parent frame,
+   so every block inherits return type, variadic flag, name and
+   safety level; popping restores the parent by unwinding.
+4. **Backends unchanged.**  Keep `func_vt` and friends as macros
+   into `cur_scope->fn`, so no target code and no target ABI
+   changes.
+5. **Block attributes.**  `@safe { ... }` writes the safety level
+   of the frame it pushes; `@system { ... }` and `@trusted { ... }`
+   override an enclosing `@safe` for their block.
+6. **Function frames.**  `gen_function()` pushes a zeroed function
+   frame whose parent is the enclosing scope and restores all
+   per-function state on exit, so nesting cannot corrupt the host
+   function.
+
+## Changes
+
+### `tcc.h`
+- Define `struct FuncState` and `struct scope`, `MAX_SCOPE_DEPTH`
+  and the `cur_scope` / `loop_scope` / `root_scope` declarations.
+- Replace the five `ST_DATA` declarations with `func_*` macros.
+
+### `tccgen.c`
+- Remove the flat definitions; add the TLS array and depth counter.
+- `new_scope()` returns the pushed frame; `prev_scope()` pops it
+  and checks stack balance.
+- Add `new_function_scope(Sym *)`; use it in `gen_function()`
+  together with save/restore of `local_stack`,
+  `local_label_stack`, `global_label_stack`, `all_cleanups`,
+  `pending_gotos`, `cur_switch`, `rsym`, `nb_temp_local_vars`,
+  `local_scope`, `loc`, `ind`, `nocode_wanted`, `cur_text_section`
+  and the scope pointers.  At file scope keep the existing
+  "NULL text section after a function" crash guard.
+- `block()`: carry the parsed `AttributeDef` into the compound
+  block frame.
+- `decl0()`: replace the `func_vt = type` K&R hack with an
+  explicit parameter-list symbol.
+
+## Non-goals
+- Allowing nested function definitions, static chains and
+  trampolines; that is `tasks/support_nested_functions.md`.  This
+  task only makes the state safe to nest.
+- Attributes on non-compound statements (`@safe x++;`).
+
+## Tests
+- `tests/tests2/398_scope_attributes.c` (+ `.expect`, with `-dt
+  -lang=d`): `@safe` / `@system` / `@trusted` blocks, inheritance
+  into nested blocks and `if` bodies, no leakage after the block,
+  and the three checked operations (arith, inc, index).
+- `tests/tests2/399_scope_depth_error.c` (+ `.expect`): nesting
+  more blocks than `MAX_SCOPE_DEPTH` is rejected with a clear
+  error.
+- Existing `379_d_safety`, `381_d_safety_pointer_arith`,
+  `358_d_scope_exit`, `359_c_scope_identifier` and
+  `373_scope_guards_error` must pass unchanged.
+
+## Acceptance criteria
+- No flat `func_*` variable remains; all seven live in
+  `struct scope`.
+- Target backends compile unchanged.
+- `@safe` applies to a block and does not leak out of it.
+- Scope nesting is bounded; exceeding the bound is diagnosed.
+- `make -j$(nproc) && make -j$(nproc) test` passes and
+  `make pgo PGO_CC=clang` shows no significant throughput or
+  instruction-count regression.

@@ -1573,6 +1573,7 @@ enum {
     TCC_OPTION_std,
     TCC_OPTION_lang,
     TCC_OPTION_slice_len_mismatch,
+    TCC_OPTION_scope_depth,
     TCC_OPTION_shared,
     TCC_OPTION_soname,
     TCC_OPTION_o,
@@ -1678,6 +1679,7 @@ static const TCCOption tcc_options[] = {
 #endif
     { "m", TCC_OPTION_m, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "fslice-len-mismatch", TCC_OPTION_slice_len_mismatch, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
+    { "fscope-depth", TCC_OPTION_scope_depth, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "f", TCC_OPTION_f, TCC_OPTION_HAS_ARG | TCC_OPTION_NOSEP },
     { "isystem", TCC_OPTION_isystem, TCC_OPTION_HAS_ARG },
     { "include", TCC_OPTION_include, TCC_OPTION_HAS_ARG },
@@ -2099,6 +2101,20 @@ PUB_FUNC int tcc_parse_args(TCCState *s, int *pargc, char ***pargv)
             else
                 return tcc_error_noabort("unsupported slice length mismatch policy '%s'", r);
             break;
+        case TCC_OPTION_scope_depth: {
+            char *end;
+            unsigned long n;
+
+            r = optarg;
+            if (*r == '=')
+                ++r;
+            n = strtoul(r, &end, 10);
+            if (end == r || *end || n < 1 || n > MAX_SCOPE_DEPTH)
+                return tcc_error_noabort("scope depth must be in the range 1..%d, not '%s'",
+                                         MAX_SCOPE_DEPTH, r);
+            s->max_scope_depth = (int)n;
+            break;
+        }
         case TCC_OPTION_shared:
             x = TCC_OUTPUT_DLL;
             goto set_output_type;

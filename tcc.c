@@ -138,6 +138,7 @@ static const char help2[] =
     "  dump-vstack                   dump vstack state during parsing\n"
     "  slice-len-mismatch=MODE       slice assign length mismatch: abort [default],\n"
     "                                copy (common prefix), or ignore\n"
+    "  scope-depth=N                 max nesting of lexical scopes (1..256)\n"
     "-m... target specific options:\n"
     "  ms-bitfields                  use MSVC bitfield layout\n"
 #ifdef TCC_TARGET_ARM
