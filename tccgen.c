@@ -7251,9 +7251,11 @@ special_math_val:
                 if (base_is_slice) {
                     copy_slice_value();
                 } else if (base_type.t & (VT_ARRAY | VT_VLA)) {
-                    CType slice_type;
+                    CType slice_type, elem_type;
                     slice_type.t = VT_STRUCT;
-                    slice_type.ref = make_slice_type(&base_type.ref->type);
+                    elem_type = base_type.ref->type;
+                    elem_type.t |= base_type.t & (VT_CONSTANT | VT_IMMUTABLE);
+                    slice_type.ref = make_slice_type(&elem_type);
                     convert_array_to_slice(&slice_type);
                 } else {
                     tcc_error("cannot slice a pointer without bounds");
@@ -7279,6 +7281,7 @@ special_math_val:
                 slice_to_ptr();
             } else if (base_type.t & (VT_ARRAY | VT_VLA)) {
                 elem_type = base_type.ref->type;
+                elem_type.t |= base_type.t & (VT_CONSTANT | VT_IMMUTABLE);
             } else if ((base_type.t & VT_BTYPE) == VT_PTR) {
                 elem_type = *pointed_type(&base_type);
             } else {
@@ -8433,8 +8436,10 @@ static void do_foreach(int reverse)
     if (is_slice_type(&agg_type)) {
         slice_type = agg_type;
     } else if (agg_type.t & (VT_ARRAY | VT_VLA)) {
+        CType elem_type_arr = agg_type.ref->type;
+        elem_type_arr.t |= agg_type.t & (VT_CONSTANT | VT_IMMUTABLE);
         slice_type.t = VT_STRUCT;
-        slice_type.ref = make_slice_type(&agg_type.ref->type);
+        slice_type.ref = make_slice_type(&elem_type_arr);
         convert_array_to_slice(&slice_type);
     } else {
         tcc_error("'foreach' requires an array or slice");
