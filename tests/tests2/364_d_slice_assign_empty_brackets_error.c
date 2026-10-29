@@ -21,7 +21,7 @@ void f(void)
 {
     int a[2];
     Ints s = a;
-    char[..] c = "ab";
+    immutable char[..] c = "ab";
     s[] = c[];
 }
 

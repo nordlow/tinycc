@@ -6505,8 +6505,10 @@ ST_FUNC void unary(void)
         /* string parsing */
         t = char_type.t;
     str_init:
-        if (tcc_state->warn_write_strings & WARN_ON)
+        if (tcc_state->warn_write_strings & WARN_ON || tcc_state->lang_d)
             t |= VT_CONSTANT;
+        if (tcc_state->lang_d)
+            t |= VT_IMMUTABLE;
         type.t = t;
         mk_pointer(&type);
         type.t |= VT_ARRAY;
@@ -11415,7 +11417,7 @@ static void gen_slice_op_assign(CType *slice_type, CType *elem, int dst,
    compound assignment token for an element-wise operation.  */
 static void gen_slice_assign(int assign_tok)
 {
-    CType elem, elem_nc, dest_type;
+    CType elem, elem_nc, dest_type, slice_type, rhs_elem;
     int esize, ealign, l, r2;
 
     dest_type = vtop->type;
@@ -11449,11 +11451,14 @@ static void gen_slice_assign(int assign_tok)
         /* An array right operand is bulk-copied, unless it is the
            element type itself.  */
         if (!is_slice_type(&vtop->type)
-            && (vtop->type.t & (VT_ARRAY | VT_VLA))
-            && !is_compatible_unqualified_types(&elem, &vtop->type)) {
-            CType slice_type;
+            && (vtop->type.t & (VT_ARRAY | VT_VLA))) {
+            if (!is_compatible_unqualified_types(&vtop->type.ref->type, &elem)
+                && !(vtop->type.ref->type.t & VT_IMMUTABLE)) {
+                cast_error(&vtop->type, &dest_type);
+            }
+            rhs_elem = vtop->type.ref->type;
             slice_type.t = VT_STRUCT;
-            slice_type.ref = make_slice_type(&elem);
+            slice_type.ref = make_slice_type(&rhs_elem);
             convert_array_to_slice(&slice_type);
         }
 

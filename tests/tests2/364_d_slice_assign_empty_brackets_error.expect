@@ -5,7 +5,7 @@
 364_d_slice_assign_empty_brackets_error.c:16: error: cannot slice a pointer without bounds
 
 [test_slice_type_mismatch]
-364_d_slice_assign_empty_brackets_error.c:25: error: cannot convert 'char [..]' to 'int [..]'
+364_d_slice_assign_empty_brackets_error.c:25: error: cannot convert 'const char [..]' to 'int [..]'
 
 [test_array_type_mismatch]
 364_d_slice_assign_empty_brackets_error.c:34: error: cannot convert 'char [2]' to 'int [..]'
