@@ -10,10 +10,9 @@ The principal goal of TinyPC is to become a compiler of multiple
 languages with modern features found in statically-typed system
 languages such as D, Zig, Rust, and C3—without sacrificing
 extraordinary default and debug-build compilation and run-time
-performance inherited from TinyCC.  By maintaining lightning-fast
-compilation speeds, TPC inherits TinyCC's outstandingly low-latency
+performance inherited from TinyCC. Enabling outstandingly low-latency
 incremental development loops for both human engineers and AI agents
-compare to all other languages including D.
+compared to all other statically typed (system) languages including D.
 
 The historical short names are kept where they are part of the ABI,
 build interface, or compatibility surface: the executable is still
