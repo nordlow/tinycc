@@ -3,11 +3,21 @@
 **TinyPC** (TPC for short) is a small, fast, self-hosting compiler for
 C and a growing D-inspired dialect.  It is derived from TinyCC, the
 *Tiny C Compiler* originally written by Fabrice Bellard, and is
-extended by Per Nordlöw with slices, dynamic arrays, UFCS, `foreach`,
-`defer`, `immutable`, compile-time `version`/`debug` conditionals, and
-many other features.
+extended by Per Nordlöw with mostly D language features such as
+slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
+compile-time `version`/`debug` conditionals, and many other
+features.
 
-The principal goal of TinyPC (TPC) is to become a compiler
+There are plans for syntactic and semantic extension not present in D
+such as
+
+- (`$if`), a shorter `static if`
+
+and tightening of functional purity to no allow reading of pointer
+values (usually originating from the non-deterministic memory
+allocators).
+
+. The principal goal of TinyPC (TPC) is to become a compiler
 of multiple languages with modern features found in statically-typed
 system languages such as D, Zig, Rust, and C3—without sacrificing
 extraordinary default and debug-build compilation and run-time
