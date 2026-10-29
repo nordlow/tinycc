@@ -57,16 +57,21 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
    array; slot 0 is a file-scope sentinel so `cur_scope` is never
    NULL and `func_*` is always readable.  Exceeding the limit is a
    normal `tcc_error`, not a stack overflow.
-3. **Inheritance by copy.**  `new_scope()` copies its parent frame,
+3. **Overridable bound.**  The effective limit defaults to
+   `MAX_SCOPE_DEPTH`; the CLI flag `-fscope-depth=N` lowers it,
+   where `N` must be within `1..MAX_SCOPE_DEPTH`.  Requests above
+   the static maximum are rejected, so the stack stays statically
+   limited.
+4. **Inheritance by copy.**  `new_scope()` copies its parent frame,
    so every block inherits return type, variadic flag, name and
    safety level; popping restores the parent by unwinding.
-4. **Backends unchanged.**  Keep `func_vt` and friends as macros
+5. **Backends unchanged.**  Keep `func_vt` and friends as macros
    into `cur_scope->fn`, so no target code and no target ABI
    changes.
-5. **Block attributes.**  `@safe { ... }` writes the safety level
+6. **Block attributes.**  `@safe { ... }` writes the safety level
    of the frame it pushes; `@system { ... }` and `@trusted { ... }`
    override an enclosing `@safe` for their block.
-6. **Function frames.**  `gen_function()` pushes a zeroed function
+7. **Function frames.**  `gen_function()` pushes a zeroed function
    frame whose parent is the enclosing scope and restores all
    per-function state on exit, so nesting cannot corrupt the host
    function.
@@ -108,6 +113,9 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
 - `tests/tests2/399_scope_depth_error.c` (+ `.expect`): nesting
   more blocks than `MAX_SCOPE_DEPTH` is rejected with a clear
   error.
+- `tests/tests2/400_scope_depth_flag.c` (+ `.expect`): the bound
+  can be lowered through `-fscope-depth=N` and values outside
+  `1..MAX_SCOPE_DEPTH` are rejected.
 - Existing `379_d_safety`, `381_d_safety_pointer_arith`,
   `358_d_scope_exit`, `359_c_scope_identifier` and
   `373_scope_guards_error` must pass unchanged.
@@ -118,6 +126,8 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
 - Target backends compile unchanged.
 - `@safe` applies to a block and does not leak out of it.
 - Scope nesting is bounded; exceeding the bound is diagnosed.
+- `-fscope-depth=N` overrides the effective bound (1..`MAX_SCOPE_DEPTH`)
+  and rejects anything above it.
 - `make -j$(nproc) && make -j$(nproc) test` passes and
   `make pgo PGO_CC=clang` shows no significant throughput or
   instruction-count regression.
