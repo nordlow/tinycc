@@ -183,6 +183,12 @@ endif
 384_d_assert_cmp.test : GEN = $(GEN-TCC)
 385_d_assert_cmp_ne.test : FLAGS += -lang=d
 385_d_assert_cmp_ne.test : GEN = $(GEN-TCC)
+386_d_assert_cmp_arr.test : FLAGS += -lang=d
+386_d_assert_cmp_arr.test : GEN = $(GEN-TCC)
+387_d_assert_cmp_arr_stacked.test : FLAGS += -lang=d
+387_d_assert_cmp_arr_stacked.test : GEN = $(GEN-TCC)
+388_d_assert_cmp_arr_len_mismatch.test : FLAGS += -lang=d
+388_d_assert_cmp_arr_len_mismatch.test : GEN = $(GEN-TCC)
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)

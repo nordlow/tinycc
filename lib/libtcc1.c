@@ -931,23 +931,22 @@ void __d_assert_cmp_arr(const char *assertion, const char *neg_op,
     }
 
     /* highlight the first differing element, if any */
-    if (la == lb) {
-        size_t i;
-        int diff = 0;
-        for (i = 0; i < la; ++i) {
-            if (elem_read((const char *)ha->ptr + i * elemsize, elemsize) !=
-                elem_read((const char *)hb->ptr + i * elemsize, elemsize)) {
-                diff = 1;
-                break;
-            }
+    {
+        size_t j = 0;
+
+        if (la != lb) {
+            /* sequences of different lengths can never be equal */
+            printf("first difference at index %llu: sequence length mismatch (%llu vs %llu)\n",
+                   (unsigned long long)(la < lb ? la : lb),
+                   (unsigned long long)la, (unsigned long long)lb);
+            exit(255);
         }
-        if (diff) {
-            size_t j;
-            for (j = 0; j < la; ++j) {
-                if (elem_read((const char *)ha->ptr + j * elemsize, elemsize) !=
-                    elem_read((const char *)hb->ptr + j * elemsize, elemsize))
-                    break;
-            }
+        while (j < la &&
+               elem_read((const char *)ha->ptr + j * elemsize, elemsize) ==
+               elem_read((const char *)hb->ptr + j * elemsize, elemsize)) {
+            ++j;
+        }
+        if (j < la) {
             printf("first difference at index %llu: %llu %s %llu\n",
                    (unsigned long long)j,
                    elem_read((const char *)ha->ptr + j * elemsize, elemsize), neg_op,

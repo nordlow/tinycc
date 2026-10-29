@@ -1,0 +1,2 @@
+assert(xs == ys) failed: [1, 2, 3] != [1, 2, 4]
+first difference at index 2: 3 != 4
