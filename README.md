@@ -8,10 +8,9 @@ slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
 compile-time `version`/`debug` conditionals, and many other
 features.
 
-There are plans for syntactic and semantic extension not present in D
-such as
+There are plans for syntactic extensions such as
 
-- (`$if`), a shorter `static if`
+(`$if`), a shorter `static if`
 
 and tightening of functional purity to no allow reading of pointer
 values (usually originating from the non-deterministic memory
