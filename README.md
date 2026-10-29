@@ -16,9 +16,9 @@ and tightening of functional purity semantics to disallow reading of
 pointer/address values (usually originating from dynamic memory
 allocators).
 
-. The principal goal of TinyPC (TPC) is to become a compiler
-of multiple languages with modern features found in statically-typed
-system languages such as D, Zig, Rust, and C3—without sacrificing
+The principal goal of TinyPC (TPC) is to become a compiler of multiple
+languages with modern features found in statically-typed system
+languages such as D, Zig, Rust, and C3—without sacrificing
 extraordinary default and debug-build compilation and run-time
 performance inherited from TinyCC. Enabling outstandingly low-latency
 incremental development loops for both human engineers and AI agents
