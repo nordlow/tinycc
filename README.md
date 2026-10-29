@@ -14,11 +14,6 @@ performance inherited from TinyCC. Enabling outstandingly low-latency
 incremental development loops for both human engineers and AI agents
 compared to all other statically typed (system) languages including D.
 
-The historical short names are kept where they are part of the ABI,
-build interface, or compatibility surface: the executable is still
-called `tcc`, and internal identifiers and build variables still use
-the `TCC`/`TCC_*` prefixes.
-
 ## Highlights
 
 - **Small!** TPC can compile and execute C code almost everywhere, for
