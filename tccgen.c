@@ -5304,7 +5304,34 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             next();
             ad->f.func_noreturn = 1;
             break;
-            /* GNUC attribute */
+        case '@':
+            {
+                next();
+                if (tok == TOK_STATIC || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "static"))) {
+                    ad->section = rodata_section;
+                    next();
+                } else if (tok == TOK_PURE1 || tok == TOK_PURE2 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "pure"))) {
+                    ad->f.func_pure = 1;
+                    next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "safe")) {
+                    ad->f.func_safety = FUNC_SAFETY_SAFE;
+                    next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "system")) {
+                    ad->f.func_safety = FUNC_SAFETY_SYSTEM;
+                    next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
+                    ad->f.func_safety = FUNC_SAFETY_TRUSTED;
+                    next();
+                } else {
+                    int t_tok = tok;
+                    if (t_tok >= TOK_IDENT) {
+                        tcc_error("unknown attribute '@%s'", get_tok_str(t_tok, &tokc));
+                    } else {
+                        tcc_error("expected attribute name after '@'");
+                    }
+                }
+            }
+            continue;
         case TOK_ATTRIBUTE1:
         case TOK_ATTRIBUTE2:
             parse_attribute(ad);
@@ -5617,6 +5644,9 @@ static void parse_d_attributes(AttributeDef *ad)
             next();
             if (tok == TOK_PURE1 || tok == TOK_PURE2 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "pure"))) {
                 ad->f.func_pure = 1;
+                next();
+            } else if (tok == TOK_STATIC || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "static"))) {
+                ad->section = rodata_section;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "safe")) {
                 ad->f.func_safety = FUNC_SAFETY_SAFE;
@@ -6045,6 +6075,9 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
 	case TOK_ATTRIBUTE2:
 	    parse_attribute(ad);
 	    break;
+	case '@':
+	    parse_d_attributes(ad);
+	    break;
         }
         mk_pointer(type);
         type->t |= qualifiers;
@@ -6080,6 +6113,8 @@ static CType *type_decl(CType *type, AttributeDef *ad, int *v, int td)
               td & ~(TYPE_DIRECT|TYPE_ABSTRACT));
     check_restrict_type(type);
     parse_attribute(ad);
+    if (tok == '@')
+        parse_d_attributes(ad);
     type->t |= storage;
     return ret;
 }
