@@ -1,14 +1,15 @@
 # Tiny Poly Compiler (TPC)
 
-**TPC** is a small, fast, self-hosting compiler for C and a growing
-D-inspired dialect.  It is derived from TinyCC, the *Tiny C Compiler*
-originally written by Fabrice Bellard, and is extended by Per Nordlöw
-with slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
-compile-time `version`/`debug` conditionals, and many other features.
+**TinyPC** (TPC for short) is a small, fast, self-hosting compiler for
+C and a growing D-inspired dialect.  It is derived from TinyCC, the
+*Tiny C Compiler* originally written by Fabrice Bellard, and is
+extended by Per Nordlöw with slices, dynamic arrays, UFCS, `foreach`,
+`defer`, `immutable`, compile-time `version`/`debug` conditionals, and
+many other features.
 
-The principal goal of TinyPC is to become a compiler of multiple
-languages with modern features found in statically-typed system
-languages such as D, Zig, Rust, and C3—without sacrificing
+The principal goal of TinyPC (TPC) is to become a compiler
+of multiple languages with modern features found in statically-typed
+system languages such as D, Zig, Rust, and C3—without sacrificing
 extraordinary default and debug-build compilation and run-time
 performance inherited from TinyCC. Enabling outstandingly low-latency
 incremental development loops for both human engineers and AI agents
