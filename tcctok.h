@@ -356,6 +356,8 @@
 
 /* D-style dynamic array support, implemented in libtcc1 */
      DEF(TOK___d_assert, "__d_assert")
+     DEF(TOK___d_assert_cmp, "__d_assert_cmp")
+     DEF(TOK___d_assert_cmp_arr, "__d_assert_cmp_arr")
      DEF(TOK___darray_resize, "__darray_resize")
      DEF(TOK___darray_append, "__darray_append")
      DEF(TOK___darray_dup, "__darray_dup")

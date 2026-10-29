@@ -642,6 +642,8 @@ extern void *memcpy(void *, const void *, size_t);
 extern void *memmove(void *, const void *, size_t);
 extern int memcmp(const void *, const void *, size_t);
 extern int printf(const char *, ...);
+extern int snprintf(const char *, ...);
+extern size_t strlen(const char *);
 extern void exit(int);
 
 static void darray_set_length(struct darray_header *a,
@@ -782,8 +784,285 @@ void __d_assert(const char *msg)
     exit(255);
 }
 
-void __d_assert_cmp(const char *assertion, const char *neg_op, long long a, long long b)
+extern size_t strlen(const char *);
+
+/* basic types of the values rendered by the assertion helpers (subset of
+   the compiler's VT_xxx type codes, see tcc.h) */
+#define EL_BYTE     1  /* VT_BYTE    */
+#define EL_SHORT    2  /* VT_SHORT   */
+#define EL_INT      3  /* VT_INT     */
+#define EL_LLONG    4  /* VT_LLONG   */
+#define EL_PTR      5  /* VT_PTR     */
+#define EL_FLOAT    8  /* VT_FLOAT   */
+#define EL_DOUBLE   9  /* VT_DOUBLE  */
+#define EL_LDOUBLE 10  /* VT_LDOUBLE */
+#define EL_BOOL    11  /* VT_BOOL    */
+
+#define EL_BTYPE    0x000f /* VT_BTYPE    */
+#define EL_UNSIGNED 0x0010 /* VT_UNSIGNED */
+
+static unsigned long long elem_read(const char *p, size_t elemsize)
 {
-    printf("assert(%s) failed: %lld %s %lld\n", assertion, a, neg_op, b);
+    unsigned long long v = 0;
+    size_t i;
+    int shift = 0;
+    for (i = 0; i < elemsize && i < sizeof(v); ++i) {
+        v |= ((unsigned long long)((unsigned char)p[i])) << shift;
+        shift += 8;
+    }
+    return v;
+}
+
+static double elem_read_d(const char *p)
+{
+    double d;
+    memcpy(&d, p, sizeof(d));
+    return d;
+}
+
+static int elem_is_float(int bt)
+{
+    return bt == EL_FLOAT || bt == EL_DOUBLE || bt == EL_LDOUBLE;
+}
+
+/* read the SIZE bytes at P as an unsigned integer */
+static unsigned long long scalar_read(const char *p, int size)
+{
+    unsigned long long v = 0;
+    int i;
+    for (i = 0; i < size && i < (int)sizeof(v); ++i)
+        v |= ((unsigned long long)((unsigned char)p[i])) << (i * 8);
+    return v;
+}
+
+/* read the SIZE bytes at P as a signed integer, sign extending to 64 bits */
+static long long scalar_read_signed(const char *p, int size)
+{
+    unsigned long long v = scalar_read(p, size);
+    if (size > 0 && size < (int)sizeof(v) && ((v >> (size * 8 - 1)) & 1))
+        v |= ~0ULL << (size * 8);
+    return (long long)v;
+}
+
+/* render the character C as a character literal, e.g. 'a' or '\n' */
+static void render_char(char *buf, size_t buf_size, unsigned int c)
+{
+    const char *esc = 0;
+
+    switch (c) {
+    case 0:    esc = "\\0"; break;
+    case '\a': esc = "\\a"; break;
+    case '\b': esc = "\\b"; break;
+    case '\t': esc = "\\t"; break;
+    case '\n': esc = "\\n"; break;
+    case '\v': esc = "\\v"; break;
+    case '\f': esc = "\\f"; break;
+    case '\r': esc = "\\r"; break;
+    case '\\': esc = "\\\\"; break;
+    case '\'': esc = "\\'"; break;
+    }
+    if (esc)
+        snprintf(buf, buf_size, "'%s'", esc);
+    else if (c >= 0x20 && c < 0x7f)
+        snprintf(buf, buf_size, "'%c'", (int)c);
+    else
+        snprintf(buf, buf_size, "'\\x%02x'", c);
+}
+
+/* render the scalar value of type TYPE (SIZE bytes at P) into BUF, e.g.
+   "42", "'a'", "1.5", "true" or "0x10" */
+static void render_scalar(char *buf, size_t buf_size, const char *p,
+                          int type, int size)
+{
+    switch (type & EL_BTYPE) {
+    case EL_BOOL:
+        snprintf(buf, buf_size, "%s", scalar_read(p, size) ? "true" : "false");
+        break;
+    case EL_BYTE:
+        render_char(buf, buf_size, (unsigned int)scalar_read(p, size));
+        break;
+    case EL_FLOAT: {
+        float f;
+        memcpy(&f, p, sizeof(f));
+        snprintf(buf, buf_size, "%g", (double)f);
+        break;
+    }
+    case EL_DOUBLE: {
+        double d;
+        memcpy(&d, p, sizeof(d));
+        snprintf(buf, buf_size, "%g", d);
+        break;
+    }
+    case EL_LDOUBLE: {
+        long double ld = 0;
+        size_t n = size < (int)sizeof(ld) ? (size_t)size : sizeof(ld);
+        memcpy(&ld, p, n);
+        snprintf(buf, buf_size, "%Lg", ld);
+        break;
+    }
+    case EL_PTR: {
+        unsigned long long v = scalar_read(p, size);
+        if (v)
+            snprintf(buf, buf_size, "0x%llx", v);
+        else
+            snprintf(buf, buf_size, "null");
+        break;
+    }
+    default:
+        if (type & EL_UNSIGNED)
+            snprintf(buf, buf_size, "%llu", scalar_read(p, size));
+        else
+            snprintf(buf, buf_size, "%lld", scalar_read_signed(p, size));
+        break;
+    }
+}
+
+/* called when 'assert(a op b)' fails.  A and B point at the evaluated
+   operands, each described by its type code and its size in bytes.  */
+void __d_assert_cmp(const char *assertion, const char *neg_op,
+                    const void *a, int a_type, int a_size,
+                    const void *b, int b_type, int b_size)
+{
+    char ab[64], bb[64];
+
+    render_scalar(ab, sizeof(ab), a, a_type, a_size);
+    render_scalar(bb, sizeof(bb), b, b_type, b_size);
+    printf("assert(%s) failed: %s %s %s\n", assertion, ab, neg_op, bb);
+    exit(255);
+}
+
+/* render the elements of a sequence into BUF, e.g. "[1, 2, 3]" */
+static void render_array(char *buf, size_t buf_size, const struct darray_header *h,
+                         size_t elemsize, int bt)
+{
+    size_t i;
+    size_t pos = 0;
+    char eb[64];
+    int n;
+
+    buf[0] = '[';
+    pos = 1;
+    for (i = 0; i < h->length; ++i) {
+        if (i) {
+            n = snprintf(buf + pos, buf_size - pos, ", ");
+            if (n < 0 || (size_t)n >= buf_size - pos)
+                break;
+            pos += (size_t)n;
+        }
+        if (elem_is_float(bt)) {
+            double d = elem_read_d((const char *)h->ptr + i * elemsize);
+            n = snprintf(eb, sizeof(eb), "%g", d);
+        } else {
+            n = snprintf(eb, sizeof(eb), "%llu", elem_read((const char *)h->ptr + i * elemsize, elemsize));
+        }
+        if (n < 0 || (size_t)n >= sizeof(eb) || pos + (size_t)n >= buf_size)
+            break;
+        memcpy(buf + pos, eb, (size_t)n);
+        pos += (size_t)n;
+    }
+    snprintf(buf + pos, buf_size - pos, "]");
+}
+
+/* return the rendered length of a sequence, e.g. the length of "[1, 2, 3]" */
+static int render_array_len(const struct darray_header *h, size_t elemsize, int bt)
+{
+    size_t i;
+    int len = 1; /* '[' */
+    char eb[64];
+    for (i = 0; i < h->length; ++i) {
+        int n;
+        if (i)
+            len += 2; /* ", " */
+        if (elem_is_float(bt)) {
+            double d = elem_read_d((const char *)h->ptr + i * elemsize);
+            n = snprintf(eb, sizeof(eb), "%g", d);
+        } else {
+            n = snprintf(eb, sizeof(eb), "%llu", elem_read((const char *)h->ptr + i * elemsize, elemsize));
+        }
+        if (n < 0)
+            break;
+        len += n;
+    }
+    return len + 1; /* ']' */
+}
+
+/* print a sequence, e.g. "[1, 2, 3]" */
+static void print_array(const struct darray_header *h, size_t elemsize, int bt)
+{
+    size_t i;
+    printf("[");
+    for (i = 0; i < h->length; ++i) {
+        char eb[64];
+        if (i)
+            printf(", ");
+        if (elem_is_float(bt)) {
+            double d = elem_read_d((const char *)h->ptr + i * elemsize);
+            snprintf(eb, sizeof(eb), "%g", d);
+            printf("%s", eb);
+        } else {
+            snprintf(eb, sizeof(eb), "%llu", elem_read((const char *)h->ptr + i * elemsize, elemsize));
+            printf("%s", eb);
+        }
+    }
+    printf("]");
+}
+
+void __d_assert_cmp_arr(const char *assertion, const char *neg_op,
+                       const void *a, const void *b, size_t elemsize,
+                       int elem_bt, const char *name_a, const char *name_b)
+{
+    const struct darray_header *ha = (const struct darray_header *)a;
+    const struct darray_header *hb = (const struct darray_header *)b;
+    size_t la = ha->length, lb = hb->length;
+    char pre[512];
+    int n, inline_len;
+
+    n = snprintf(pre, sizeof(pre), "assert(%s) failed: ", assertion);
+    inline_len = n + render_array_len(ha, elemsize, elem_bt) + 1
+               + (int)strlen(neg_op) + 1
+               + render_array_len(hb, elemsize, elem_bt) + 1;
+
+    if (inline_len <= 80) {
+        /* inline format: both sequences fit on one line */
+        printf("assert(%s) failed: ", assertion);
+        print_array(ha, elemsize, elem_bt);
+        printf(" %s ", neg_op);
+        print_array(hb, elemsize, elem_bt);
+        printf("\n");
+    } else {
+        /* stacked format: values do not fit on one line */
+        printf("assert(%s) failed for\n\n", assertion);
+        printf("%s: ", name_a);
+        print_array(ha, elemsize, elem_bt);
+        printf("\n");
+        printf("%s: ", name_b);
+        print_array(hb, elemsize, elem_bt);
+        printf("\n");
+    }
+
+    /* highlight the first differing element, if any */
+    {
+        size_t j = 0;
+
+        if (la != lb) {
+            /* sequences of different lengths can never be equal */
+            printf("first difference at index %llu: sequence length mismatch (%llu vs %llu)\n",
+                   (unsigned long long)(la < lb ? la : lb),
+                   (unsigned long long)la, (unsigned long long)lb);
+            exit(255);
+        }
+        while (j < la &&
+               elem_read((const char *)ha->ptr + j * elemsize, elemsize) ==
+               elem_read((const char *)hb->ptr + j * elemsize, elemsize)) {
+            ++j;
+        }
+        if (j < la) {
+            printf("first difference at index %llu: %llu %s %llu\n",
+                   (unsigned long long)j,
+                   elem_read((const char *)ha->ptr + j * elemsize, elemsize), neg_op,
+                   elem_read((const char *)hb->ptr + j * elemsize, elemsize));
+        }
+    }
+
     exit(255);
 }
