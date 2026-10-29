@@ -189,6 +189,24 @@ endif
 387_d_assert_cmp_arr_stacked.test : GEN = $(GEN-TCC)
 388_d_assert_cmp_arr_len_mismatch.test : FLAGS += -lang=d
 388_d_assert_cmp_arr_len_mismatch.test : GEN = $(GEN-TCC)
+389_d_assert_cmp_double.test : FLAGS += -lang=d
+389_d_assert_cmp_double.test : GEN = $(GEN-TCC)
+390_d_assert_cmp_float.test : FLAGS += -lang=d
+390_d_assert_cmp_float.test : GEN = $(GEN-TCC)
+391_d_assert_cmp_signed.test : FLAGS += -lang=d
+391_d_assert_cmp_signed.test : GEN = $(GEN-TCC)
+392_d_assert_cmp_unsigned.test : FLAGS += -lang=d
+392_d_assert_cmp_unsigned.test : GEN = $(GEN-TCC)
+393_d_assert_cmp_char.test : FLAGS += -lang=d
+393_d_assert_cmp_char.test : GEN = $(GEN-TCC)
+394_d_assert_cmp_bool.test : FLAGS += -lang=d
+394_d_assert_cmp_bool.test : GEN = $(GEN-TCC)
+395_d_assert_cmp_pointer.test : FLAGS += -lang=d
+395_d_assert_cmp_pointer.test : GEN = $(GEN-TCC)
+396_d_assert_cmp_long_double.test : FLAGS += -lang=d
+396_d_assert_cmp_long_double.test : GEN = $(GEN-TCC)
+397_d_assert_cmp_scalars_pass.test : FLAGS += -lang=d
+397_d_assert_cmp_scalars_pass.test : GEN = $(GEN-TCC)
 # this test compiles/links two files:
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)

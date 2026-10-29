@@ -3741,6 +3741,21 @@ static int is_slice_type(CType *type)
         && type->ref && type->ref->a.is_slice;
 }
 
+/* Return true if 'type' is a scalar type, i.e. a single arithmetic,
+   pointer or boolean value that can be held in a temporary of its own
+   type.  */
+static int is_scalar_value_type(CType *type)
+{
+    switch (type->t & VT_BTYPE) {
+    case VT_BYTE: case VT_SHORT: case VT_INT: case VT_LLONG:
+    case VT_PTR: case VT_BOOL:
+    case VT_FLOAT: case VT_DOUBLE: case VT_LDOUBLE:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /* Return the number of elements an array of type 'type' has when it is
    viewed through a slice.  Arrays that hold a string literal store the
    terminating null character as well, which is not part of the slice.  */
@@ -10392,19 +10407,31 @@ static void push_sym_value(Sym *s)
     }
 }
 
-/* evaluate the value of symbol 's' exactly once, by storing it into a
-   fresh temporary local variable, and leave the resulting rvalue on top
-   of the value stack */
-static void eval_sym_to_temp(Sym *s, int *offset, int *r2)
+/* the type of the temporary that holds the value of 's' when an assertion
+   compares two evaluated operands: scalars keep their own (unqualified)
+   type so that both the comparison and the failure diagnostic use their
+   actual representation, while other types are reduced to a 64-bit
+   integer, as before */
+static void assert_operand_type(Sym *s, CType *type)
 {
-    CType type;
+    *type = s->type;
+    type->t &= ~(VT_CONSTANT | VT_IMMUTABLE | VT_BITFIELD);
+    if (!is_scalar_value_type(&s->type)) {
+        type->t = VT_LLONG;
+        type->ref = NULL;
+    }
+}
+
+/* evaluate the value of symbol 's' exactly once, by storing it into a
+   fresh temporary local variable of type 'type', and leave the resulting
+   rvalue on top of the value stack */
+static void eval_sym_to_temp(Sym *s, CType *type, int *offset, int *r2)
+{
     int size, align;
 
-    type.t = VT_LLONG;
-    type.ref = NULL;
-    size = type_size(&type, &align);
+    size = type_size(type, &align);
     *offset = get_temp_local_var(size, align, r2);
-    vset(&type, VT_LOCAL | VT_LVAL, *offset);
+    vset(type, VT_LOCAL | VT_LVAL, *offset);
     vtop->r2 = *r2;
     push_sym_value(s);
     vstore();
@@ -10456,8 +10483,6 @@ static void do_d_assert(void)
         int l_l = 0, r2_l = 0;
         int l_r = 0, r2_r = 0;
         int la, lb, elem_bt, esize, ealign;
-        CType type;
-        CType lltype;
         CType slice_type;
 
         switch (op) {
@@ -10561,34 +10586,41 @@ static void do_d_assert(void)
             gfunc_call(8);
             gsym(b);
         } else {
+        CType type_l, type_r;
+        int size_l, size_r, align;
+
         /* evaluate each operand exactly once into a temporary local */
-        eval_sym_to_temp(s_l, &l_l, &r2_l);
+        assert_operand_type(s_l, &type_l);
+        assert_operand_type(s_r, &type_r);
+        eval_sym_to_temp(s_l, &type_l, &l_l, &r2_l);
         /* keep the $L temporary allocated so that $R gets a distinct one */
-        vset(&lltype, VT_LOCAL | VT_LVAL, l_l);
+        vset(&type_l, VT_LOCAL | VT_LVAL, l_l);
         vtop->r2 = r2_l;
-        eval_sym_to_temp(s_r, &l_r, &r2_r);
+        eval_sym_to_temp(s_r, &type_r, &l_r, &r2_r);
         vpop(); /* discard placeholder marking the $L temporary as used */
 
         /* generate the comparison over the evaluated temporaries */
-        type.t = VT_LLONG;
-        type.ref = NULL;
-        vset(&type, VT_LOCAL | VT_LVAL, l_l);
+        vset(&type_l, VT_LOCAL | VT_LVAL, l_l);
         vtop->r2 = r2_l;
-        vset(&type, VT_LOCAL | VT_LVAL, l_r);
+        vset(&type_r, VT_LOCAL | VT_LVAL, l_r);
         vtop->r2 = r2_r;
         gen_op(cmp_op);
         a = gvtst(1, 0);
         b = gjmp(0);
         gsym(a);
         /* failure: pass the evaluated values to the runtime helper */
+        size_l = type_size(&type_l, &align);
+        size_r = type_size(&type_r, &align);
         vpush_helper_func(tok_alloc_const("__d_assert_cmp"));
         vpush_string(assertion_buf);
         vpush_string(neg_str);
-        vset(&type, VT_LOCAL | VT_LVAL, l_l);
-        vtop->r2 = r2_l;
-        vset(&type, VT_LOCAL | VT_LVAL, l_r);
-        vtop->r2 = r2_r;
-        gfunc_call(4);
+        vset(&char_pointer_type, VT_LOCAL, l_l);
+        vpushi(type_l.t);
+        vpushi(size_l);
+        vset(&char_pointer_type, VT_LOCAL, l_r);
+        vpushi(type_r.t);
+        vpushi(size_r);
+        gfunc_call(8);
         gsym(b);
         tok = saved_tok;
         }
