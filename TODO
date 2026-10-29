@@ -354,8 +354,7 @@ serialization and graph traversal.
     JSON, BSON, custom binary etc. API should look something like
     - @str(x), @s(x)
     - @fmt(x, ".3"), @f(x)
-    - @as(x, json), $json(x)
-    where UFCS is supported aswell say as `x.$s`.
+    where UFCS is supported aswell say as `x.@s`.
 - **`inout` & Signature-Elision Inference**:
   - A compact surface area, but functions as a type-and-effect system,
     requiring strict semantic soundness per line of code.
