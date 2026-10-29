@@ -494,6 +494,7 @@ ST_FUNC void tccgen_finish(TCCState *s1)
     kr_params = NULL;
     pending_block_safety = 0;
     scope_depth = 0;
+    scope_depth_limit = 0;
     cur_scope = root_scope = &scope_stack[0];
     nb_temp_local_vars = 0;
     global_label_stack = NULL;
