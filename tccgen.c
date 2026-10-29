@@ -80,11 +80,11 @@ static TCC_TLS CString initstr;
 
 /* The lexical scope stack.  Slot 0 is the file-scope sentinel so that
    cur_scope is never NULL.  */
-static TCC_TLS struct scope scope_stack[MAX_SCOPE_DEPTH + 1];
+static TCC_TLS Scope scope_stack[MAX_SCOPE_DEPTH + 1];
 static TCC_TLS int scope_depth;
 /* effective limit, MAX_SCOPE_DEPTH unless lowered by -fscope-depth=N */
 static TCC_TLS int scope_depth_limit;
-ST_DATA struct scope *cur_scope, *loop_scope, *root_scope;
+ST_DATA Scope *cur_scope, *loop_scope, *root_scope;
 
 #if PTR_SIZE == 4
 #define VT_SIZE_T (VT_INT | VT_UNSIGNED)
@@ -105,7 +105,7 @@ static TCC_TLS struct switch_t {
     int def_sym; /* default symbol */
     int nocode_wanted;
     int *bsym;
-    struct scope *scope;
+    Scope *scope;
     struct switch_t *prev;
     SValue sv;
 } *cur_switch; /* current switch */
@@ -8229,7 +8229,7 @@ static void try_call_cleanup_goto(Sym *cleanupstate)
 }
 
 /* call 'func' for each __attribute__((cleanup(func))) */
-static void block_cleanup(struct scope *o)
+static void block_cleanup(Scope *o)
 {
     int jmp = 0;
     Sym *g, **pg;
@@ -8264,9 +8264,9 @@ static void vla_restore(int loc)
         gen_vla_sp_restore(loc);
 }
 
-static void vla_leave(struct scope *o)
+static void vla_leave(Scope *o)
 {
-    struct scope *c = cur_scope, *v = NULL;
+    Scope *c = cur_scope, *v = NULL;
     for (; c != o && c; c = c->prev)
       if (c->vla.num)
         v = c;
@@ -8277,9 +8277,9 @@ static void vla_leave(struct scope *o)
 /* ------------------------------------------------------------------------- */
 /* local scopes */
 
-static struct scope *push_scope(void)
+static Scope *push_scope(void)
 {
-    struct scope *o;
+    Scope *o;
 
     if (scope_depth >= scope_depth_limit)
         tcc_error("too many nested scopes (max %d)", scope_depth_limit);
@@ -8288,9 +8288,9 @@ static struct scope *push_scope(void)
     return o;
 }
 
-static struct scope *new_scope(void)
+static Scope *new_scope(void)
 {
-    struct scope *o = push_scope();
+    Scope *o = push_scope();
 
     /* copy and link previous scope */
     *o = *cur_scope;
@@ -8307,9 +8307,9 @@ static struct scope *new_scope(void)
 
 /* a function frame does not inherit block state from its enclosing
    scope, only the enclosing scope as its parent */
-static struct scope *new_function_scope(Sym *sym)
+static Scope *new_function_scope(Sym *sym)
 {
-    struct scope *o = push_scope();
+    Scope *o = push_scope();
 
     memset(o, 0, sizeof *o);
     o->prev = &scope_stack[scope_depth - 1];
@@ -8323,7 +8323,7 @@ static struct scope *new_function_scope(Sym *sym)
     return o;
 }
 
-static void prev_scope(struct scope *o, int is_expr)
+static void prev_scope(Scope *o, int is_expr)
 {
     if (o != cur_scope)
         tcc_error("internal error: unbalanced scope");
@@ -8355,7 +8355,7 @@ static void prev_scope(struct scope *o, int is_expr)
 }
 
 /* leave a scope via break/continue(/goto) */
-static void leave_scope(struct scope *o)
+static void leave_scope(Scope *o)
 {
     if (!o)
         return;
@@ -8365,13 +8365,13 @@ static void leave_scope(struct scope *o)
 
 /* short versiona for scopes with 'if/do/while/switch' which can
    declare only types (of struct/union/enum) */
-static void new_scope_s(struct scope *o)
+static void new_scope_s(Scope *o)
 {
     o->lstk = local_stack;
     ++local_scope;
 }
 
-static void prev_scope_s(struct scope *o)
+static void prev_scope_s(Scope *o)
 {
     sym_pop(&local_stack, o->lstk, 0);
     --local_scope;
@@ -8382,7 +8382,7 @@ static void prev_scope_s(struct scope *o)
 
 static void lblock(int *bsym, int *csym)
 {
-    struct scope *lo = loop_scope, *co = cur_scope;
+    Scope *lo = loop_scope, *co = cur_scope;
     int *b = co->bsym, *c = co->csym;
     if (csym) {
         co->csym = csym;
@@ -8407,7 +8407,7 @@ static void lblock(int *bsym, int *csym)
    arrays and slices are handled uniformly.  */
 static void do_foreach(int reverse)
 {
-    struct scope *o;
+    Scope *o;
     AttributeDef ad, adbase;
     CType btype, type, agg_type, slice_type, elem_type, len_type, ptr_type;
     CType vtypes[2];
@@ -8723,7 +8723,7 @@ static void do_defer(void)
 static void block(int flags)
 {
     int a, b, c, d, e, t;
-    struct scope o, *p;
+    Scope o, *p;
     AttributeDef ad;
     Sym *s;
 again:
@@ -10259,8 +10259,8 @@ static void sym_push_params(Sym *ref)
    'cur_text_section' */
 static void gen_function(Sym *sym)
 {
-    struct scope *saved_scope = cur_scope, *saved_root = root_scope;
-    struct scope *saved_loop = loop_scope;
+    Scope *saved_scope = cur_scope, *saved_root = root_scope;
+    Scope *saved_loop = loop_scope;
     struct switch_t *saved_switch = cur_switch;
     Sym *saved_local_stack = local_stack;
     Sym *saved_local_label_stack = local_label_stack;

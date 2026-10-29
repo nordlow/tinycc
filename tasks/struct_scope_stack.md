@@ -15,7 +15,7 @@ fields of a fixed-capacity stack of lexical scope frames, so that
 
 ## Current state
 
-`tccgen.c` already has a lexical scope stack: `struct scope`
+`tccgen.c` already has a lexical scope stack: `Scope`
 (`tccgen.c:125`) with `cur_scope` / `loop_scope` / `root_scope`,
 pushed by `new_scope()` (`tccgen.c:8266`) for compound statements,
 `for` and `foreach`, and popped by `prev_scope()`
@@ -50,7 +50,7 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
 
 ## Design
 
-1. **One stack, not two.**  Extend the existing `struct scope`
+1. **One stack, not two.**  Extend the existing `Scope`
    instead of adding a parallel `struct Scope`; the lowercase
    struct already is the lexical scope stack.
 2. **Fixed capacity.**  `MAX_SCOPE_DEPTH` (256) frames in a TLS
@@ -74,7 +74,7 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
 ## Changes
 
 ### `tcc.h`
-- Define `struct FuncState` and `struct scope`, `MAX_SCOPE_DEPTH`
+- Define `struct FuncState` and `Scope`, `MAX_SCOPE_DEPTH`
   and the `cur_scope` / `loop_scope` / `root_scope` declarations.
 - Replace the five `ST_DATA` declarations with `func_*` macros.
 
@@ -114,7 +114,7 @@ again at `tccgen.c:11412` via `func_vt.ref->next`.
 
 ## Acceptance criteria
 - No flat `func_*` variable remains; all seven live in
-  `struct scope`.
+  `Scope`.
 - Target backends compile unchanged.
 - `@safe` applies to a block and does not leak out of it.
 - Scope nesting is bounded; exceeding the bound is diagnosed.

@@ -174,7 +174,7 @@ struct ctfe_parse_ctx {
     CType func_vt;
     int func_var, func_safety, func_old;
     const char *funcname;
-    struct scope *cur_scope, *root_scope;
+    Scope *cur_scope, *root_scope;
 };
 ```
 
