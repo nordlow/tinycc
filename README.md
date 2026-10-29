@@ -6,6 +6,14 @@ originally written by Fabrice Bellard, and is extended by Per Nordlöw
 with slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
 compile-time `version`/`debug` conditionals, and many other features.
 
+The principal vision behind TPC is to extend the compiler with modern
+features found in statically-typed system languages such as D, Zig,
+Rust, and C3—without sacrificing extraordinary default and
+debug-build compilation and run-time performance.  By maintaining
+lightning-fast compilation speeds, TPC delivers outstandingly
+low-latency incremental development loops for both human engineers and AI
+agents.
+
 The historical short names are kept where they are part of the ABI,
 build interface, or compatibility surface: the executable is still
 called `tcc`, and internal identifiers and build variables still use
