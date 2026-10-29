@@ -1936,10 +1936,17 @@ previous @var{vtop} in a safe storage.
 code (for example if stacked floating point registers are used as on
 x86).
 
-@code{vdup()}, @code{vswap()}, @code{vrotb()} and @code{vrott()}
-duplicate, exchange and rotate the topmost entries. They all go through
+Various helper functions push specific value types onto the stack:
+@code{vpushi()} for integer constants, @code{vpushs()} for size_t/pointer constants, @code{vpush64()} for 64-bit constants, @code{vpushsym()} and @code{vpush_ref()} for symbol and section references, @code{vpush_helper_func()} for runtime helper routines, @code{vpush_string()} for string literals, and @code{vpushv()} to duplicate an existing stack value.
+
+@code{vdup()}, @code{vswap()}, @code{vrotb()}, @code{vrott()}, and @code{vrev()}
+duplicate, exchange, rotate, and reverse the topmost entries. They all go through
 @code{vcheck_cmp()} first, because a @code{VT_CMP} value may only stay on
 top of the stack.
+
+@code{vstore()} stores the value of @var{vtop} into the lvalue located just below it on the stack, popping both.
+
+@code{check_vstack()} asserts that @code{vtop == vstack - 1} at statement boundaries, acting as an invariant check against stack leaks.
 
 The @code{gv(rc)} function generates code to evaluate @var{vtop} (the
 top value of the stack) into registers. @var{rc} selects in which
