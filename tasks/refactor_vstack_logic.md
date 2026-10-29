@@ -5,8 +5,10 @@ Improve the maintainability, safety, and readability of low-level `vstack` / `vt
 
 ## Context & Pain Points
 TinyCC uses an explicit virtual expression stack (`vstack`, `vtop`) for code generation. Functions like `eval_sym_to_temp`, `push_sym_value`, `vpush_string`, `do_d_assert`, and related expression routines frequently interleave low-level stack primitives:
-- Manual stack manipulation: `vtop`, `vstack`, `vpop()`, `vset()`, `vpush_*()`.
-- Stack reorganization and storage: `vrott()`, `vstore()`.
+- Push operations: `vpush()`, `vpush64()`, `vpushi()`, `vpushs()`, `vpushv()`, `vpushsym()`, `vpush_ref()`, `vpush_helper_func()`, `vpush_string()`.
+- Pop, duplication, and setting: `vpop()`, `vdup()`, `vswap()`, `vset()`, `vsetc()`, `vseti()`.
+- Stack reorganization: `vrott()`, `vrotb()`, `vrev()`.
+- Evaluation, storage, and comparison flags: `vstore()`, `vcheck_cmp()`, `vset_VT_CMP()`, `vset_VT_JMP()`.
 - Temporary variable management: `get_temp_local_var()`.
 ## Proposed Strategies for Maintainability
 1. **Structured Expression Descriptors**:
