@@ -219,8 +219,15 @@ endif
 403_d_purity_inference.test : GEN = $(GEN-TCC)
 404_d_safety_inference.test : FLAGS += -dt -lang=d
 404_d_safety_inference.test : GEN = $(GEN-TCC)
+407_unused_warnings.test : FLAGS += -Wunused
+407_unused_warnings.test : NORUN = true
+407_unused_warnings.test : T1 = $(TCC) $(FLAGS) -c $1 2>&1
+407_unused_warnings.test : FILTER = | sed -e 's,.*/,,g'
+408_d_scoped_enum.test : FLAGS += -lang=d
+408_d_scoped_enum.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
+
 
 # this test needs two files, and we want to invoke the linker
 120_alias.test : FLAGS += $(subst 120,120+,$1)

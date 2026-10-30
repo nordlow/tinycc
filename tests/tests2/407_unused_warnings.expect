@@ -1,3 +1,8 @@
-407_unused_warnings.c:18: warning: alias 'UnusedAlias' declared but not used
-407_unused_warnings.c:18: warning: variable 'unused_var' declared but not used
-407_unused_warnings.c:18: warning: parameter 'unused_param' declared but not used (can be avoided by prefixing with '_')
+407_unused_warnings.c:7: warning: alias 'UnusedAlias' declared but not used
+407_unused_warnings.c:7: warning: variable 'unused_var' declared but not used
+407_unused_warnings.c:7: warning: parameter 'unused_param' declared but not used (can be avoided by prefixing with '_')
+407_unused_warnings.c:13: warning: variable 'unused_param' declared but not used
+407_unused_warnings.c:13: warning: variable 'align' declared but not used
+407_unused_warnings.c:13: warning: variable 'size' declared but not used
+407_unused_warnings.c:13: warning: variable 'arg_type' declared but not used
+407_unused_warnings.c:13: warning: variable 'ap' declared but not used

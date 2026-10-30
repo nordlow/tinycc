@@ -4977,9 +4977,20 @@ do_decl:
                 if (bt && !in_range(ll, t.t))
 		    tcc_error("enumerator '%s' out of range of its type",
 			get_tok_str(v, NULL));
-                ss = sym_push(v, &t, VT_CONST, 0);
-                ss->enum_val = ll;
-                *ps = ss, ps = &ss->next;
+                if (tcc_state->lang_d) {
+                    ss = sym_malloc();
+                    memset(ss, 0, sizeof *ss);
+                    ss->v = v;
+                    ss->type = t;
+                    ss->enum_val = ll;
+                    *ps = ss;
+                    ps = &ss->next;
+                } else {
+                    ss = sym_push(v, &t, VT_CONST, 0);
+                    ss->enum_val = ll;
+                    *ps = ss, ps = &ss->next;
+                }
+
                 if (ll < nl)
                     nl = ll;
                 if (ll > pl)
@@ -5025,6 +5036,7 @@ do_decl:
             s->c = 1;
         enum_done:
             s->type.t = type->t = t.t | VT_ENUM;
+            s->type.ref = s;
 
         } else {
             c = 0;
@@ -7170,8 +7182,17 @@ special_math_val:
                 gen_dollar();
                 break;
             }
+            if (tcc_state->lang_d) {
+                Sym *es = struct_find(t);
+                if (es && IS_ENUM(es->type.t)) {
+                    vset(&es->type, VT_CONST, 0);
+                    vtop->sym = es;
+                    break;
+                }
+            }
             if (tok != '(')
                 tcc_error("'%s' undeclared", name);
+
             /* for simple function calls, we tolerate undeclared
                external reference to int() function */
             if (!func_old)
@@ -7223,7 +7244,7 @@ special_math_val:
         } else if (tok == '.' || tok == TOK_ARROW) {
             int qualifiers, cumofs;
             int is_arrow = tok == TOK_ARROW;
-            /* field */
+            Sym *ms;
             if (!is_arrow && (vtop->type.t & VT_BTYPE) == VT_PTR) {
                 CType *pt = pointed_type(&vtop->type);
                 if (pt && (pt->t & VT_BTYPE) == VT_STRUCT) {
@@ -7235,7 +7256,25 @@ special_math_val:
             qualifiers = vtop->type.t & VT_QUAL;
             /* expect pointer on structure */
             next();
+            if (tcc_state->lang_d && (vtop->type.t & VT_ENUM)) {
+                Sym *es = vtop->type.ref;
+                int member_tok = tok;
+                if (member_tok < TOK_UIDENT)
+                    expect("enum member identifier");
+                next();
+                ms = es ? es->next : NULL;
+                while (ms && ms->v != member_tok)
+                    ms = ms->next;
+                if (!ms)
+                    tcc_error("'%s' is not a member of enum", get_tok_str(member_tok, NULL));
+                vpop();
+                vpushi(ms->enum_val);
+                vtop->type = ms->type;
+                vtop->sym = ms;
+                continue;
+            }
             if (tcc_state->lang_d && tok == TOK_SIZEOF) {
+
                 next();
                 {
                     CType expr_type_val = vtop->type;
