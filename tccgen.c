@@ -8318,6 +8318,15 @@ static Scope *new_scope(void)
     o->lstk = local_stack;
     o->llstk = local_label_stack;
     ++local_scope;
+
+    if (pending_block_safety) {
+        cur_scope->fn.safety = pending_block_safety;
+        pending_block_safety = 0;
+    }
+    if (pending_block_pure) {
+        cur_scope->fn.pure = pending_block_pure;
+        pending_block_pure = 0;
+    }
     return o;
 }
 
@@ -8761,7 +8770,7 @@ again:
 
     if (debug_modes)
         tcc_tcov_check_line (tcc_state, 0), tcc_tcov_block_begin (tcc_state);
-
+    parse_statement:
     if (t == TOK_IF) {
         new_scope_s(&o);
         skip('(');
@@ -8801,6 +8810,13 @@ again:
             t = tok;
             next();
             goto parse_compound_block;
+        }
+        if (tok == TOK_FOR || tok == TOK_FOREACH || tok == TOK_FOREACH_REVERSE || tok == TOK_WHILE || tok == TOK_DO || tok == TOK_SWITCH || tok == TOK_IF) {
+            pending_block_safety = ad.f.func_safety;
+            pending_block_pure = ad.f.func_pure;
+            t = tok;
+            next();
+            goto parse_statement;
         }
         if (flags & STMT_EXPR) {
             vpop();

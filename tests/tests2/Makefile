@@ -213,6 +213,8 @@ endif
 398_scope_attributes.test : GEN = $(GEN-TCC)
 401_d_pure_global_access.test : FLAGS += -dt -lang=d
 401_d_pure_global_access.test : GEN = $(GEN-TCC)
+402_d_statement_attributes.test : FLAGS += -dt -lang=d
+402_d_statement_attributes.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
 
