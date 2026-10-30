@@ -368,7 +368,7 @@ S = $(if $(findstring yes,$(SILENT)),@$(info * $@))
 
 # Profile-Guided Optimization (PGO) build target
 # Usage: make pgo PGO_CC=clang (or PGO_CC=gcc)
-PGO_CC ?= clang
+PGO_CC ?= cc
 PGO_MARCH ?= native
 PREFIX ?= /usr/local
 export PREFIX
@@ -431,15 +431,15 @@ ifeq ($(PGO_CC),clang)
 	CC=clang CFLAGS="$(PGO_CFLAGS) -fprofile-use=$$(pwd)/tcc.profdata" LDFLAGS="-fprofile-use=$$(pwd)/tcc.profdata" ./configure --prefix=$(PREFIX)
 	$(MAKE) -j$(nproc) -B CC=clang PREFIX=$(PREFIX)
 else
-	@echo "=== Phase 1: Building PGO instrumented binary (GCC) ==="
-	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=$(PREFIX)
-	$(MAKE) -j$(nproc) -B CC=gcc PREFIX=$(PREFIX)
+	@echo "=== Phase 1: Building PGO instrumented binary ($(PGO_CC)) ==="
+	CC=$(PGO_CC) CFLAGS="$(PGO_CFLAGS) -fprofile-generate" LDFLAGS="-fprofile-generate" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=$(PGO_CC) PREFIX=$(PREFIX)
 	@echo "=== Phase 2: Running training workload ==="
 	for i in {1..25}; do ./tcc -B. -Iinclude -I. tcc.c -o /dev/null; done
 	$(MAKE) clean PREFIX=$(PREFIX)
-	@echo "=== Phase 3: Building PGO optimized binary (GCC) ==="
-	CC=gcc CFLAGS="$(PGO_CFLAGS) -fprofile-use" LDFLAGS="-fprofile-use" ./configure --prefix=$(PREFIX)
-	$(MAKE) -j$(nproc) -B CC=gcc PREFIX=$(PREFIX)
+	@echo "=== Phase 3: Building PGO optimized binary ($(PGO_CC)) ==="
+	CC=$(PGO_CC) CFLAGS="$(PGO_CFLAGS) -fprofile-use" LDFLAGS="-fprofile-use" ./configure --prefix=$(PREFIX)
+	$(MAKE) -j$(nproc) -B CC=$(PGO_CC) PREFIX=$(PREFIX)
 endif
 	@echo "PGO build complete using $(PGO_CC)!"
 	@$(MAKE) --no-print-directory pgo-bench
