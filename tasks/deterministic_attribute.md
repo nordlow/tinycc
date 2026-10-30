@@ -111,9 +111,12 @@ checks, `@nodet` turns off determinism checks.
 ## Rationale
 
 `@pure` code, and deterministic code generally, must not inadvertently
-depend on pointer addresses, which differ across runs and platforms.
-Address-dependent results (ordering by address, hashing addresses,
-printing addresses) silently break reproducibility.
+depend on runtime pointer addresses (which differ across runs and
+platforms due to ASLR and stack layout).  Comparing or ordering non-null
+runtime addresses, hashing addresses, or printing addresses silently
+breaks reproducibility.  However, comparing pointer values against zero
+(the null pointer constant, `NULL`, or `0`) is fully allowed and
+deterministic since the null address is invariant across runs and platforms.
 
 Determinism is also what makes a result cacheable, comparable across
 runs, and stably testable.  Making it part of `@pure` avoids the
@@ -128,7 +131,7 @@ runs of the same binary.
   despite their desugaring to offset arithmetic.
 - Writing through a pointer, slice, or other output parameter,
   including in-place algorithms such as the `sort` above.
-- Pointer equality with null (`p == NULL`, `!p`).
+- Pointer equality and relational comparison against zero / null (`p == NULL`, `p != NULL`, `!p`), as the null address is invariant across runs and platforms.
 - Allocation, in `@det` code: the address itself is a handle that may
   be stored, dereferenced, and passed on.  Only letting that address
   leak into a computed value is forbidden.
