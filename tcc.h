@@ -539,12 +539,12 @@ enum {
     FUNC_PURITY_TRUE
 };
 
-enum {
+typedef enum {
     FUNC_SAFETY_UNKNOWN = 0,
     FUNC_SAFETY_SYSTEM,
     FUNC_SAFETY_TRUSTED,
     FUNC_SAFETY_SAFE
-};
+} FuncSafety;
 
 /* function attributes or temporary attributes for parsing */
 struct FuncAttr {
@@ -1511,7 +1511,7 @@ typedef struct FuncState {
     int ind;              /* function start address */
     unsigned char variadic;
     unsigned char old_style;
-    unsigned char safety; /* FUNC_SAFETY_... */
+    FuncSafety safety; /* FUNC_SAFETY_... */
     unsigned char pure;   /* FUNC_PURITY_... */
 } FuncState;
 
