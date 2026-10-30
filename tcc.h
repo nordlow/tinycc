@@ -531,7 +531,8 @@ struct SymAttr {
     nodebug     : 1, /**< Nodebug attribute */
     nocopy      : 1, /**< Non-copyable struct type attribute */
     is_slice    : 1, /**< Struct generated for a T[..] slice type */
-    str_lit     : 1; /**< Array created for a string literal (includes terminating null) */
+    str_lit     : 1, /**< Array created for a string literal (includes terminating null) */
+    used        : 1; /**< Symbol is used */
 };
 
 /**
