@@ -3818,7 +3818,10 @@ static int is_type_start(int t)
     case TOK_RESTRICT1: case TOK_RESTRICT2: case TOK_RESTRICT3:
     case TOK_TYPEOF1: case TOK_TYPEOF2: case TOK_TYPEOF3:
     case TOK_ALIGNAS: case TOK_EXTENSION:
+    case TOK_IMMUTABLE:
         return 1;
+    case '@':
+        return tcc_state->lang_d;
     }
     s = sym_find(t);
     return s && (s->type.t & VT_TYPEDEF);
@@ -5374,7 +5377,46 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             break;
         case '@':
             {
+                const uint8_t *saved_ptr = file->buf_ptr;
                 next();
+                if (tok == TOK_IMMUTABLE || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "immutable"))) {
+                    type->t = t;
+                    parse_btype_qualify(type, VT_CONSTANT | VT_IMMUTABLE);
+                    t = type->t;
+                    next();
+                    if (tok == '(') {
+                        parse_expr_type(&type1);
+                        type1.t &= ~(VT_STORAGE&~VT_TYPEDEF);
+                        if (type1.ref)
+                            sym_to_attr(ad, type1.ref);
+                        type1.t |= type->t & (VT_CONSTANT | VT_IMMUTABLE);
+                        type->t = type1.t;
+                        type->ref = type1.ref;
+                        goto basic_type2;
+                    }
+                    break;
+                } else if (tok == TOK_CONST1 || tok == TOK_CONST2 || tok == TOK_CONST3 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "const"))) {
+                    type->t = t;
+                    parse_btype_qualify(type, VT_CONSTANT);
+                    t = type->t;
+                    next();
+                    if (tok == '(') {
+                        parse_expr_type(&type1);
+                        type1.t &= ~(VT_STORAGE&~VT_TYPEDEF);
+                        if (type1.ref)
+                            sym_to_attr(ad, type1.ref);
+                        type1.t |= type->t & VT_CONSTANT;
+                        type->t = type1.t;
+                        type->ref = type1.ref;
+                        goto basic_type2;
+                    }
+                    break;
+                } else if (saved_ptr) {
+                    file->buf_ptr = (uint8_t *)saved_ptr;
+                    next();
+                }
+            }
+            {
                 if (tok == TOK_STATIC || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "static"))) {
                     ad->section = rodata_section;
                     next();
