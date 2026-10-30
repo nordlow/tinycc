@@ -10,11 +10,7 @@ features.
 
 There are plans for syntactic extensions such as
 
-(`$if`), a shorter `static if`
-
-and tightening of functional purity semantics to disallow reading of
-pointer/address values (usually originating from dynamic memory
-allocators).
+(`$if`), a shorter `static if`.
 
 The principal goal of TinyPC (TPC) is to become a compiler of multiple
 languages with modern features found in statically-typed system
@@ -482,14 +478,14 @@ void f(void)
 
 `@safe` is enforced for functions: pointer arithmetic and pointer
 indexing are rejected.  `@trusted` and `@system` mark code as exempt
-from those checks.  Attributes are also accepted on statements and
-blocks, but only function-level safety is enforced so far.  `@pure`
-is recorded on the function type; it does not enable optimisations
-yet.  The planned semantics are documented in
+from those checks.  `@pure` enforces functional purity and
+determinism (disallowing global/static variable access and
+non-deterministic pointer arithmetic or relational comparisons, while
+permitting pointer dereferencing and null checks).  `@nodet` serves as an
+opt-out for determinism requirements.  Detailed semantics are
+documented in
 [tasks/pure_attribute_semantics.md](tasks/pure_attribute_semantics.md)
-and, for the intended purity/determinism/`@nodet` relationship, in
-[tasks/deterministic_attribute.md](tasks/deterministic_attribute.md).
-
+and [tasks/deterministic_attribute.md](tasks/deterministic_attribute.md).
 ### Defer and scope(exit)
 
 The `defer` statement registers cleanup code that runs when the
