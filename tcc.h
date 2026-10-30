@@ -1529,7 +1529,11 @@ typedef struct FuncState {
  */
 typedef struct Scope {
     struct Scope *prev;   /**< Enclosing parent scope */
-    struct { int loc, locorig, num; } vla; /**< Variable-length array tracking */
+    struct {
+        int loc;     /**< Variable-length array location offset */
+        int locorig; /**< Original variable-length array location offset */
+        int num;     /**< Number of active variable-length arrays */
+    } vla;           /**< Variable-length array tracking */
     struct { Sym *s; int n; } cl; /**< Cleanup functions */
     int *bsym, *csym;     /**< Break and continue jump target symbol stacks */
     Sym *lstk, *llstk;    /**< Local symbol stack */
