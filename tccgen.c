@@ -1179,7 +1179,7 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
     if (sym && sym->v < SYM_FIRST_ANOM
         && (sym->sym_scope == 0 || (sym->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
         && (sym->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(sym->type.t) && !(sym->type.t & VT_TYPEDEF)) {
-        if (cur_scope->fn.pure == FUNC_PURITY_TRUE) {
+        if (IS_PURE(cur_scope->fn.pure)) {
             tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
         } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
             cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
@@ -7058,7 +7058,7 @@ special_math_val:
         if (s && s->v < SYM_FIRST_ANOM
             && (s->sym_scope == 0 || (s->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
             && (s->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(s->type.t) && !(s->type.t & VT_TYPEDEF)) {
-            if (cur_scope->fn.pure == FUNC_PURITY_TRUE) {
+            if (IS_PURE(cur_scope->fn.pure)) {
                 tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
             } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
                 cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
@@ -10364,7 +10364,7 @@ static void gen_function(Sym *sym)
     func_vla_arg(sym);
     block(0);
     if (root_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
-        root_scope->fn.pure = FUNC_PURITY_TRUE;
+        root_scope->fn.pure = FUNC_PURITY_INFERRED_TRUE;
     }
     if (sym->type.ref) {
         sym->type.ref->f.func_pure = root_scope->fn.pure;

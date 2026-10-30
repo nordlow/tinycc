@@ -540,9 +540,12 @@ struct SymAttr {
 typedef enum {
     FUNC_PURITY_UNKNOWN = 0,     /**< Purity not explicitly specified (candidate for inference) */
     FUNC_PURITY_FALSE,           /**< Function is explicitly impure */
-    FUNC_PURITY_TRUE,            /**< Function is pure (@pure attribute or inferred pure) */
+    FUNC_PURITY_TRUE,            /**< Function is explicitly pure (@pure attribute) */
+    FUNC_PURITY_INFERRED_TRUE,   /**< Function was inferred pure */
     FUNC_PURITY_MAYBE_FALSE      /**< Function inferred as impure due to global state access */
 } FuncPurity;
+
+#define IS_PURE(p) ((p) == FUNC_PURITY_TRUE || (p) == FUNC_PURITY_INFERRED_TRUE)
 
 /**
  * @brief Function safety level for memory safety checks.
@@ -564,9 +567,9 @@ struct FuncAttr {
     func_dtor   : 1, /* attribute((destructor)) */
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
-    func_pure   : 2, /* FUNC_PURITY_... */
+    func_pure   : 3, /* FUNC_PURITY_... */
     func_safety : 2, /* FUNC_SAFETY_... */
-    xxxx        : 9;
+    xxxx        : 8;
 };
 /* symbol management */
 typedef struct Sym {
