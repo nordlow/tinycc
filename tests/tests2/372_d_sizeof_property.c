@@ -25,6 +25,7 @@ int main(void) {
     printf("(immutable int).sizeof = %zu\n", (immutable int).sizeof);
     printf("(@immutable int).sizeof = %zu\n", (@immutable int).sizeof);
     printf("(const int).sizeof = %zu\n", (const int).sizeof);
+    printf("(@const int).sizeof = %zu\n", (@const int).sizeof);
 
     // Instance .sizeof
     printf("x.sizeof = %zu\n", x.sizeof);

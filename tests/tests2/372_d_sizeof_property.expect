@@ -8,6 +8,7 @@ int*.sizeof = 8
 (immutable int).sizeof = 4
 (@immutable int).sizeof = 4
 (const int).sizeof = 4
+(@const int).sizeof = 4
 x.sizeof = 4
 ch.sizeof = 1
 arr.sizeof = 40

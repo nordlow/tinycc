@@ -6644,6 +6644,8 @@ ST_FUNC void unary(void)
                 next();
                 if (tok == TOK_IMMUTABLE || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "immutable"))) {
                     tok = TOK_IMMUTABLE;
+                } else if (tok == TOK_CONST1 || tok == TOK_CONST2 || tok == TOK_CONST3 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "const"))) {
+                    tok = TOK_CONST1;
                 } else if (saved_ptr) {
                     file->buf_ptr = (uint8_t *)saved_ptr;
                     next();
