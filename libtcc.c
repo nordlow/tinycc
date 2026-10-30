@@ -1718,19 +1718,21 @@ typedef struct FlagDef {
 } FlagDef;
 
 #define WD_ALL    0x0001 /* warning is activated when using -Wall */
+#define WD_UNUSED 0x0004 /* warning is activated when using -Wunused */
 #define FD_INVERT 0x0002 /* invert value before storing */
 
 static const FlagDef options_W[] = {
     { offsetof(TCCState, warn_all), WD_ALL, "all" },
+    { offsetof(TCCState, warn_unused), WD_UNUSED, "unused" },
     { offsetof(TCCState, warn_error), 0, "error" },
     { offsetof(TCCState, warn_write_strings), 0, "write-strings" },
     { offsetof(TCCState, warn_unsupported), 0, "unsupported" },
     { offsetof(TCCState, warn_implicit_function_declaration), WD_ALL, "implicit-function-declaration" },
     { offsetof(TCCState, warn_discarded_qualifiers), WD_ALL, "discarded-qualifiers" },
     { offsetof(TCCState, warn_uncovered), 0, "uncovered" },
-    { offsetof(TCCState, warn_unused_variable), 0, "unused-variable" },
-    { offsetof(TCCState, warn_unused_parameter), 0, "unused-parameter" },
-    { offsetof(TCCState, warn_unused_alias), 0, "unused-alias" },
+    { offsetof(TCCState, warn_unused_variable), WD_UNUSED, "unused-variable" },
+    { offsetof(TCCState, warn_unused_parameter), WD_UNUSED, "unused-parameter" },
+    { offsetof(TCCState, warn_unused_alias), WD_UNUSED, "unused-alias" },
     { 0, 0, NULL }
 };
 
@@ -1759,23 +1761,23 @@ static const FlagDef options_m[] = {
 
 static int set_flag(TCCState *s, const FlagDef *flags, const char *name)
 {
-    int value, mask, ret;
+    int value, mask, ret, group_flags;
     const FlagDef *p;
     const char *r;
     unsigned char *f;
-
-    r = name, value = !strstart("no-", &r), mask = 0;
+    r = name, value = !strstart("no-", &r), mask = 0, group_flags = 0;
 
     /* when called with options_W, look for -W[no-]error=<option> */
-    if ((flags->flags & WD_ALL) && strstart("error=", &r))
+    if (strstart("error=", &r))
         value = value ? WARN_ON|WARN_ERR : WARN_NOE, mask = WARN_ON;
 
     for (ret = -1, p = flags; p->name; ++p) {
         if (ret) {
             if (strcmp(r, p->name))
                 continue;
+            group_flags = p->flags;
         } else {
-            if (0 == (p->flags & WD_ALL))
+            if (group_flags == 0 || 0 == (p->flags & group_flags))
                 continue;
         }
 
@@ -1784,7 +1786,7 @@ static int set_flag(TCCState *s, const FlagDef *flags, const char *name)
 
         if (ret) {
             ret = 0;
-            if (strcmp(r, "all"))
+            if (strcmp(r, "all") && strcmp(r, "unused"))
                 break;
         }
     }

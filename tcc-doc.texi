@@ -374,6 +374,9 @@ Warn when const is dropped.
 @item -Wunsupported
 Warn about unsupported GCC features that are ignored by TPC.
 
+@item -Wunused
+Enable all unused warnings (@option{-Wunused-variable}, @option{-Wunused-parameter}, @option{-Wunused-alias}).
+
 @item -Wunused-variable
 Warn about unused local variables.
 

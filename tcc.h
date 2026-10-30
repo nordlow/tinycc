@@ -840,6 +840,7 @@ struct TCCState {
     unsigned char warn_implicit_function_declaration;
     unsigned char warn_discarded_qualifiers;
     unsigned char warn_uncovered;
+    unsigned char warn_unused;
     unsigned char warn_unused_variable;
     unsigned char warn_unused_parameter;
     unsigned char warn_unused_alias;
