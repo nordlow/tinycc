@@ -387,8 +387,7 @@ Warn about unused type aliases.
 Warn about unused function parameters. Unused parameter warnings can be avoided by prefixing the parameter name with an underscore character (@code{_}).
 
 @item -Wwrite-strings
-Make string constants be of type @code{const char *} instead of @code{char
-*}.
+Make string constants reside in read-only process-lifetime storage (@code{.rodata}) and have type @code{const char *} instead of @code{char *}. In @option{-lang=d} mode, string literals are strictly qualified as immutable.
 
 @item -Wall
 Activate some useful warnings (@option{-Wimplicit-function-declaration},
