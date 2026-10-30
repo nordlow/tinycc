@@ -1,0 +1,9 @@
+[test_inferred_pure]
+28
+
+[test_inferred_impure]
+10
+15
+
+[test_inferred_pure_combination]
+42
