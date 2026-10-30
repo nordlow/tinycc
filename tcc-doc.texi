@@ -377,6 +377,9 @@ Warn about unsupported GCC features that are ignored by TPC.
 @item -Wunused-variable
 Warn about unused local variables and aliases.
 
+@item -Wunused-parameter
+Warn about unused function parameters. Unused parameter warnings can be avoided by prefixing the parameter name with an underscore character (@code{_}).
+
 @item -Wwrite-strings
 Make string constants be of type @code{const char *} instead of @code{char
 *}.
@@ -384,8 +387,6 @@ Make string constants be of type @code{const char *} instead of @code{char
 @item -Wall
 Activate some useful warnings (@option{-Wimplicit-function-declaration},
 @option{-Wdiscarded-qualifiers}, @option{-Wunused-variable}).
-Make string constants be of type @code{const char *} instead of @code{char
-*}.
 
 @item -Werror
 Abort compilation if a warning is issued. Can be given an option to enable

@@ -532,9 +532,9 @@ struct SymAttr {
     nocopy      : 1, /**< Non-copyable struct type attribute */
     is_slice    : 1, /**< Struct generated for a T[..] slice type */
     str_lit     : 1, /**< Array created for a string literal (includes terminating null) */
-    used        : 1; /**< Symbol is used */
+    used        : 1, /**< Symbol is used */
+    is_param    : 1; /**< Symbol is a function parameter */
 };
-
 /**
  * @brief Function purity level representing mathematical purity guarantees.
  */
@@ -841,6 +841,7 @@ struct TCCState {
     unsigned char warn_discarded_qualifiers;
     unsigned char warn_uncovered;
     unsigned char warn_unused_variable;
+    unsigned char warn_unused_parameter;
     #define WARN_ON  1 /**< warning is on (-Woption) */
     unsigned char warn_num; /* temp var for tcc_warning_c() */
 

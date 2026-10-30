@@ -852,10 +852,15 @@ ST_FUNC void sym_pop(Sym **ptop, Sym *b, int keep)
                 && !IS_ENUM_VAL(s->type.t)
                 && !(s->type.t & (VT_STATIC | VT_EXTERN))
                 && !s->a.used) {
-                if (s->type.t & VT_TYPEDEF) {
-                    tcc_warning_c(warn_unused_variable)("alias '%s' declared but not used", get_tok_str(s->v, NULL));
-                } else {
-                    tcc_warning_c(warn_unused_variable)("variable '%s' declared but not used", get_tok_str(s->v, NULL));
+                const char *name = get_tok_str(s->v, NULL);
+                if (name[0] != '_') {
+                    if (s->type.t & VT_TYPEDEF) {
+                        tcc_warning_c(warn_unused_variable)("alias '%s' declared but not used", name);
+                    } else if (s->a.is_param) {
+                        tcc_warning_c(warn_unused_parameter)("parameter '%s' declared but not used (can be avoided by prefixing with '_')", name);
+                    } else {
+                        tcc_warning_c(warn_unused_variable)("variable '%s' declared but not used", name);
+                    }
                 }
             }
 	    sym_free(s);
@@ -10435,8 +10440,10 @@ static void sym_push_params(Sym *ref)
     while (s->next)
         s = s->next;
     while (s != ref) {
-        if ((s->v & ~SYM_STRUCT) < SYM_FIRST_ANOM)
-            sym_copy(s, &local_stack);
+        if ((s->v & ~SYM_STRUCT) < SYM_FIRST_ANOM) {
+            Sym *ps = sym_copy(s, &local_stack);
+            ps->a.is_param = 1;
+        }
         s = s->prev;
     }
 }

@@ -1729,6 +1729,7 @@ static const FlagDef options_W[] = {
     { offsetof(TCCState, warn_discarded_qualifiers), WD_ALL, "discarded-qualifiers" },
     { offsetof(TCCState, warn_uncovered), 0, "uncovered" },
     { offsetof(TCCState, warn_unused_variable), 0, "unused-variable" },
+    { offsetof(TCCState, warn_unused_parameter), 0, "unused-parameter" },
     { 0, 0, NULL }
 };
 
