@@ -5,8 +5,7 @@ C and a growing D-inspired dialect.  It is derived from TinyCC, the
 *Tiny C Compiler* originally written by Fabrice Bellard, and is
 extended by Per Nordlöw with mostly D language features such as
 slices, dynamic arrays, UFCS, `foreach`, `defer`, `immutable`,
-compile-time `version`/`debug` conditionals, and many other
-features.
+compile-time `version`/`debug` conditionals, and many other features.
 
 There are plans for syntactic extensions such as
 
