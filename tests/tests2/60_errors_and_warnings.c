@@ -423,7 +423,7 @@ int f() { return v(); }
 #endif
 void func(void)
 {
-    char *ccp = "123";
+    char *__attribute__((unused)) ccp = "123";
     fink();
 }
 __attribute__((stuff)) int fink() {return 0;}

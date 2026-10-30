@@ -846,8 +846,20 @@ ST_FUNC void sym_pop(Sym **ptop, Sym *b, int keep)
         /* remove symbol in token array */
         if ((v & ~SYM_STRUCT) < SYM_FIRST_ANOM)
             sym_link(s, 0);
-	if (!keep)
+	if (!keep) {
+            if (s->sym_scope > 0 && s->v < SYM_FIRST_ANOM
+                && (s->type.t & VT_BTYPE) != VT_FUNC
+                && !IS_ENUM_VAL(s->type.t)
+                && !(s->type.t & (VT_STATIC | VT_EXTERN))
+                && !s->a.used) {
+                if (s->type.t & VT_TYPEDEF) {
+                    tcc_warning_c(warn_unused_variable)("alias '%s' declared but not used", get_tok_str(s->v, NULL));
+                } else {
+                    tcc_warning_c(warn_unused_variable)("variable '%s' declared but not used", get_tok_str(s->v, NULL));
+                }
+            }
 	    sym_free(s);
+        }
         s = ss;
     }
     if (!keep)
@@ -1176,6 +1188,8 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
 {
     CValue cval;
     cval.i = 0;
+    if (sym)
+        sym->a.used = 1;
     if (sym && sym->v < SYM_FIRST_ANOM
         && (sym->sym_scope == 0 || (sym->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
         && (sym->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(sym->type.t) && !(sym->type.t & VT_TYPEDEF)) {
@@ -4380,8 +4394,7 @@ redo:
         case TOK_USED2:
         case TOK_UNUSED1:
         case TOK_UNUSED2:
-            /* currently, no need to handle it because tcc does not
-               track used/unused objects */
+            ad->a.used = 1;
             break;
         case TOK_CONST1:
         case TOK_CONST2:
@@ -5480,7 +5493,7 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             s = sym_find(tok);
             if (!s || !(s->type.t & VT_TYPEDEF))
                 goto the_end;
-
+            s->a.used = 1;
             n = tok, next();
             if (tok == ':' && ignore_label) {
                 /* ignore if it's a label */

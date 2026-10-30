@@ -29,6 +29,10 @@ void *__va_arg(__builtin_va_list ap,
                int arg_type,
                int size, int align)
 {
+    (void)ap;
+    (void)arg_type;
+    (void)size;
+    (void)align;
     size = (size + 7) & ~7;
     align = (align + 7) & ~7;
     switch ((enum __va_arg_type)arg_type) {

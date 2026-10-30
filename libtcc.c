@@ -883,8 +883,6 @@ LIBTCCAPI TCCState *tcc_new(void)
     s->warn_implicit_function_declaration = 1;
     s->warn_discarded_qualifiers = 1;
     s->ms_extensions = 1;
-    s->unwind_tables = 1;
-
 #ifdef CHAR_IS_UNSIGNED
     s->char_is_unsigned = 1;
 #endif
@@ -1730,13 +1728,12 @@ static const FlagDef options_W[] = {
     { offsetof(TCCState, warn_implicit_function_declaration), WD_ALL, "implicit-function-declaration" },
     { offsetof(TCCState, warn_discarded_qualifiers), WD_ALL, "discarded-qualifiers" },
     { offsetof(TCCState, warn_uncovered), 0, "uncovered" },
+    { offsetof(TCCState, warn_unused_variable), 0, "unused-variable" },
     { 0, 0, NULL }
 };
 
 static const FlagDef options_f[] = {
     { offsetof(TCCState, char_is_unsigned), 0, "unsigned-char" },
-    { offsetof(TCCState, char_is_unsigned), FD_INVERT, "signed-char" },
-    { offsetof(TCCState, nocommon), FD_INVERT, "common" },
     { offsetof(TCCState, leading_underscore), 0, "leading-underscore" },
     { offsetof(TCCState, ms_extensions), 0, "ms-extensions" },
     { offsetof(TCCState, dollars_in_identifiers), 0, "dollars-in-identifiers" },
