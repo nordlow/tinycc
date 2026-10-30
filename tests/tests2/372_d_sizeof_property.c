@@ -20,6 +20,11 @@ int main(void) {
     printf("int[10].sizeof = %zu\n", int[10].sizeof);
     printf("int*.sizeof = %zu\n", int*.sizeof);
 
+    // Parenthesized qualified types .sizeof
+    printf("(int).sizeof = %zu\n", (int).sizeof);
+    printf("(immutable int).sizeof = %zu\n", (immutable int).sizeof);
+    printf("(const int).sizeof = %zu\n", (const int).sizeof);
+
     // Instance .sizeof
     printf("x.sizeof = %zu\n", x.sizeof);
     printf("ch.sizeof = %zu\n", ch.sizeof);

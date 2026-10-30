@@ -5298,6 +5298,16 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
             parse_btype_qualify(type, VT_CONSTANT | VT_IMMUTABLE);
             t = type->t;
             next();
+            if (tok == '(') {
+                parse_expr_type(&type1);
+                type1.t &= ~(VT_STORAGE&~VT_TYPEDEF);
+                if (type1.ref)
+                    sym_to_attr(ad, type1.ref);
+                type1.t |= type->t & (VT_CONSTANT | VT_IMMUTABLE);
+                type->t = type1.t;
+                type->ref = type1.ref;
+                goto basic_type2;
+            }
             break;
         case TOK_VOLATILE1:
         case TOK_VOLATILE2:
@@ -6645,6 +6655,16 @@ ST_FUNC void unary(void)
             } else if (t == TOK_SOTYPE) { /* from sizeof/alignof (...) */
                 vpush(&type);
                 return;
+            } else if (tcc_state->lang_d && tok == '.') {
+                next();
+                if (tok == TOK_SIZEOF) {
+                    next();
+                    vpush_type_size(&type, &align);
+                    gen_cast_s(VT_SIZE_T);
+                    return;
+                } else {
+                    tcc_error("expected 'sizeof' after type");
+                }
             } else {
                 unary();
                 gen_cast(&type);
