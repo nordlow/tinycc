@@ -473,12 +473,14 @@ void f(void)
         /* direct memory access is allowed here */
     }
     @trusted raw_call();
+    @trusted for (int i = 0; i < 10; i++) {
+        /* trusted loop body */
+    }
 }
 ```
 
-`@safe` is enforced for functions: pointer arithmetic and pointer
-indexing are rejected.  `@trusted` and `@system` mark code as exempt
-from those checks.  `@pure` enforces functional purity and
+`@safe` is enforced for functions and blocks: pointer arithmetic and pointer
+indexing are rejected.  `@trusted` and `@system` mark statements, loops (`for`, `foreach`), and blocks as exempt from those checks.  `@pure` enforces functional purity and
 determinism (disallowing global/static variable access and
 non-deterministic pointer arithmetic or relational comparisons, while
 permitting pointer dereferencing and null checks).  `@nodet` serves as an
