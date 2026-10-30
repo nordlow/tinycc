@@ -6603,6 +6603,15 @@ ST_FUNC void unary(void)
         if (tcc_state->lang_d)
             t |= VT_IMMUTABLE;
         type.t = t;
+        if (nocode_wanted > 1) {
+            Sym *s = sym_push(SYM_FIELD, &type, 0, tokc.str.size);
+            type.t = t | VT_PTR | VT_ARRAY;
+            type.ref = s;
+            vpush(&type);
+            vtop->r = VT_CONST;
+            next();
+            break;
+        }
         mk_pointer(&type);
         type.t |= VT_ARRAY;
         memset(&ad, 0, sizeof(AttributeDef));
@@ -11486,7 +11495,8 @@ static int decl(int l)
                 {
                     CType deduced_type;
                     expr_type(&deduced_type, gexpr);
-                    convert_expression_type(&deduced_type);
+                    if (!(deduced_type.t & VT_ARRAY))
+                        convert_expression_type(&deduced_type);
                     subst_auto_type(&type, &deduced_type);
                 }
                 end_macro();

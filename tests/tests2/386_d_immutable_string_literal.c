@@ -5,6 +5,9 @@ unittest {
     $assert(__builtin_types_compatible_p(__typeof__(x), immutable char *));
     $assert(sizeof("a") == 2);
     $assert(__builtin_types_compatible_p(__typeof__("a"), immutable char[2]));
+    auto y = "a";
+    $assert(__builtin_types_compatible_p(__typeof__(y), immutable char[2]));
+    $assert(sizeof(y) == 2);
 }
 
 int main(void) {
