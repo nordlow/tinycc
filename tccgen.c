@@ -3272,6 +3272,12 @@ redo:
             goto std_op;
         if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
             tcc_error("pointer arithmetic not allowed in @safe scope");
+        else {
+            if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+        }
         /* if both pointers, then it must be the '-' op */
         if (bt1 == VT_PTR && bt2 == VT_PTR) {
             if (op != '-')
@@ -4195,8 +4201,16 @@ ST_FUNC void vstore(void)
 ST_FUNC void inc(int post, int c)
 {
     test_lvalue();
-    if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && ((vtop->type.t & VT_BTYPE) == VT_PTR))
-        tcc_error("pointer arithmetic not allowed in @safe scope");
+    if ((vtop->type.t & VT_BTYPE) == VT_PTR) {
+        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
+            tcc_error("pointer arithmetic not allowed in @safe scope");
+        else {
+            if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+        }
+    }
     vdup(); /* save lvalue */
     if (post) {
         gv_dup(); /* duplicate value */
@@ -7208,7 +7222,7 @@ special_math_val:
                         TokenString *p, *p2;
 
                         s = vtop[-1].type.ref;
-                        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && s->f.func_safety == FUNC_SAFETY_SYSTEM)
+                        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && (s->f.func_safety == FUNC_SAFETY_SYSTEM || s->f.func_safety == FUNC_SAFETY_INFERRED_SYSTEM))
                             tcc_error("calling @system function not allowed in @safe scope");
                         vtop[-1].r &= ~VT_LVAL;
                         next();
@@ -7327,9 +7341,16 @@ special_math_val:
             base_type = vtop->type;
             base_sv = vtop;
             base_is_slice = is_slice_type(&base_type);
-            if ((base_type.t & VT_BTYPE) == VT_PTR
-                && cur_scope->fn.safety == FUNC_SAFETY_SAFE)
-                tcc_error("pointer indexing not allowed in @safe scope");
+            if ((base_type.t & VT_BTYPE) == VT_PTR) {
+                if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
+                    tcc_error("pointer indexing not allowed in @safe scope");
+                else {
+                    if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                        cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                    if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                        root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                }
+            }
             if (tok == TOK_TWODOTS || tok == TOK_DOTS
                 || (tcc_state->lang_d && tok == ']')) {
                 /* full slice: a[..], or a[] in D mode */
@@ -7423,7 +7444,7 @@ special_math_val:
             }
             /* get return type */
             s = vtop->type.ref;
-            if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && s->f.func_safety == FUNC_SAFETY_SYSTEM)
+            if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && (s->f.func_safety == FUNC_SAFETY_SYSTEM || s->f.func_safety == FUNC_SAFETY_INFERRED_SYSTEM))
                 tcc_error("calling @system function not allowed in @safe scope");
             next();
             sa = s->next; /* first parameter */
@@ -9113,6 +9134,12 @@ again:
     } else if (t == TOK_ASM1 || t == TOK_ASM2 || t == TOK_ASM3) {
         if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
             tcc_error("inline assembly not allowed in @safe scope");
+        else {
+            if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+        }
         asm_instr();
 
     } else {
@@ -10368,6 +10395,12 @@ static void gen_function(Sym *sym)
     }
     if (sym->type.ref) {
         sym->type.ref->f.func_pure = root_scope->fn.pure;
+    }
+    if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN) {
+        root_scope->fn.safety = FUNC_SAFETY_INFERRED_SAFE;
+    }
+    if (sym->type.ref) {
+        sym->type.ref->f.func_safety = root_scope->fn.safety;
     }
     gsym(rsym);
     nocode_wanted = 0;

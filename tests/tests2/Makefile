@@ -217,6 +217,8 @@ endif
 402_d_statement_attributes.test : GEN = $(GEN-TCC)
 403_d_purity_inference.test : FLAGS += -dt -lang=d
 403_d_purity_inference.test : GEN = $(GEN-TCC)
+404_d_safety_inference.test : FLAGS += -dt -lang=d
+404_d_safety_inference.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
 

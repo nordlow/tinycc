@@ -1,0 +1,5 @@
+[test_inferred_safe]
+42
+
+[test_inferred_system]
+404_d_safety_inference.c:22: error: calling @system function not allowed in @safe scope

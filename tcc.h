@@ -550,11 +550,15 @@ typedef enum {
  * @brief Function safety level for memory safety checks.
  */
 typedef enum {
-    FUNC_SAFETY_UNKNOWN = 0, /**< Safety not explicitly specified */
-    FUNC_SAFETY_SYSTEM,      /**< System safety level (unchecked) */
-    FUNC_SAFETY_TRUSTED,     /**< Trusted safety level (exempt from checks) */
-    FUNC_SAFETY_SAFE         /**< Safe level (@safe attribute, pointer checks enforced) */
+    FUNC_SAFETY_UNKNOWN = 0,         /**< Safety not explicitly specified nor yet inferred */
+    FUNC_SAFETY_SAFE,            /**< Safe level (@safe attribute, pointer checks enforced) */
+    FUNC_SAFETY_SYSTEM,          /**< System safety level (unchecked) */
+    FUNC_SAFETY_TRUSTED,         /**< Trusted safety level (exempt from checks) */
+    FUNC_SAFETY_INFERRED_SYSTEM, /**< Safety inferred system / unsafe */
+    FUNC_SAFETY_INFERRED_SAFE,   /**< Function was inferred safe */
 } FuncSafety;
+
+#define IS_SAFE(s) ((s) == FUNC_SAFETY_SAFE || (s) == FUNC_SAFETY_INFERRED_SAFE || (s) == FUNC_SAFETY_TRUSTED)
 
 /* function attributes or temporary attributes for parsing */
 struct FuncAttr {
@@ -567,8 +571,8 @@ struct FuncAttr {
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
     func_pure   : 2, /* FUNC_PURITY_... */
-    func_safety : 2, /* FUNC_SAFETY_... */
-    xxxx        : 9;
+    func_safety : 3, /* FUNC_SAFETY_... */
+    xxxx        : 8;
 };
 /* symbol management */
 typedef struct Sym {
