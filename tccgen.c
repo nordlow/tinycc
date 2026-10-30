@@ -1176,7 +1176,7 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
 {
     CValue cval;
     cval.i = 0;
-    if (cur_scope->fn.pure && sym && sym->v < SYM_FIRST_ANOM
+    if (cur_scope->fn.pure == FUNC_PURITY_TRUE && sym && sym->v < SYM_FIRST_ANOM
         && (sym->sym_scope == 0 || (sym->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
         && (sym->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(sym->type.t) && !(sym->type.t & VT_TYPEDEF)) {
         tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
@@ -1272,7 +1272,7 @@ static void merge_funcattr(struct FuncAttr *fa, struct FuncAttr *fa1)
     if (fa1->func_dtor)
       fa->func_dtor = 1;
     if (fa1->func_pure)
-      fa->func_pure = 1;
+      fa->func_pure = fa1->func_pure;
     if (fa1->func_safety)
       fa->func_safety = fa1->func_safety;
 }
@@ -4367,7 +4367,7 @@ redo:
         case TOK_CONST3:
         case TOK_PURE1:
         case TOK_PURE2:
-            ad->f.func_pure = 1;
+            ad->f.func_pure = FUNC_PURITY_TRUE;
             break;
         case TOK_NOINLINE:
 	    /* ignored */
@@ -5351,7 +5351,7 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
                     ad->section = rodata_section;
                     next();
                 } else if (tok == TOK_PURE1 || tok == TOK_PURE2 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "pure"))) {
-                    ad->f.func_pure = 1;
+                    ad->f.func_pure = FUNC_PURITY_TRUE;
                     next();
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "safe")) {
                     ad->f.func_safety = FUNC_SAFETY_SAFE;
@@ -5683,7 +5683,7 @@ static void parse_d_attributes(AttributeDef *ad)
         if (tok == '@') {
             next();
             if (tok == TOK_PURE1 || tok == TOK_PURE2 || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "pure"))) {
-                ad->f.func_pure = 1;
+                ad->f.func_pure = FUNC_PURITY_TRUE;
                 next();
             } else if (tok == TOK_STATIC || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "static"))) {
                 ad->section = rodata_section;
@@ -7051,8 +7051,7 @@ special_math_val:
                 "implicit declaration of function '%s'", name);
             s = external_global_sym(t, &func_old_type);
         }
-
-        if (cur_scope->fn.pure && s && s->v < SYM_FIRST_ANOM
+        if (cur_scope->fn.pure == FUNC_PURITY_TRUE && s && s->v < SYM_FIRST_ANOM
             && (s->sym_scope == 0 || (s->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
             && (s->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(s->type.t) && !(s->type.t & VT_TYPEDEF)) {
             tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
@@ -8330,17 +8329,22 @@ static Scope *new_function_scope(Sym *sym)
 
     memset(o, 0, sizeof *o);
     o->prev = &scope_stack[scope_depth - 1];
-    o->fn.vt = sym->type.ref->type;
-    o->fn.variadic = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
-    o->fn.old_style = sym->type.ref->f.func_type == FUNC_OLD;
-    o->fn.safety = sym->type.ref->f.func_safety;
-    o->fn.pure = sym->type.ref->f.func_pure;
+    if (sym->type.ref) {
+        o->fn.vt = sym->type.ref->type;
+        o->fn.variadic = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
+        o->fn.old_style = sym->type.ref->f.func_type == FUNC_OLD;
+        o->fn.safety = sym->type.ref->f.func_safety;
+        o->fn.pure = sym->type.ref->f.func_pure;
+    } else {
+        o->fn.vt = sym->type;
+        o->fn.safety = FUNC_SAFETY_UNKNOWN;
+        o->fn.pure = FUNC_PURITY_UNKNOWN;
+    }
     o->fn.name = get_tok_str(sym->v, NULL);
     o->fn.ind = ind;
     cur_scope = o;
     return o;
 }
-
 static void prev_scope(Scope *o, int is_expr)
 {
     if (o != cur_scope)

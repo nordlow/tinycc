@@ -534,6 +534,12 @@ struct SymAttr {
 };
 
 enum {
+    FUNC_PURITY_UNKNOWN = 0,
+    FUNC_PURITY_FALSE,
+    FUNC_PURITY_TRUE
+};
+
+enum {
     FUNC_SAFETY_UNKNOWN = 0,
     FUNC_SAFETY_SYSTEM,
     FUNC_SAFETY_TRUSTED,
@@ -550,11 +556,10 @@ struct FuncAttr {
     func_dtor   : 1, /* attribute((destructor)) */
     func_args   : 8, /* PE __stdcall args */
     func_alwinl : 1, /* always_inline */
-    func_pure   : 1, /* @pure or attribute((pure)) */
+    func_pure   : 2, /* FUNC_PURITY_... */
     func_safety : 2, /* FUNC_SAFETY_... */
-    xxxx        : 10;
+    xxxx        : 9;
 };
-
 /* symbol management */
 typedef struct Sym {
     int v; /* symbol token */
@@ -1507,7 +1512,7 @@ typedef struct FuncState {
     unsigned char variadic;
     unsigned char old_style;
     unsigned char safety; /* FUNC_SAFETY_... */
-    unsigned char pure;   /* @pure flag */
+    unsigned char pure;   /* FUNC_PURITY_... */
 } FuncState;
 
 typedef struct Scope {
