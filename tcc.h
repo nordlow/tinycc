@@ -520,34 +520,20 @@ typedef struct SValue {
  */
 struct SymAttr {
     unsigned int
-    /** Alignment constraint specified as log2 + 1 (0 == unspecified). */
-    aligned     : 5,
-    /** Struct or field packing attribute (forces byte alignment and removes padding). */
-    packed      : 1,
-    /** Weak symbol linkage attribute (permits overriding by strong definitions at link time). */
-    weak        : 1,
-    /** Symbol visibility level (e.g., default, hidden, internal, protected). */
-    visibility  : 2,
-    /** Windows PE dllexport attribute (exports symbol from a dynamic library/DLL). */
-    dllexport   : 1,
-    /** Windows PE nodecorate attribute (suppresses standard name decoration mangling). */
-    nodecorate  : 1,
-    /** Windows PE dllimport attribute (imports symbol from an external dynamic library/DLL). */
-    dllimport   : 1,
-    /** Address-taken flag (indicates that the address of the variable or function has been taken). */
-    addrtaken   : 1,
-    /** Nodebug attribute (suppresses emission of debugging metadata and debug entries for this symbol). */
-    nodebug     : 1,
-    /** Non-copyable struct type attribute (prevents structural copying or assignment of struct instances). */
-    nocopy      : 1,
-    /** Slice type flag (indicates a synthesized struct generated for a D/TPC slice type T[..]). */
-    is_slice    : 1,
-    /** String literal array flag (indicates an array created for a string literal including terminating null). */
-    str_lit     : 1,
-    /** Symbol used flag (tracks whether a variable or function symbol has been referenced in expressions or assignments). */
-    used        : 1,
-    /** Function parameter flag (indicates that the symbol represents a formal parameter of a function). */
-    is_param    : 1;
+    aligned     : 5, /**< Alignment constraint specified as log2 + 1 (0 == unspecified). */
+    packed      : 1, /**< Struct or field packing attribute (forces byte alignment and removes padding). */
+    weak        : 1, /**< Weak symbol linkage attribute (permits overriding by strong definitions at link time). */
+    visibility  : 2, /**< Symbol visibility level (e.g., default, hidden, internal, protected). */
+    dllexport   : 1, /**< Windows PE dllexport attribute (exports symbol from a dynamic library/DLL). */
+    nodecorate  : 1, /**< Windows PE nodecorate attribute (suppresses standard name decoration mangling). */
+    dllimport   : 1, /**< Windows PE dllimport attribute (imports symbol from an external dynamic library/DLL). */
+    addrtaken   : 1, /**< Address-taken flag (indicates that the address of the variable or function has been taken). */
+    nodebug     : 1, /**< Nodebug attribute (suppresses emission of debugging metadata and debug entries for this symbol). */
+    nocopy      : 1, /**< Non-copyable struct type attribute (prevents structural copying or assignment of struct instances). */
+    is_slice    : 1, /**< Slice type flag (indicates a synthesized struct generated for a D/TPC slice type T[..]). */
+    str_lit     : 1, /**< String literal array flag (indicates an array created for a string literal including terminating null). */
+    used        : 1, /**< Symbol used flag (tracks whether a variable or function symbol has been referenced in expressions or assignments). */
+    is_param    : 1; /**< Function parameter flag (indicates that the symbol represents a formal parameter of a function). */
 };
 /**
  * @brief Function purity level representing mathematical purity guarantees.
