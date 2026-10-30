@@ -18,3 +18,9 @@
 
 [test_system_add]
 40
+
+[test_safe_call_system]
+381_d_safety_pointer_arith.c:57: error: calling @system function not allowed in @safe scope
+
+[test_safe_asm]
+381_d_safety_pointer_arith.c:63: error: inline assembly not allowed in @safe scope

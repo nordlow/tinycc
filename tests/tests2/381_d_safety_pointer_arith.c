@@ -50,4 +50,18 @@ int main(void) {
     printf("%d\n", f(a));
     return 0;
 }
+
+#elif defined test_safe_call_system
+int g(int x) @system { return x; }
+int f(void) @safe {
+    return g(1);
+}
+int main(void) { return 0; }
+
+#elif defined test_safe_asm
+int f(void) @safe {
+    __asm__("");
+    return 0;
+}
+int main(void) { return 0; }
 #endif

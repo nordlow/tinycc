@@ -7189,6 +7189,8 @@ special_math_val:
                         TokenString *p, *p2;
 
                         s = vtop[-1].type.ref;
+                        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && s->f.func_safety == FUNC_SAFETY_SYSTEM)
+                            tcc_error("calling @system function not allowed in @safe scope");
                         vtop[-1].r &= ~VT_LVAL;
                         next();
                         sa = s->next ? s->next->next : NULL;
@@ -7402,6 +7404,8 @@ special_math_val:
             }
             /* get return type */
             s = vtop->type.ref;
+            if (cur_scope->fn.safety == FUNC_SAFETY_SAFE && s && s->f.func_safety == FUNC_SAFETY_SYSTEM)
+                tcc_error("calling @system function not allowed in @safe scope");
             next();
             sa = s->next; /* first parameter */
             nb_args = regsize = 0;
@@ -9060,6 +9064,8 @@ again:
         skip(';');
 
     } else if (t == TOK_ASM1 || t == TOK_ASM2 || t == TOK_ASM3) {
+        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
+            tcc_error("inline assembly not allowed in @safe scope");
         asm_instr();
 
     } else {
