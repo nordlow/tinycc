@@ -226,6 +226,8 @@ static int gjmp_acs(int t)
 #define gjmp gjmp_acs
 /* ------------------------------------------------------------------------- */
 
+/* Returns true if type flags `t` (extracted basic type `bt` via VT_BTYPE)
+   represents a floating-point type (VT_LDOUBLE, VT_DOUBLE, VT_FLOAT, VT_QFLOAT). */
 ST_INLN int is_float(int t)
 {
     int bt = t & VT_BTYPE;
@@ -235,6 +237,8 @@ ST_INLN int is_float(int t)
         || bt == VT_QFLOAT;
 }
 
+/* Returns true if basic type `bt` (extracted via VT_BTYPE) represents
+   an integer type (VT_BYTE, VT_BOOL, VT_SHORT, VT_INT, VT_LLONG). */
 static inline int is_integer_btype(int bt)
 {
     return bt == VT_BYTE
@@ -244,6 +248,8 @@ static inline int is_integer_btype(int bt)
         || bt == VT_LLONG;
 }
 
+/* Returns the byte size of basic type `bt` (extracted via VT_BTYPE),
+   supporting VT_BYTE, VT_BOOL, VT_SHORT, VT_INT, VT_LLONG, and VT_PTR. */
 static int btype_size(int bt)
 {
     return bt == VT_BYTE || bt == VT_BOOL ? 1 :
@@ -253,7 +259,8 @@ static int btype_size(int bt)
         bt == VT_PTR ? PTR_SIZE : 0;
 }
 
-/* returns function return register from type */
+/* Returns function primary return register for type flags `t`
+   (masked by VT_BTYPE, e.g., VT_LDOUBLE). */
 static int R_RET(int t)
 {
     if (!is_float(t))
@@ -268,7 +275,8 @@ static int R_RET(int t)
     return REG_FRET;
 }
 
-/* returns 2nd function return register, if any */
+/* Returns 2nd function return register, if any, for type flags `t`
+   (masked by VT_BTYPE, e.g., VT_LLONG, VT_QLONG, VT_QFLOAT, VT_LDOUBLE). */
 static int R2_RET(int t)
 {
     t &= VT_BTYPE;
@@ -287,22 +295,24 @@ static int R2_RET(int t)
     return VT_CONST;
 }
 
-/* returns true for two-word types */
+/* Returns true for two-word types based on R2_RET(`t`). */
 #define USING_TWO_WORDS(t) (R2_RET(t) != VT_CONST)
 
-/* put function return registers to stack value */
+/* Put function return registers (R_RET and R2_RET) to stack value sv
+   for type flags `t`. */
 static void PUT_R_RET(SValue *sv, int t)
 {
     sv->r = R_RET(t), sv->r2 = R2_RET(t);
 }
 
-/* returns function return register class for type t */
+/* Returns function return register class for type flags `t`. */
 static int RC_RET(int t)
 {
     return reg_classes[R_RET(t)] & ~(RC_FLOAT | RC_INT);
 }
 
-/* returns generic register class for type t */
+/* Returns generic register class for type flags `t`
+   (handling VT_LDOUBLE and VT_QFLOAT target specifics). */
 static int RC_TYPE(int t)
 {
     if (!is_float(t))
@@ -319,7 +329,7 @@ static int RC_TYPE(int t)
     return RC_FLOAT;
 }
 
-/* returns 2nd register class corresponding to t and rc */
+/* Returns 2nd register class corresponding to type flags `t` and register class `rc`. */
 static int RC2_TYPE(int t, int rc)
 {
     if (!USING_TWO_WORDS(t))
