@@ -3,3 +3,12 @@
 
 [test_trusted_foreach]
 60
+
+[test_pure_block]
+42
+
+[test_pure_for]
+10
+
+[test_pure_foreach]
+6
