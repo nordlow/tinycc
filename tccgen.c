@@ -855,7 +855,7 @@ ST_FUNC void sym_pop(Sym **ptop, Sym *b, int keep)
                 const char *name = get_tok_str(s->v, NULL);
                 if (name[0] != '_') {
                     if (s->type.t & VT_TYPEDEF) {
-                        tcc_warning_c(warn_unused_variable)("alias '%s' declared but not used", name);
+                        tcc_warning_c(warn_unused_alias)("alias '%s' declared but not used", name);
                     } else if (s->a.is_param) {
                         tcc_warning_c(warn_unused_parameter)("parameter '%s' declared but not used (can be avoided by prefixing with '_')", name);
                     } else {

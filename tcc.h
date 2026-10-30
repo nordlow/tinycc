@@ -842,6 +842,7 @@ struct TCCState {
     unsigned char warn_uncovered;
     unsigned char warn_unused_variable;
     unsigned char warn_unused_parameter;
+    unsigned char warn_unused_alias;
     #define WARN_ON  1 /**< warning is on (-Woption) */
     unsigned char warn_num; /* temp var for tcc_warning_c() */
 

@@ -375,7 +375,10 @@ Warn when const is dropped.
 Warn about unsupported GCC features that are ignored by TPC.
 
 @item -Wunused-variable
-Warn about unused local variables and aliases.
+Warn about unused local variables.
+
+@item -Wunused-alias
+Warn about unused type aliases.
 
 @item -Wunused-parameter
 Warn about unused function parameters. Unused parameter warnings can be avoided by prefixing the parameter name with an underscore character (@code{_}).
