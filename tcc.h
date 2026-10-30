@@ -1519,11 +1519,11 @@ typedef struct FuncState {
     const char *name;     /**< Function name for diagnostics and __func__ */
     int vc;               /**< Stack address of implicit struct return */
     int ind;              /**< Function start code address */
-    unsigned char variadic; /**< Non-zero if function is variadic */
-    unsigned char old_style; /**< Non-zero if K&R old-style parameter declaration */
-    unsigned char pure_inferred; /**< Non-zero if purity was inferred */
     FuncSafety safety;    /**< Function memory safety level */
     FuncPurity pure;      /**< Function purity level */
+    unsigned char variadic;       /**< Non-zero if function is variadic */
+    unsigned char old_style;      /**< Non-zero if K&R old-style parameter declaration */
+    unsigned char pure_inferred;  /**< Non-zero if purity was inferred */
 } FuncState;
 
 /**
