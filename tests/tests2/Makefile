@@ -211,8 +211,8 @@ endif
 397_d_assert_cmp_scalars_pass.test : GEN = $(GEN-TCC)
 398_scope_attributes.test : FLAGS += -dt -lang=d
 398_scope_attributes.test : GEN = $(GEN-TCC)
-399_scope_depth_error.test : GEN = $(GEN-TCC)
-# this test compiles/links two files:
+401_d_pure_global_access.test : FLAGS += -dt -lang=d
+401_d_pure_global_access.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
 

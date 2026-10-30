@@ -1,0 +1,14 @@
+[test_global_var]
+401_d_pure_global_access.c:6: error: global variable 'global_var' not allowed in @pure scope
+
+[test_static_var]
+401_d_pure_global_access.c:13: error: global variable 'static_var' not allowed in @pure scope
+
+[test_tls_var]
+401_d_pure_global_access.c:20: error: global variable 'tls_var' not allowed in @pure scope
+
+[test_global_member]
+401_d_pure_global_access.c:27: error: global variable 'g_pt' not allowed in @pure scope
+
+[test_pure_local_pass]
+11

@@ -1507,6 +1507,7 @@ typedef struct FuncState {
     unsigned char variadic;
     unsigned char old_style;
     unsigned char safety; /* FUNC_SAFETY_... */
+    unsigned char pure;   /* @pure flag */
 } FuncState;
 
 typedef struct Scope {

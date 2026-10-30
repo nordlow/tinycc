@@ -50,6 +50,7 @@ static TCC_TLS Sym *kr_params;
 /* safety level of a compound block whose attributes were parsed by
    decl() before the block itself was seen */
 static TCC_TLS int pending_block_safety;
+static TCC_TLS int pending_block_pure;
 ST_DATA char debug_modes;
 
 ST_DATA SValue *vtop;
@@ -493,6 +494,7 @@ ST_FUNC void tccgen_finish(TCCState *s1)
     pending_gotos = NULL;
     kr_params = NULL;
     pending_block_safety = 0;
+    pending_block_pure = 0;
     scope_depth = 0;
     scope_depth_limit = 0;
     cur_scope = root_scope = &scope_stack[0];
@@ -1174,6 +1176,11 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
 {
     CValue cval;
     cval.i = 0;
+    if (cur_scope->fn.pure && sym && sym->v < SYM_FIRST_ANOM
+        && (sym->sym_scope == 0 || (sym->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
+        && (sym->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(sym->type.t) && !(sym->type.t & VT_TYPEDEF)) {
+        tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
+    }
     vsetc(type, VT_CONST | VT_SYM, &cval);
     vtop->sym = sym;
 }
@@ -7045,6 +7052,11 @@ special_math_val:
             s = external_global_sym(t, &func_old_type);
         }
 
+        if (cur_scope->fn.pure && s && s->v < SYM_FIRST_ANOM
+            && (s->sym_scope == 0 || (s->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
+            && (s->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(s->type.t) && !(s->type.t & VT_TYPEDEF)) {
+            tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
+        }
         r = s->r;
         /* A symbol that has a register is a local register variable,
            which starts out as VT_LOCAL value.  */
@@ -8322,6 +8334,7 @@ static Scope *new_function_scope(Sym *sym)
     o->fn.variadic = sym->type.ref->f.func_type == FUNC_ELLIPSIS;
     o->fn.old_style = sym->type.ref->f.func_type == FUNC_OLD;
     o->fn.safety = sym->type.ref->f.func_safety;
+    o->fn.pure = sym->type.ref->f.func_pure;
     o->fn.name = get_tok_str(sym->v, NULL);
     o->fn.ind = ind;
     cur_scope = o;
@@ -8803,8 +8816,14 @@ again:
             cur_scope->fn.safety = pending_block_safety;
             pending_block_safety = 0;
         }
+        if (pending_block_pure) {
+            cur_scope->fn.pure = pending_block_pure;
+            pending_block_pure = 0;
+        }
         if (ad.f.func_safety)
             cur_scope->fn.safety = ad.f.func_safety;
+        if (ad.f.func_pure)
+            cur_scope->fn.pure = ad.f.func_pure;
 
         /* handle local labels declarations */
         while (tok == TOK_LABEL) {
@@ -11318,8 +11337,10 @@ static int decl(int l)
                 continue;
             }
             if (l != VT_CONST) {
-                if (tok == '{')
+                if (tok == '{') {
                     pending_block_safety = adbase.f.func_safety;
+                    pending_block_pure = adbase.f.func_pure;
+                }
                 break;
             }
             if (tok == TOK_ASM1 || tok == TOK_ASM2 || tok == TOK_ASM3) {
