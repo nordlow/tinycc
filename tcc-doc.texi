@@ -374,7 +374,16 @@ Warn when const is dropped.
 @item -Wunsupported
 Warn about unsupported GCC features that are ignored by TPC.
 
+@item -Wunused-variable
+Warn about unused local variables and aliases.
+
 @item -Wwrite-strings
+Make string constants be of type @code{const char *} instead of @code{char
+*}.
+
+@item -Wall
+Activate some useful warnings (@option{-Wimplicit-function-declaration},
+@option{-Wdiscarded-qualifiers}, @option{-Wunused-variable}).
 Make string constants be of type @code{const char *} instead of @code{char
 *}.
 
@@ -830,9 +839,8 @@ function attributes. The following attributes are supported:
 name (name is a string containing the section name) instead of the default
 section.
 
-  @item @code{unused}: specify that the variable or the function is unused.
-Accepted but currently ignored.
-
+  @item @code{unused}: specify that the variable or the function is unused
+  (suppresses unused variable and alias warnings).
   @item @code{cleanup(func)}: specify a function to be called automatically
 when the variable goes out of scope.  The cleanup function must take one
 parameter, a pointer to a type compatible with the variable, and return
