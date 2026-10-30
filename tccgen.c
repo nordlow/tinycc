@@ -1176,10 +1176,14 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
 {
     CValue cval;
     cval.i = 0;
-    if (cur_scope->fn.pure == FUNC_PURITY_TRUE && sym && sym->v < SYM_FIRST_ANOM
+    if (sym && sym->v < SYM_FIRST_ANOM
         && (sym->sym_scope == 0 || (sym->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
         && (sym->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(sym->type.t) && !(sym->type.t & VT_TYPEDEF)) {
-        tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
+        if (cur_scope->fn.pure == FUNC_PURITY_TRUE) {
+            tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
+        } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
+            cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
+        }
     }
     vsetc(type, VT_CONST | VT_SYM, &cval);
     vtop->sym = sym;
@@ -7051,10 +7055,14 @@ special_math_val:
                 "implicit declaration of function '%s'", name);
             s = external_global_sym(t, &func_old_type);
         }
-        if (cur_scope->fn.pure == FUNC_PURITY_TRUE && s && s->v < SYM_FIRST_ANOM
+        if (s && s->v < SYM_FIRST_ANOM
             && (s->sym_scope == 0 || (s->type.t & (VT_STATIC | VT_EXTERN | VT_TLS)))
             && (s->type.t & VT_BTYPE) != VT_FUNC && !IS_ENUM_VAL(s->type.t) && !(s->type.t & VT_TYPEDEF)) {
-            tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
+            if (cur_scope->fn.pure == FUNC_PURITY_TRUE) {
+                tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
+            } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
+                cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
+            }
         }
         r = s->r;
         /* A symbol that has a register is a local register variable,
@@ -10355,6 +10363,13 @@ static void gen_function(Sym *sym)
     tcc_debug_prolog_epilog(tcc_state, 0);
     func_vla_arg(sym);
     block(0);
+    if (root_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
+        root_scope->fn.pure = FUNC_PURITY_TRUE;
+        root_scope->fn.pure_inferred = 1;
+    }
+    if (sym->type.ref) {
+        sym->type.ref->f.func_pure = root_scope->fn.pure;
+    }
     gsym(rsym);
     nocode_wanted = 0;
     tcc_debug_end_scope(NULL, !func_var);

@@ -538,9 +538,10 @@ struct SymAttr {
  * @brief Function purity level representing mathematical purity guarantees.
  */
 typedef enum {
-    FUNC_PURITY_UNKNOWN = 0, /**< Purity not explicitly specified */
-    FUNC_PURITY_FALSE,       /**< Function is impure (has side effects or accesses global state) */
-    FUNC_PURITY_TRUE         /**< Function is pure (@pure attribute) */
+    FUNC_PURITY_UNKNOWN = 0,     /**< Purity not explicitly specified (candidate for inference) */
+    FUNC_PURITY_FALSE,           /**< Function is explicitly impure */
+    FUNC_PURITY_TRUE,            /**< Function is pure (@pure attribute or inferred pure) */
+    FUNC_PURITY_MAYBE_FALSE      /**< Function inferred as impure due to global state access */
 } FuncPurity;
 
 /**
@@ -1520,6 +1521,7 @@ typedef struct FuncState {
     int ind;              /**< Function start code address */
     unsigned char variadic; /**< Non-zero if function is variadic */
     unsigned char old_style; /**< Non-zero if K&R old-style parameter declaration */
+    unsigned char pure_inferred; /**< Non-zero if purity was inferred */
     FuncSafety safety;    /**< Function memory safety level */
     FuncPurity pure;      /**< Function purity level */
 } FuncState;
