@@ -515,35 +515,42 @@ typedef struct SValue {
 
 } SValue;
 
-/* symbol attributes */
+/**
+ * @brief Symbol attributes describing alignment, packing, linkage, and special modifiers.
+ */
 struct SymAttr {
     unsigned int
-    aligned     : 5, /* alignment as log2+1 (0 == unspecified) */
-    packed      : 1,
-    weak        : 1,
-    visibility  : 2,
-    dllexport   : 1,
-    nodecorate  : 1,
-    dllimport   : 1,
-    addrtaken   : 1,
-    nodebug     : 1,
-    nocopy      : 1,
-    is_slice    : 1, /* struct generated for a T[..] slice type */
-    str_lit     : 1; /* array created for a string literal; its length
-                        includes the terminating null character */
+    aligned     : 5, /**< Alignment as log2+1 (0 == unspecified) */
+    packed      : 1, /**< Packed struct/field attribute */
+    weak        : 1, /**< Weak symbol linkage */
+    visibility  : 2, /**< Symbol visibility */
+    dllexport   : 1, /**< DLLExport attribute */
+    nodecorate  : 1, /**< Nodecorate attribute */
+    dllimport   : 1, /**< DLLImport attribute */
+    addrtaken   : 1, /**< Address taken flag */
+    nodebug     : 1, /**< Nodebug attribute */
+    nocopy      : 1, /**< Non-copyable struct type attribute */
+    is_slice    : 1, /**< Struct generated for a T[..] slice type */
+    str_lit     : 1; /**< Array created for a string literal (includes terminating null) */
 };
 
+/**
+ * @brief Function purity level representing mathematical purity guarantees.
+ */
 typedef enum {
-    FUNC_PURITY_UNKNOWN = 0,
-    FUNC_PURITY_FALSE,
-    FUNC_PURITY_TRUE
+    FUNC_PURITY_UNKNOWN = 0, /**< Purity not explicitly specified */
+    FUNC_PURITY_FALSE,       /**< Function is impure (has side effects or accesses global state) */
+    FUNC_PURITY_TRUE         /**< Function is pure (@pure attribute) */
 } FuncPurity;
 
+/**
+ * @brief Function safety level for memory safety checks.
+ */
 typedef enum {
-    FUNC_SAFETY_UNKNOWN = 0,
-    FUNC_SAFETY_SYSTEM,
-    FUNC_SAFETY_TRUSTED,
-    FUNC_SAFETY_SAFE
+    FUNC_SAFETY_UNKNOWN = 0, /**< Safety not explicitly specified */
+    FUNC_SAFETY_SYSTEM,      /**< System safety level (unchecked) */
+    FUNC_SAFETY_TRUSTED,     /**< Trusted safety level (exempt from checks) */
+    FUNC_SAFETY_SAFE         /**< Safe level (@safe attribute, pointer checks enforced) */
 } FuncSafety;
 
 /* function attributes or temporary attributes for parsing */
@@ -1501,27 +1508,32 @@ static inline int toup(int c) {
    array; exceeding this limit is a compile error, not a crash.  */
 #define MAX_SCOPE_DEPTH 256 /**< Maximum nested lexical scope depth limit */
 
-/* Per-function state.  Every lexical scope inherits a copy from its
-   enclosing scope, so block-level attributes such as '@safe' apply to
-   the block and to everything nested in it.  */
+/**
+ * @brief Per-function state.
+ * Every lexical scope inherits a copy from its enclosing scope, so block-level
+ * attributes such as '@safe' apply to the block and to everything nested in it.
+ */
 typedef struct FuncState {
-    CType vt;             /* return type */
-    const char *name;     /* for diagnostics and __func__ */
-    int vc;               /* stack address of implicit struct return */
-    int ind;              /* function start address */
-    unsigned char variadic;
-    unsigned char old_style;
-    FuncSafety safety; /* FUNC_SAFETY_... */
-    FuncPurity pure;   /* FUNC_PURITY_... */
+    CType vt;             /**< Function return type descriptor */
+    const char *name;     /**< Function name for diagnostics and __func__ */
+    int vc;               /**< Stack address of implicit struct return */
+    int ind;              /**< Function start code address */
+    unsigned char variadic; /**< Non-zero if function is variadic */
+    unsigned char old_style; /**< Non-zero if K&R old-style parameter declaration */
+    FuncSafety safety;    /**< Function memory safety level */
+    FuncPurity pure;      /**< Function purity level */
 } FuncState;
 
+/**
+ * @brief Lexical scope descriptor for symbol resolution and block-level attributes.
+ */
 typedef struct Scope {
-    struct Scope *prev;
-    struct { int loc, locorig, num; } vla;
-    struct { Sym *s; int n; } cl;
-    int *bsym, *csym;
-    Sym *lstk, *llstk;
-    FuncState fn;
+    struct Scope *prev;   /**< Enclosing parent scope */
+    struct { int loc, locorig, num; } vla; /**< Variable-length array tracking */
+    struct { Sym *s; int n; } cl; /**< Cleanup functions */
+    int *bsym, *csym;     /**< Break and continue jump target symbol stacks */
+    Sym *lstk, *llstk;    /**< Local symbol stack */
+    FuncState fn;         /**< Function state for this scope */
 } Scope;
 
 ST_DATA Scope *cur_scope, *loop_scope, *root_scope;
