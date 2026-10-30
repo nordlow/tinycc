@@ -1073,7 +1073,7 @@ typedefs, `alias`, fields, parameters and return types; `(T,)` for
 compound literals, pointers/arrays of tuples, `t[i]` with a constant
 index, and `__builtin_types_compatible_p`.  Structural identity.
 Tuple ABI = struct ABI.  Debug info suppressed.  Type tuples enabled
-in C and D modes.  Exit criteria: `406`-`411` pass, including the
+in C and D modes.  Exit criteria: `407`-`412` pass, including the
 comma-expression compatibility tests and a cross-mode build.
 
 **M2 -- compile-time value tuples (P2).**  `$(...)` in `-lang=d`,
@@ -1082,7 +1082,7 @@ a non-constant element is an error everywhere, not only in a constant
 context; side table; rodata blob via `init_putv()`; constant indexing
 in `enum`, array bounds, `static assert`, `$assert`; nested `$(...)`;
 empty `$()` rejected; `$if (c) ...` over a compile-time condition.
-Exit criteria: `412`-`413` pass; a compile-time `$(...)` produces no
+Exit criteria: `413`-`414` pass; a compile-time `$(...)` produces no
 code beyond the rodata blob; `-lang=c` still parses `$(x)` as a call
 to `$`.
 
@@ -1091,7 +1091,7 @@ the six tuple-expected contexts, in both modes; the tuple-context
 flag and its clearing rules; tuple temporaries; assignment, copy,
 arguments and returns; element-wise conversion on assignment and
 casts; `t[i]` on rvalues.  No inferred-type tuple local:
-`auto t = (a, b);` stays `int t = b`.  Exit criteria: `414`-`418`
+`auto t = (a, b);` stays `int t = b`.  Exit criteria: `415`-`419`
 pass; the comma-expression suite passes in both modes; the ABI
 matches the equivalent struct for 8-, 16- and >16-byte tuples.
 
@@ -1099,7 +1099,7 @@ matches the equivalent struct for 8-, 16- and >16-byte tuples.
 `auto (a, b) = expr;`; evaluation exactly once; arity and type
 checks; destructuring a tuple-typed variable and a function result;
 `$foreach (x; t) ...` over a constant tuple.  Exit criteria:
-`419`-`420` pass; the initializer's side effects occur once.
+`420`-`421` pass; the initializer's side effects occur once.
 
 **M5 -- type-level and constant-level operations (P2/P3).**
 Hash-consing/interning if profiling justifies it; `typeof(t[i])`;
@@ -1107,7 +1107,7 @@ compile-time tuple concatenation with `~` (reusing the slice `~`
 operator at `tccgen.c:7852` if it fits); element-wise `==`/`!=`
 (optional); struct and array elements in compile-time tuples;
 manifest-constant destructuring; proper debug info; `-fdump-decls`
-polish.  Exit criteria: `421`-`422` pass; `make pgo PGO_CC=clang`
+polish.  Exit criteria: `422`-`423` pass; `make pgo PGO_CC=clang`
 shows no regression.
 
 The reflection task in `TODO.md:151` can then build
@@ -1117,31 +1117,31 @@ that work is not part of this task.
 ## Test plan
 
 New tests go in `tests/tests2/`, starting at the next free prefix
-`406`, following the conventions in that `Makefile` (`FLAGS +=
+`407`, following the conventions in that `Makefile` (`FLAGS +=
 -lang=d` for D tests, `GEN = $(GEN-TCC)` where the test depends on
 tcc-specific behaviour, `-dt` for multi-snippet error tests, `-b`
 for bounds checking).  The latest existing test is
-`405_manifest_assert.c`.
+`406_d_noinit.c`.
 
 | file | milestone | asserts |
 | --- | --- | --- |
-| `406_tuple_type.c` | M1 | typedef, declaration, nested tuple, `sizeof`/`_Alignof`, compound literal, field access, `typeof`, `_Generic`, `__builtin_types_compatible_p` |
-| `407_tuple_type_error.c` (`-dt`) | M1 | `()`, `(void, int)`, function element, incomplete element, out-of-range index, non-constant index, cast to tuple, tuple arithmetic |
-| `408_tuple_comma_compat.c` | M1 | `(a, b)`, `f((a, b))`, `for (i = 0, j = 0; ...)`, `return (a, b);`, `(T)x` casts; all unchanged in C mode |
-| `409_d_tuple_comma_compat.c` (`-lang=d`) | M1 | the same comma expressions in D mode, plus `a[$]`, `a[$-1]`, `s[0..$]` and `$assert` |
-| `410_tuple_abi.c` | M1 | pass/return tuples of 8, 16 and >16 bytes, mixed int/float, nested tuples; compare against the equivalent struct |
-| `411_tuple_abi_bcheck.c` (`-b`) | M1 | tuple field access under bounds checking |
-| `412_d_tuple_value.c` (`-lang=d`) | M2 | `$(...)` constants in `enum`, array bounds, `static assert`, `$assert`; `$(e)` as a value and `$(e,)` as a 1-tuple; nested `$(...)`; `$if` over a constant condition; mixed element types |
-| `413_d_tuple_value_error.c` (`-dt -lang=d`) | M2 | non-constant element (in any context), struct-valued element, empty `$()`, `$(e)` where a tuple is required, out-of-range index, `$` without `(`, function named `$`, non-constant `$if` condition |
-| `414_tuple_runtime.c` | M3 | `(x, y)` in initializer, assignment, argument, return, cast and destructuring contexts; copy/assign; element-wise conversion |
-| `415_tuple_runtime_error.c` (`-dt`) | M3 | arity/type mismatch in a tuple literal, tuple arithmetic, indexing a non-tuple, non-tuple parameter with `(...)` |
-| `416_tuple_paren_compat.c` | M3 | `(a, b)` remains a comma expression everywhere else; `auto t = (a, b)` is an int; `x + (a, b)` is an int |
-| `417_d_tuple_paren_compat_d.c` (`-lang=d`) | M3 | the same comma expressions in D mode, plus `a[$(1)]` and `a[$]` next to each other |
-| `418_tuple_c_mode.c` | M3 | type tuples and `(...)` run-time literals in C mode; `$(...)` still calls a function named `$`; `$x` and `$if` remain identifiers |
-| `419_d_tuple_destructure.c` (`-lang=d`) | M4 | `auto (a, b) = f();`, destructuring a variable and a compile-time tuple, evaluation once, `$foreach` over a compile-time tuple |
-| `420_d_tuple_destructure_error.c` (`-dt -lang=d`) | M4 | arity mismatch, non-tuple initializer, duplicate names |
-| `421_d_tuple_type_ops.c` (`-lang=d`) | M5 | `typeof(t[i])`, tuple `~`/`==` if implemented, qualifiers, interning identity |
-| `422_d_tuple_manifest_destructure.c` (`-lang=d`) | M5 | destructuring a compile-time tuple into manifest constants; no side effects at the binding site |
+| `407_tuple_type.c` | M1 | typedef, declaration, nested tuple, `sizeof`/`_Alignof`, compound literal, field access, `typeof`, `_Generic`, `__builtin_types_compatible_p` |
+| `408_tuple_type_error.c` (`-dt`) | M1 | `()`, `(void, int)`, function element, incomplete element, out-of-range index, non-constant index, cast to tuple, tuple arithmetic |
+| `409_tuple_comma_compat.c` | M1 | `(a, b)`, `f((a, b))`, `for (i = 0, j = 0; ...)`, `return (a, b);`, `(T)x` casts; all unchanged in C mode |
+| `410_d_tuple_comma_compat.c` (`-lang=d`) | M1 | the same comma expressions in D mode, plus `a[$]`, `a[$-1]`, `s[0..$]` and `$assert` |
+| `411_tuple_abi.c` | M1 | pass/return tuples of 8, 16 and >16 bytes, mixed int/float, nested tuples; compare against the equivalent struct |
+| `412_tuple_abi_bcheck.c` (`-b`) | M1 | tuple field access under bounds checking |
+| `413_d_tuple_value.c` (`-lang=d`) | M2 | `$(...)` constants in `enum`, array bounds, `static assert`, `$assert`; `$(e)` as a value and `$(e,)` as a 1-tuple; nested `$(...)`; `$if` over a constant condition; mixed element types |
+| `414_d_tuple_value_error.c` (`-dt -lang=d`) | M2 | non-constant element (in any context), struct-valued element, empty `$()`, `$(e)` where a tuple is required, out-of-range index, `$` without `(`, function named `$`, non-constant `$if` condition |
+| `415_tuple_runtime.c` | M3 | `(x, y)` in initializer, assignment, argument, return, cast and destructuring contexts; copy/assign; element-wise conversion |
+| `416_tuple_runtime_error.c` (`-dt`) | M3 | arity/type mismatch in a tuple literal, tuple arithmetic, indexing a non-tuple, non-tuple parameter with `(...)` |
+| `417_tuple_paren_compat.c` | M3 | `(a, b)` remains a comma expression everywhere else; `auto t = (a, b)` is an int; `x + (a, b)` is an int |
+| `418_d_tuple_paren_compat_d.c` (`-lang=d`) | M3 | the same comma expressions in D mode, plus `a[$(1)]` and `a[$]` next to each other |
+| `419_tuple_c_mode.c` | M3 | type tuples and `(...)` run-time literals in C mode; `$(...)` still calls a function named `$`; `$x` and `$if` remain identifiers |
+| `420_d_tuple_destructure.c` (`-lang=d`) | M4 | `auto (a, b) = f();`, destructuring a variable and a compile-time tuple, evaluation once, `$foreach` over a compile-time tuple |
+| `421_d_tuple_destructure_error.c` (`-dt -lang=d`) | M4 | arity mismatch, non-tuple initializer, duplicate names |
+| `422_d_tuple_type_ops.c` (`-lang=d`) | M5 | `typeof(t[i])`, tuple `~`/`==` if implemented, qualifiers, interning identity |
+| `423_d_tuple_manifest_destructure.c` (`-lang=d`) | M5 | destructuring a compile-time tuple into manifest constants; no side effects at the binding site |
 
 Additional coverage:
 
@@ -1160,14 +1160,14 @@ Additional coverage:
 - **Parser regression in `decl()`.**  `parse_btype()` is called
   speculatively on every statement.  The scan/replay hook must leave
   the token stream exactly as it found it on the "not a tuple" path.
-  Mitigation: the `408`/`409` comma-compatibility tests, plus a
+  Mitigation: the `409`/`410` comma-compatibility tests, plus a
   debug build with `-fdump-decls` on the existing tests.
 - **Context-flag leakage.**  The run-time tuple flag must be cleared
   when descending into a subexpression and restored afterwards.
   Otherwise `x + (a, b)`, `f((a, b), c)` or a comma expression inside
   a tuple element could be read as a tuple.  Mitigation: set the flag
   at the six sites only, clear it at the top of `unary()`, and cover
-  each nesting case in `416`/`417`.
+  each nesting case in `417`/`418`.
 - **Run-time tuples in C mode.**  They rely on the expected type
   being a tuple, which only new code can produce.  If the context
   plumbing turns out to be imprecise at any site, gate the flag on
@@ -1339,7 +1339,7 @@ Additional coverage:
   a tuple-expected context and a comma expression everywhere else;
   neither spelling is accepted where the other is required.
 - **Comma compatibility:** every valid C and D comma expression in
-  `408`/`409`/`416`/`417` keeps its meaning; `auto t = (a, b);` is an
+  `409`/`410`/`417`/`418` keeps its meaning; `auto t = (a, b);` is an
   `int`; `f((a, b))` is one argument; `x + (a, b)` is an int.
 - **Modes:** type tuples and `(...)` run-time literals work in C and
   D; only the `$` forms are `-lang=d` only.
