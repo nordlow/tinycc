@@ -1,0 +1,3 @@
+407_unused_warnings.c:18: warning: alias 'UnusedAlias' declared but not used
+407_unused_warnings.c:18: warning: variable 'unused_var' declared but not used
+407_unused_warnings.c:18: warning: parameter 'unused_param' declared but not used (can be avoided by prefixing with '_')
