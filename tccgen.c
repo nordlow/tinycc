@@ -1182,7 +1182,7 @@ ST_FUNC void vpushsym(CType *type, Sym *sym)
         if (IS_PURE(cur_scope->fn.pure)) {
             tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(sym->v, NULL));
         } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
-            cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
+            cur_scope->fn.pure = FUNC_PURITY_INFERRED_FALSE;
         }
     }
     vsetc(type, VT_CONST | VT_SYM, &cval);
@@ -7061,7 +7061,7 @@ special_math_val:
             if (IS_PURE(cur_scope->fn.pure)) {
                 tcc_error("global variable '%s' not allowed in @pure scope", get_tok_str(s->v, NULL));
             } else if (cur_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
-                cur_scope->fn.pure = FUNC_PURITY_MAYBE_FALSE;
+                cur_scope->fn.pure = FUNC_PURITY_INFERRED_FALSE;
             }
         }
         r = s->r;
