@@ -6637,6 +6637,19 @@ ST_FUNC void unary(void)
         t = tok;
         next();
         /* cast ? */
+        {
+            const uint8_t *saved_ptr = NULL;
+            if (tcc_state->lang_d && tok == '@') {
+                saved_ptr = file->buf_ptr;
+                next();
+                if (tok == TOK_IMMUTABLE || (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "immutable"))) {
+                    tok = TOK_IMMUTABLE;
+                } else if (saved_ptr) {
+                    file->buf_ptr = (uint8_t *)saved_ptr;
+                    next();
+                }
+            }
+        }
         if (parse_btype(&type, &ad, 0)) {
             type_decl(&type, &ad, &n, TYPE_ABSTRACT);
             skip(')');

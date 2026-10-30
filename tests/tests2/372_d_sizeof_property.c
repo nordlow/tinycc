@@ -23,6 +23,7 @@ int main(void) {
     // Parenthesized qualified types .sizeof
     printf("(int).sizeof = %zu\n", (int).sizeof);
     printf("(immutable int).sizeof = %zu\n", (immutable int).sizeof);
+    printf("(@immutable int).sizeof = %zu\n", (@immutable int).sizeof);
     printf("(const int).sizeof = %zu\n", (const int).sizeof);
 
     // Instance .sizeof
