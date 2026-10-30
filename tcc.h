@@ -1523,7 +1523,6 @@ typedef struct FuncState {
     FuncPurity pure;      /**< Function purity level */
     unsigned char variadic;       /**< Non-zero if function is variadic */
     unsigned char old_style;      /**< Non-zero if K&R old-style parameter declaration */
-    unsigned char pure_inferred;  /**< Non-zero if purity was inferred */
 } FuncState;
 
 /**

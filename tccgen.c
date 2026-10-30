@@ -10365,7 +10365,6 @@ static void gen_function(Sym *sym)
     block(0);
     if (root_scope->fn.pure == FUNC_PURITY_UNKNOWN) {
         root_scope->fn.pure = FUNC_PURITY_TRUE;
-        root_scope->fn.pure_inferred = 1;
     }
     if (sym->type.ref) {
         sym->type.ref->f.func_pure = root_scope->fn.pure;
