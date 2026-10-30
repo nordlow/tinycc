@@ -50,7 +50,7 @@ static TCC_TLS Sym *kr_params;
 /* safety level of a compound block whose attributes were parsed by
    decl() before the block itself was seen */
 static TCC_TLS FuncSafety pending_block_safety;
-static TCC_TLS int pending_block_pure;
+static TCC_TLS FuncPurity pending_block_pure;
 ST_DATA char debug_modes;
 
 ST_DATA SValue *vtop;

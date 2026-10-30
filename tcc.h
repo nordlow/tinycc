@@ -533,11 +533,11 @@ struct SymAttr {
                         includes the terminating null character */
 };
 
-enum {
+typedef enum {
     FUNC_PURITY_UNKNOWN = 0,
     FUNC_PURITY_FALSE,
     FUNC_PURITY_TRUE
-};
+} FuncPurity;
 
 typedef enum {
     FUNC_SAFETY_UNKNOWN = 0,
@@ -1512,7 +1512,7 @@ typedef struct FuncState {
     unsigned char variadic;
     unsigned char old_style;
     FuncSafety safety; /* FUNC_SAFETY_... */
-    unsigned char pure;   /* FUNC_PURITY_... */
+    FuncPurity pure;   /* FUNC_PURITY_... */
 } FuncState;
 
 typedef struct Scope {
