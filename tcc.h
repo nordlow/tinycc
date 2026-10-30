@@ -717,7 +717,9 @@ typedef struct TokenString {
     char alloc;
 } TokenString;
 
-/* GNUC attribute definition */
+/** (GNUC) Attribute Definition.
+
+   TODO: Should this be reordered or compacted? */
 typedef struct AttributeDef {
     struct SymAttr a;
     struct FuncAttr f;
@@ -727,6 +729,7 @@ typedef struct AttributeDef {
     int asm_label; /* associated asm label */
     char attr_mode; /* __attribute__((__mode__(...))) */
     char new_section; /* section is new */
+    int noinit; /* @noinit. TODO: Should this be merged into? */
 } AttributeDef;
 
 /* inline functions */

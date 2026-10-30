@@ -5432,6 +5432,9 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                     ad->f.func_safety = FUNC_SAFETY_TRUSTED;
                     next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "noinit")) {
+                    ad->noinit = 1;
+                    next();
                 } else {
                     int t_tok = tok;
                     if (t_tok >= TOK_IDENT) {
@@ -5766,6 +5769,9 @@ static void parse_d_attributes(AttributeDef *ad)
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                 ad->f.func_safety = FUNC_SAFETY_TRUSTED;
+                next();
+            } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "noinit")) {
+                ad->noinit = 1;
                 next();
             } else {
                 int t = tok;
@@ -11701,8 +11707,21 @@ static int decl(int l)
                         r |= VT_LVAL;
                     }
 
-                    if (tok == '=')
-                        has_init = 1;
+                    if (tok == '=') {
+                        int t1 = tok;
+                        next();
+                        if (tok == TOK_VOID) {
+                            next();
+                            has_init = 0;
+                        } else {
+                            unget_tok(tok);
+                            unget_tok(t1);
+                            next();
+                            has_init = 1;
+                        }
+                    } else if (ad.noinit) {
+                        has_init = 0;
+                    }
 
                     if (((type.t & VT_EXTERN) && (!has_init || l != VT_CONST))
 		        || (type.t & VT_BTYPE) == VT_FUNC
