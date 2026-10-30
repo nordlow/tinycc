@@ -395,7 +395,7 @@ Two semantic points the implementation must pin down:
 - README: a new subsection under "D-style language extensions"
   (`README.md:234`), next to `unittest` and `$assert`, plus a
   cross-reference from the compile-time reflection proposal in
-  `TODO:151`-`186`.
+  `TODO.md:151`-`186`.
 
 ## Data structures
 

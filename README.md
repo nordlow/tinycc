@@ -197,7 +197,7 @@ The reference manual is [`tcc-doc.html`](tcc-doc.html), generated from
 [`tcc-doc.texi`](tcc-doc.texi).  Windows-specific information is in
 [`win32/tcc-win32.txt`](win32/tcc-win32.txt).  The coding conventions
 are documented in [`CodingStyle`](CodingStyle), and the project's
-planned work is tracked in [`TODO`](TODO).
+planned work is tracked in [`TODO.md`](TODO.md).
 
 ## Language modes
 
