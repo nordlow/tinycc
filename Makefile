@@ -599,10 +599,10 @@ tcc_s$(EXESUF): $($T_FILES)
 	$S$(CC) tcc.c -o $@ -fsanitize=address,undefined $(DEFINES) $(CFLAGS) $(LDFLAGS) $(LIBS)
 # test the installed tcc instead
 # self-compile tcc with -Wstack-address-escape active
-self-stack-address-escape:
+stack-address-check:
 	$(MAKE) -B
 	./tcc -B. -Wstack-address-escape -DONE_SOURCE=0 -c tcc.c libtcc.c tccpp.c tccgen.c tccelf.c tccasm.c tccrun.c x86_64-gen.c x86_64-link.c
-	rm -f tcc.o libtcc.o tccpp.o tccgen.o tccdbg.o tccelf.o tccasm.c tccrun.c x86_64-gen.c x86_64-link.o i386-asm.o
+	rm -f tcc.o libtcc.o tccpp.o tccgen.o tccdbg.o tccelf.o tccasm.o tccrun.o x86_64-gen.o x86_64-link.o i386-asm.o
 clean:
 	@rm -f tcc *-tcc tcc_p tcc_c tcc_s
 	@rm -f tags ETAGS *.o *.a *.so* *.out *.log lib*.def *.exe *.dll
@@ -613,10 +613,9 @@ distclean: clean
 	@rm -vf config.h config.mak config.texi
 	@rm -vf $(TCCDOCS)
 
-.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE pgo pgo-bench tdc self-stack-address-escape
+.PHONY: all clean test tar tags ETAGS doc distclean install uninstall FORCE pgo pgo-bench tdc stack-address-check
 help:
 	@echo "make"
-	@echo "   build native compiler (from separate objects)"
 	@echo "make ONE_SOURCE=no/yes SILENT=no/yes"
 	@echo "   force building from separate/one object(s), less/more silently"
 	@echo "make cross-TARGET"
@@ -637,9 +636,8 @@ help:
 	@echo "   run tests as above with sanitize option."
 	@echo "make test-install"
 	@echo "   run tests with the installed tcc"
-	@echo "make self-stack-address-escape"
+	@echo "make stack-address-check"
 	@echo "   self-compile tcc with -Wstack-address-escape warning flag active"
-	@echo "   install install-strip uninstall doc [dist]clean tags ETAGS tar help"
 	@echo "Custom configuration:"
 	@echo "   The makefile includes a file 'config-extra.mak' if it is present."
 	@echo "   This file may contain some custom configuration.  For example to"
