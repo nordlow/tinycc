@@ -239,6 +239,9 @@ static const char version[] =
     ")\n"
     ;
 
+/**
+ * @brief Print a list of search paths under a header.
+ */
 static void print_dirs(const char *msg, char **paths, int nb_paths)
 {
     int i;
@@ -247,6 +250,9 @@ static void print_dirs(const char *msg, char **paths, int nb_paths)
         printf("  %s\n", paths[i]);
 }
 
+/**
+ * @brief Print the installed library, include, library and CRT search directories.
+ */
 static void print_search_dirs(TCCState *s)
 {
     printf("install: %s\n", s->tcc_lib_path);
@@ -260,6 +266,9 @@ static void print_search_dirs(TCCState *s)
 #endif
 }
 
+/**
+ * @brief Add include/library paths from CPATH/LIBRARY_PATH/C_INCLUDE_PATH environment variables.
+ */
 static void set_environment(TCCState *s)
 {
     char * path;
@@ -278,6 +287,9 @@ static void set_environment(TCCState *s)
     }
 }
 
+/**
+ * @brief Compute the default output file name for the first input file.
+ */
 static char *default_outputfile(TCCState *s, const char *first_file)
 {
     char buf[1024];
@@ -305,6 +317,9 @@ static char *default_outputfile(TCCState *s, const char *first_file)
     return tcc_strdup(buf);
 }
 
+/**
+ * @brief Return the current time in milliseconds.
+ */
 static unsigned getclock_ms(void)
 {
 #ifdef _WIN32
@@ -316,6 +331,9 @@ static unsigned getclock_ms(void)
 #endif
 }
 
+/**
+ * @brief Compile and run C source files given on the command line.
+ */
 int main(int argc, char **argv)
 {
     TCCState *s, *s1;
