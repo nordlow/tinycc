@@ -704,7 +704,9 @@ LIBTCCAPI void tcc_set_error_func(TCCState *s, void *error_opaque, TCCErrorFunc 
     s->error_func = error_func;
 }
 
-/* error without aborting current compilation */
+/**
+ * @brief Report a compiler error without aborting the current compilation.
+ */
 PUB_FUNC int _tcc_error_noabort(const char *fmt, ...)
 {
     va_list ap;
@@ -714,6 +716,9 @@ PUB_FUNC int _tcc_error_noabort(const char *fmt, ...)
     return -1;
 }
 
+/**
+ * @brief Report a fatal compiler error and terminate the process.
+ */
 #undef _tcc_error
 PUB_FUNC void _tcc_error(const char *fmt, ...)
 {
@@ -724,6 +729,9 @@ PUB_FUNC void _tcc_error(const char *fmt, ...)
 }
 #define _tcc_error use_tcc_error_noabort
 
+/**
+ * @brief Report a compiler warning.
+ */
 PUB_FUNC void _tcc_warning(const char *fmt, ...)
 {
     va_list ap;
@@ -842,12 +850,17 @@ static int tcc_compile(TCCState *s1, int filetype, const char *str, int fd)
     return s1->nb_errors != 0 ? -1 : 0;
 }
 
+/**
+ * @brief Compile a C source string held in memory and return an error code.
+ */
 LIBTCCAPI int tcc_compile_string(TCCState *s, const char *str)
 {
     return tcc_compile(s, s->filetype, str, -1);
 }
 
-/* define a preprocessor symbol. value can be `NULL`, sym can be "sym=val" */
+/**
+ * @brief Define a preprocessor symbol; the value defaults to 1 when `NULL`.
+ */
 LIBTCCAPI void tcc_define_symbol(TCCState *s1, const char *sym, const char *value)
 {
     const char *eq;
@@ -858,13 +871,18 @@ LIBTCCAPI void tcc_define_symbol(TCCState *s1, const char *sym, const char *valu
     cstr_printf(&s1->cmdline_defs, "#define %.*s %s\n", (int)(eq-sym), sym, value);
 }
 
-/* undefine a preprocessor symbol */
+/**
+ * @brief Undefine a preprocessor symbol.
+ */
 LIBTCCAPI void tcc_undefine_symbol(TCCState *s1, const char *sym)
 {
     cstr_printf(&s1->cmdline_defs, "#undef %s\n", sym);
 }
 
 
+/**
+ * @brief Create a new `TCCState` compilation context with default options.
+ */
 LIBTCCAPI TCCState *tcc_new(void)
 {
     TCCState *s;
@@ -913,6 +931,9 @@ LIBTCCAPI TCCState *tcc_new(void)
     return s;
 }
 
+/**
+ * @brief Release and free a `TCCState` compilation context and its resources.
+ */
 LIBTCCAPI void tcc_delete(TCCState *s1)
 {
     /* free sections */
@@ -961,6 +982,9 @@ LIBTCCAPI void tcc_delete(TCCState *s1)
 #endif
 }
 
+/**
+ * @brief Set the output type and configure the standard paths/libraries.
+ */
 LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type)
 {
 #ifdef CONFIG_TCC_PIE
@@ -1012,18 +1036,27 @@ LIBTCCAPI int tcc_set_output_type(TCCState *s, int output_type)
     return s->nb_errors ? -1 : 0;
 }
 
+/**
+ * @brief Add a user include search path to the compilation context.
+ */
 LIBTCCAPI int tcc_add_include_path(TCCState *s, const char *pathname)
 {
     tcc_split_path(s, &s->include_paths, &s->nb_include_paths, pathname);
     return 0;
 }
 
+/**
+ * @brief Add a system include search path to the compilation context.
+ */
 LIBTCCAPI int tcc_add_sysinclude_path(TCCState *s, const char *pathname)
 {
     tcc_split_path(s, &s->sysinclude_paths, &s->nb_sysinclude_paths, pathname);
     return 0;
 }
 
+/**
+ * @brief Add a user library search path to the compilation context.
+ */
 LIBTCCAPI int tcc_add_library_path(TCCState *s, const char *pathname)
 {
     tcc_split_path(s, &s->library_paths, &s->nb_library_paths, pathname);
@@ -1296,6 +1329,9 @@ ST_FUNC int tcc_add_crt(TCCState *s1, const char *filename)
 #endif
 
 /* the library name is the same as the argument of the '-l' option */
+/**
+ * @brief Add a named library (via `-l` option or `#pragma lib`) to the compilation context.
+ */
 LIBTCCAPI int tcc_add_library(TCCState *s, const char *libraryname)
 {
     static const char * const libs[] = {
