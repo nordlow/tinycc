@@ -4109,12 +4109,7 @@ static void check_stack_address_escape(Sym *dest_sym, Sym *src_sym, int is_retur
 {
     int is_safe = (cur_scope->fn.safety == FUNC_SAFETY_SAFE);
     int is_error = is_safe || tcc_state->stack_address_escape_error;
-    int is_warn = tcc_state->warn_stack_address ||
-                  tcc_state->warn_stack_address_escape ||
-                  tcc_state->warn_stack_escape ||
-                  tcc_state->warn_address_escape ||
-                  tcc_state->stack_address_escape_warn;
-
+    int is_warn = tcc_state->warn_stack_address_escape;
     if (is_return) {
         if (vtop >= vstack && (fn_vt->t & VT_BTYPE) == VT_PTR &&
             src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC)) {

@@ -882,11 +882,7 @@ struct TCCState {
     unsigned char warn_unused_variable; /**< Whether unused local variables are warned about. */
     unsigned char warn_unused_parameter; /**< Whether unused function parameters are warned about. */
     unsigned char warn_unused_alias; /**< Whether unused type aliases are warned about. */
-    unsigned char warn_stack_address;
     unsigned char warn_stack_address_escape;
-    unsigned char warn_stack_escape;
-    unsigned char warn_address_escape;
-    unsigned char stack_address_escape_warn;
     unsigned char stack_address_escape_error;
     unsigned char warn_num; /**< Temporary variable holding the currently issued warning number (`tcc_warning_c()`). */
 

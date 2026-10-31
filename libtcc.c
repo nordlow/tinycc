@@ -1781,10 +1781,8 @@ static const FlagDef options_W[] = {
     { offsetof(TCCState, warn_unused_variable), WD_UNUSED, "unused-variable" },
     { offsetof(TCCState, warn_unused_parameter), WD_UNUSED, "unused-parameter" },
     { offsetof(TCCState, warn_unused_alias), WD_UNUSED, "unused-alias" },
-    { offsetof(TCCState, warn_stack_address), 0, "stack-address" },
     { offsetof(TCCState, warn_stack_address_escape), 0, "stack-address-escape" },
-    { offsetof(TCCState, warn_stack_escape), 0, "stack-escape" },
-    { offsetof(TCCState, warn_address_escape), 0, "address-escape" },
+    { 0, 0, NULL }
 };
 
 static const FlagDef options_f[] = {
@@ -1800,11 +1798,11 @@ static const FlagDef options_f[] = {
     { offsetof(TCCState, gnu89_inline), 0, "gnu89-inline" },
     { offsetof(TCCState, unwind_tables), 0, "asynchronous-unwind-tables" },
     { offsetof(TCCState, diagnostics_show_column), 0, "diagnostics-show-column" },
-    { offsetof(TCCState, stack_address_escape_warn), 0, "stack-address-escape-warn" },
     { offsetof(TCCState, stack_address_escape_error), 0, "stack-address-escape-error" },
+    { 0, 0, NULL }
 };
+
 static const FlagDef options_m[] = {
-    { offsetof(TCCState, ms_bitfields), 0, "ms-bitfields" },
 #ifdef TCC_TARGET_X86_64
     { offsetof(TCCState, nosse), FD_INVERT, "sse" },
 #endif
