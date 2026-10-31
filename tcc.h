@@ -828,6 +828,7 @@ struct sym_attr {
 #define TCC_SLICE_MISMATCH_COPY   1 /**< copy only the common prefix */
 #define TCC_SLICE_MISMATCH_IGNORE 2 /**< copy nothing */
 
+#define WARN_ON 1
 struct TCCState {
     unsigned char verbose; /**< Whether to display some information during compilation. */
     unsigned char nostdinc; /**< Whether to skip adding the standard system include paths. */
@@ -881,7 +882,12 @@ struct TCCState {
     unsigned char warn_unused_variable; /**< Whether unused local variables are warned about. */
     unsigned char warn_unused_parameter; /**< Whether unused function parameters are warned about. */
     unsigned char warn_unused_alias; /**< Whether unused type aliases are warned about. */
-    #define WARN_ON  1 /**< warning is on (-`Woption`) */
+    unsigned char warn_stack_address;
+    unsigned char warn_stack_address_escape;
+    unsigned char warn_stack_escape;
+    unsigned char warn_address_escape;
+    unsigned char stack_address_escape_warn;
+    unsigned char stack_address_escape_error;
     unsigned char warn_num; /**< Temporary variable holding the currently issued warning number (`tcc_warning_c()`). */
 
     unsigned char option_r; /* option -r */

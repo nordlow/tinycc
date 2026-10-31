@@ -4104,6 +4104,49 @@ static void gen_assign_cast(CType *dt)
     gen_cast(dt);
 }
 
+/* check stack address escape to global storage or return */
+static void check_stack_address_escape(Sym *dest_sym, Sym *src_sym, int is_return, CType *fn_vt)
+{
+    int is_safe = (cur_scope->fn.safety == FUNC_SAFETY_SAFE);
+    int is_error = is_safe || tcc_state->stack_address_escape_error;
+    int is_warn = tcc_state->warn_stack_address ||
+                  tcc_state->warn_stack_address_escape ||
+                  tcc_state->warn_stack_escape ||
+                  tcc_state->warn_address_escape ||
+                  tcc_state->stack_address_escape_warn;
+
+    if (is_return) {
+        if (vtop >= vstack && (fn_vt->t & VT_BTYPE) == VT_PTR &&
+            src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC)) {
+            if (is_error)
+                tcc_error("returning address of local variable '%s'", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
+            else if (is_warn)
+                tcc_warning_c(warn_stack_address_escape)("returning address of local variable '%s'", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
+            else {
+                if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                    cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                    root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            }
+        }
+    } else {
+        if (vtop >= vstack + 1 &&
+            (dest_sym && dest_sym->sym_scope == 0) &&
+            (src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC))) {
+            if (is_error)
+                tcc_error("assignment of address of stack variable '%s' to global/static storage", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
+            else if (is_warn)
+                tcc_warning_c(warn_stack_address_escape)("assignment of address of stack variable '%s' to global/static storage", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
+            else {
+                if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                    cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                    root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            }
+        }
+    }
+}
+
 /* store vtop in lvalue pushed on stack */
 ST_FUNC void vstore(void)
 {
@@ -4118,18 +4161,9 @@ ST_FUNC void vstore(void)
 
     if (vtop >= vstack + 1 &&
         (vtop[-1].r & VT_SYM || (vtop[-1].r & VT_VALMASK) == VT_LOCAL || (vtop[-1].r & VT_VALMASK) == VT_LLOCAL || (vtop[-1].r & VT_LVAL)) &&
-        vtop[-1].sym && vtop[-1].sym->sym_scope == 0 &&
         (vtop->r & VT_SYM || (vtop->r & VT_VALMASK) == VT_LOCAL || (vtop->r & VT_VALMASK) == VT_LLOCAL || (vtop->r & VT_LVAL)) &&
-        vtop->sym && vtop->sym->sym_scope > 0 && !(vtop->sym->type.t & VT_STATIC) &&
         sbt == VT_PTR) {
-        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
-            tcc_error("assignment of address of stack variable '%s' to global/static storage", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
-        else {
-            if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
-                cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
-            if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
-                root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
-        }
+        check_stack_address_escape(vtop[-1].sym, vtop->sym, 0, NULL);
     }
 
     if ((vtop[-1].r & VT_LVAL) && vtop[-1].sym && vtop[-1].sym->a.final_var) {
@@ -9150,17 +9184,9 @@ again:
         if (tok != ';') {
             gexpr();
             if (b) {
-                if (vtop >= vstack && (func_vt.t & VT_BTYPE) == VT_PTR &&
-                    (vtop->r & VT_SYM || (vtop->r & VT_VALMASK) == VT_LOCAL || (vtop->r & VT_VALMASK) == VT_LLOCAL || (vtop->r & VT_LVAL)) &&
-                    vtop->sym && vtop->sym->sym_scope > 0 && !(vtop->sym->type.t & VT_STATIC)) {
-                    if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
-                        tcc_error("returning address of local variable '%s'", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
-                    else {
-                        if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
-                            cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
-                        if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
-                            root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
-                    }
+                if (vtop >= vstack &&
+                    (vtop->r & VT_SYM || (vtop->r & VT_VALMASK) == VT_LOCAL || (vtop->r & VT_VALMASK) == VT_LLOCAL || (vtop->r & VT_LVAL))) {
+                    check_stack_address_escape(NULL, vtop->sym, 1, &func_vt);
                 }
                 gen_assign_cast(&func_vt);
             } else {
