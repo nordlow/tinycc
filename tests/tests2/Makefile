@@ -263,10 +263,11 @@ endif
 
 # this test creates two DLLs and an EXE
 113_btdll.test: T1 = \
-    $(TCC) -bt $1 -shared -D DLL=1 -o a1$(DLLSUF) && \
-    $(TCC) -bt $1 -shared -D DLL=2 -o a2$(DLLSUF) && \
-    $(TCC) -bt $1 a1$(DLLSUF) a2$(DLLSUF) -Wl,-rpath=. -o $*.exe && \
-    ./$*.exe
+	mkdir -p .tmp && \
+	$(TCC) -bt $1 -shared -D DLL=1 -o .tmp/a1$(DLLSUF) && \
+	$(TCC) -bt $1 -shared -D DLL=2 -o .tmp/a2$(DLLSUF) && \
+	$(TCC) -bt $1 .tmp/a1$(DLLSUF) .tmp/a2$(DLLSUF) -Wl,-rpath=.tmp -o .tmp/$*.exe && \
+	./.tmp/$*.exe
 
 114_bound_signal.test: FLAGS += -b
 114_bound_signal.test: NORUN = true # tcc -run does not support fork and -b and SELINUX
@@ -293,21 +294,23 @@ endif
 # Verify that undefined TLS symbols in TCC objects work with the system linker.
 # (note: '$*' is '146_tls_extern' here)
 146_tls_extern.test: T1 = \
-	$(TCC) -c $1 -o $*-main.o && \
-	$(TCC) -c $1 -DDEFS -o $*-defs.o && \
-	$(CC) -no-pie -Wl,-z,noexecstack $*-main.o $*-defs.o -o $*.exe && \
-	./$*.exe
+	mkdir -p .tmp && \
+	$(TCC) -c $1 -o .tmp/$*-main.o && \
+	$(TCC) -c $1 -DDEFS -o .tmp/$*-defs.o && \
+	$(CC) -no-pie -Wl,-z,noexecstack .tmp/$*-main.o .tmp/$*-defs.o -o .tmp/$*.exe && \
+	./.tmp/$*.exe
 ifeq (-$(CONFIG_WIN32)-,-yes-)
 146_tls_extern.test : CC=$(TCC)
 endif
 
 # Check ELF linker symbols
 148_linker_symbols.test: T1 = \
+	mkdir -p .tmp && \
 	for T in 1 2 3 4 5 6; do \
-	  echo; echo "--- TEST $$T ---"; F=$*-$$T; \
+	  echo; echo "--- TEST $$T ---"; F=.tmp/$*-$$T; \
 	  $(TCC) $1 -DTEST=$$T+100 -c -fcommon -o $$F.o && \
 	  $(TCC) $1 -DTEST=$$T+200 -shared -o $$F.so -fPIC && \
-	  $(TCC) $1 -DTEST=$$T -Wl,-rpath=. -o $$F.exe $$F.o $$F.so -no-pie && \
+	  $(TCC) $1 -DTEST=$$T -Wl,-rpath=.tmp -o $$F.exe $$F.o $$F.so -no-pie && \
 	  ./$$F.exe; \
 	done
 148_linker_symbols.test: GEN=$(T1)
@@ -320,17 +323,20 @@ all test tests2.all: $(filter-out $(SKIP),$(TESTS))
 
 %.test: %.c %.expect
 	@echo Test: $*...
-	@$(call T1,$<) $(T3)
+	@mkdir -p .tmp
+	@$(call T1,$<) $(FILTER) >.tmp/$*.output 2>&1 || true
+	@diff -Nbu $(filter %.expect,$^) .tmp/$*.output
+	@rm -f .tmp/$*.output $(filter %.expect,$(GEN-ALWAYS))
 
 %.test: %.d %.expect
 	@echo Test: $*...
-	@$(call T1,$<) $(T3)
+	@mkdir -p .tmp
+	@$(call T1,$<) $(FILTER) >.tmp/$*.output 2>&1 || true
+	@diff -Nbu $(filter %.expect,$^) .tmp/$*.output
+	@rm -f .tmp/$*.output $(filter %.expect,$(GEN-ALWAYS))
 
 T1 = $(TCC) $(FLAGS) $(T2) $(ARGS)
-T2 = $(if $(NORUN),$1 -o $*.exe && ./$*.exe,-run $1)
-T3 = $(FILTER) >$*.output 2>&1 || true \
-     && diff -Nbu $(filter %.expect,$^) $*.output \
-     && rm -f $*.output $(filter $*.expect,$(GEN-ALWAYS))
+T2 = $(if $(NORUN),$1 -o .tmp/$*.exe && ./.tmp/$*.exe,-run $1)
 
 # run single test and update .expect file, e.g. "make tests2.37+"
 tests2.%+:
@@ -355,7 +361,7 @@ F2 = $1 UPDATE="$(patsubst %.test,%.expect,$1)"
 
 # using TCC for .expect if -dt in FLAGS
 GEN = $(if $(filter -dt -bt -b,$(FLAGS)),$(GEN-TCC),$(GEN-CC))
-GEN-CC = $(CC) -w -std=gnu99 $(FLAGS) $1 -o $*.exe && ./$*.exe $(ARGS)
+GEN-CC = @mkdir -p .tmp && $(CC) -w -std=gnu99 $(FLAGS) $1 -o .tmp/$*.exe && ./.tmp/$*.exe $(ARGS)
 GEN-TCC = $(T1)
 GEN-MSC = $(MS-CC) $1 && ./$*.exe
 MS-CC = cl
@@ -368,4 +374,4 @@ $(sort $(GEN-ALWAYS) $(UPDATE)) : force
 force:
 
 clean :
-	rm -f fred.txt *.output *.o *.a *.exe *.dll *.so *.def *.tcov $(GEN-ALWAYS)
+	rm -rf .tmp fred.txt $(GEN-ALWAYS)
