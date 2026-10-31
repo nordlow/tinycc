@@ -453,15 +453,18 @@ extern long double strtold (const char *__nptr, char **__endptr);
 #define TOK_MAX_SIZE        4 /**< token max size in int unit when stored in string */
 
 /* token symbol management */
+/**
+ * @brief Token symbol entry in the global token hash table.
+ */
 typedef struct TokenSym {
-    struct TokenSym *hash_next;
-    struct Sym *sym_define; /* direct pointer to define */
-    struct Sym *sym_label; /* direct pointer to label */
-    struct Sym *sym_struct; /* direct pointer to structure */
-    struct Sym *sym_identifier; /* direct pointer to identifier */
-    int tok; /* token number */
-    int len;
-    char str[1];
+    struct TokenSym *hash_next;   /**< Pointer to the next token symbol in the hash bucket chain. */
+    struct Sym *sym_define;       /**< Direct pointer to the macro definition symbol if defined. */
+    struct Sym *sym_label;        /**< Direct pointer to the label symbol if applicable. */
+    struct Sym *sym_struct;       /**< Direct pointer to the structure, union, or enum symbol. */
+    struct Sym *sym_identifier;   /**< Direct pointer to the identifier symbol table entry. */
+    int tok;                      /**< Unique numeric token identifier assigned by the lexer. */
+    int len;                      /**< Length of the token string in bytes. */
+    char str[1];                  /**< Flexible array member storing the null-terminated token string text. */
 } TokenSym;
 
 #ifdef TCC_TARGET_PE
@@ -470,49 +473,56 @@ typedef unsigned short nwchar_t;
 typedef int nwchar_t;
 #endif
 
+/**
+ * @brief Dynamic string buffer descriptor used for preprocessor and identifier strings.
+ */
 typedef struct CString {
-    int size; /* size in bytes */
-    int size_allocated;
-    char *data; /* `nwchar_t`* in cases */
+    int size;                     /**< Current size of the string content in bytes. */
+    int size_allocated;           /**< Total allocated capacity of the data buffer in bytes. */
+    char *data;                   /**< Pointer to the character or wide-character (`nwchar_t*`) data buffer. */
 } CString;
 
-/* type definition */
+/**
+ * @brief C type descriptor combining type flags and an optional reference symbol.
+ */
 typedef struct CType {
-    int t;
-    struct Sym *ref;
+    int t;                        /**< Type flags specifying basic type, qualifiers (const/volatile), and modifiers. */
+    struct Sym *ref;              /**< Reference symbol pointer for structs, unions, enums, functions, or pointer targets. */
 } CType;
 
 /* long double words on host(!) platform */
-#define LDOUBLE_WORDS ((sizeof(long double)+3)/4) /**< `Number` of 32-bit words for long double on host */
+#define LDOUBLE_WORDS ((sizeof(long double)+3)/4) /**< Number of 32-bit words for long double on host */
 
-/* constant value */
+/**
+ * @brief Union holding compile-time constant scalar, floating-point, or string values.
+ */
 typedef union CValue {
-    long double ld;
-    double d;
-    float f;
-    uint64_t i;
+    long double ld;               /**< Long double precision floating-point constant value. */
+    double d;                     /**< Double precision floating-point constant value. */
+    float f;                      /**< Single precision floating-point constant value. */
+    uint64_t i;                   /**< Unsigned 64-bit integer constant value or pointer representation. */
     struct {
-        char *data;
-        int size;
-    } str;
-    int tab[LDOUBLE_WORDS];
+        char *data;               /**< Pointer to string constant literal data bytes. */
+        int size;                 /**< Size of the string constant literal in bytes. */
+    } str;                        /**< String literal constant descriptor. */
+    int tab[LDOUBLE_WORDS];       /**< Raw 32-bit word array representation for long double or large constants. */
 } CValue;
 
-/* value on stack */
+/**
+ * @brief Evaluation stack value descriptor tracking type, register allocation, and constant/symbol state.
+ */
 typedef struct SValue {
-    CType type;      /* type */
-    unsigned short r;      /* register + flags */
-    unsigned short r2;     /* second register, used for 'long long'
-                              type. `If` not used, set to `VT_CONST` */
+    CType type;                   /**< Complete C type descriptor of the expression value. */
+    unsigned short r;             /**< Register allocation flags, register index, and storage flags (`VT_*`). */
+    unsigned short r2;            /**< Second register index (used for 64-bit `long long` values on 32-bit targets; `VT_CONST` if unused). */
     union {
-      struct { int jtrue, jfalse; }; /* forward jmps */
-      CValue c;         /* constant, if `VT_CONST` */
+      struct { int jtrue, jfalse; }; /**< Jump targets (true and false condition branches) for boolean expressions. */
+      CValue c;                      /**< Constant value descriptor if the storage class is `VT_CONST`. */
     };
     union {
-      struct { unsigned short cmp_op, cmp_r; }; /* `VT_CMP` operation */
-      struct Sym *sym;  /* symbol, if (`VT_SYM` | `VT_CONST`), or if */
-    };                  /* result of unary() for an identifier. */
-
+      struct { unsigned short cmp_op, cmp_r; }; /**< Comparison operation and register details for `VT_CMP` conditional values. */
+      struct Sym *sym;                          /**< Associated symbol pointer if `VT_SYM` | `VT_CONST`, or result of unary identifier resolution. */
+    };
 } SValue;
 
 /**
@@ -564,84 +574,95 @@ typedef enum {
 /* function attributes or temporary attributes for parsing */
 struct FuncAttr {
     unsigned
-    func_call   : 3, /* calling convention (0..5), see below */
-    func_type   : 2, /* `FUNC_OLD`/`NEW`/`ELLIPSIS` */
-    func_noreturn : 1, /* attribute((noreturn)) */
-    func_ctor   : 1, /* attribute((constructor)) */
-    func_dtor   : 1, /* attribute((destructor)) */
-    func_args   : 8, /* `PE` `__stdcall` args */
-    func_alwinl : 1, /* `always_inline` */
-    func_pure   : 2, /* `FUNC_PURITY_`... */
-    func_safety : 3, /* `FUNC_SAFETY_`... */
+    func_call   : 3, /**< Calling convention encoding: `FUNC_CDECL`, `FUNC_STDCALL`, `FUNC_FASTCALL1`, `FUNC_FASTCALL2`, `FUNC_FASTCALL3` or `FUNC_THISCALL`. */
+    func_type   : 2, /**< Function prototype kind: `FUNC_NEW`, `FUNC_OLD` or `FUNC_ELLIPSIS`. */
+    func_noreturn : 1, /**< Whether the function is declared `noreturn` via `attribute((noreturn))`. */
+    func_ctor   : 1, /**< Whether the function is registered via `attribute((constructor))`. */
+    func_dtor   : 1, /**< Whether the function is registered via `attribute((destructor))`. */
+    func_args   : 8, /**< Number of argument words affected by the `PE` `__stdcall` calling convention. */
+    func_alwinl : 1, /**< Whether the function was marked `always_inline`. */
+    func_pure   : 2, /**< Purity level: `FUNC_PURITY_UNKNOWN`, `FUNC_PURITY_TRUE` or an inferred purity variant. */
+    func_safety : 3, /**< Memory safety level: `FUNC_SAFETY_UNKNOWN`, `FUNC_SAFETY_SAFE`, `FUNC_SAFETY_SYSTEM`, `FUNC_SAFETY_TRUSTED` or an inferred safety variant. */
     xxxx        : 8;
 };
 /* symbol management */
+/**
+ * @brief Symbol table entry describing variables, functions, types, labels, macros, and typedefs.
+ */
 typedef struct Sym {
-    int v; /* symbol token */
-    unsigned short r; /* associated register or `VT_CONST`/`VT_LOCAL` and `LVAL` type */
-    struct SymAttr a; /* symbol attributes */
+    int v;                        /**< Symbol token identifier representing the name. */
+    unsigned short r;             /**< Associated register, or `VT_CONST`/`VT_LOCAL` storage class and lvalue flags. */
+    struct SymAttr a;             /**< Extended symbol attributes (alignment, packing, weak linkage, visibility). */
     union {
         struct {
-            int c; /* associated number or `Elf` symbol index */
+            int c;                /**< Associated integer constant value, stack offset, or ELF symbol index. */
             union {
-                int sym_scope; /* scope level for locals */
-                int jnext; /* next jump label */
-                int jind; /* label position */
-                struct FuncAttr f; /* function attributes */
-                int auxtype; /* bitfield access type */
+                int sym_scope;    /**< Lexical scope nesting level for local variables. */
+                int jnext;        /**< Next jump label index in chain. */
+                int jind;         /**< Generated code index position for labels. */
+                struct FuncAttr f;/**< Function attributes (calling convention, purity, safety, noreturn). */
+                int auxtype;      /**< Auxiliary bitfield access type or underlying integer type. */
             };
         };
-        long long enum_val; /* enum constant if `IS_ENUM_VAL` */
-        int *d; /* define token stream */
-        struct Sym *cleanup_func;
+        long long enum_val;       /**< Enumerator constant integer value if `IS_ENUM_VAL` is set. */
+        int *d;                   /**< Preprocessor macro definition token stream. */
+        struct Sym *cleanup_func; /**< Cleanup function pointer for variable cleanup attribute. */
     };
 
-    CType type; /* associated type */
+    CType type;                   /**< Complete C type descriptor associated with this symbol. */
     union {
-        struct Sym *next; /* next related symbol (for fields and anoms) */
-        int *e; /* expanded token stream with preprocessor macros */
-        int asm_label; /* associated asm label */
-        struct Sym *cleanupstate; /* in defined labels */
-        int *vla_array_str; /* vla array code */
+        struct Sym *next;         /**< Pointer to next related symbol (e.g., struct/union fields or anonymous members). */
+        int *e;                   /**< Expanded token stream with preprocessor macro expansions. */
+        int asm_label;            /**< Associated inline assembly label identifier. */
+        struct Sym *cleanupstate; /**< Cleanup state pointer for defined labels. */
+        int *vla_array_str;       /**< Variable-length array allocation code token string. */
     };
-    struct Sym *prev; /* prev symbol in stack */
+    struct Sym *prev;             /**< Pointer to the previous symbol in the current scope symbol stack. */
     union {
-        struct Sym *prev_tok; /* previous symbol for this token */
-        struct Sym *cleanup_sym; /* symbol from `__attribute__`((cleanup())) */
-        struct Sym *cleanup_label; /* label in '`pending_gotos`' chain */
+        struct Sym *prev_tok;     /**< Previous symbol sharing the same token hash bucket. */
+        struct Sym *cleanup_sym;  /**< Symbol associated with `__attribute__((cleanup()))`. */
+        struct Sym *cleanup_label;/**< Label in the pending gotos resolution chain. */
     };
 } Sym;
 
-/* section definition */
+/**
+ * @brief ELF section descriptor managing section data, relocations, and output attributes.
+ */
 typedef struct Section {
-    unsigned long data_offset; /* current data offset */
-    unsigned char *data;       /* section data */
-    unsigned long data_allocated; /* used for realloc() handling */
-    TCCState *s1;
-    int sh_name;             /* elf section name (only used during output) */
-    int sh_num;              /* elf section number */
-    int sh_type;             /* elf section type */
-    int sh_flags;            /* elf section flags */
-    int sh_info;             /* elf section info */
-    int sh_addralign;        /* elf section alignment */
-    int sh_entsize;          /* elf entry size */
-    unsigned long sh_size;   /* section size (only used during output) */
-    addr_t sh_addr;          /* address at which the section is relocated */
-    unsigned long sh_offset; /* file offset */
-    int nb_hashed_syms;      /* used to resize the hash table */
-    struct Section *link;    /* link to another section */
-    struct Section *reloc;   /* corresponding section for relocation, if any */
-    struct Section *hash;    /* hash table for symbols */
-    struct Section *prev;    /* previous section on section stack */
-    char name[1];           /* section name */
+    unsigned long data_offset;    /**< Current write offset position within the section data buffer in bytes. */
+    unsigned char *data;          /**< Pointer to the raw section content data buffer. */
+    unsigned long data_allocated; /**< Total allocated capacity of the data buffer (used for reallocation management). */
+    TCCState *s1;                 /**< Pointer to the parent `TCCState` compilation session context. */
+    int sh_name;                  /**< ELF section name string table index (used during final output generation). */
+    int sh_num;                   /**< ELF section table index number. */
+    int sh_type;                  /**< ELF section type (e.g., `SHT_PROGBITS`, `SHT_SYMTAB`, `SHT_RELA`). */
+    int sh_flags;                 /**< ELF section attribute flags (e.g., `SHF_ALLOC`, `SHF_WRITE`, `SHF_EXECINSTR`). */
+    int sh_info;                  /**< ELF section extra information field. */
+    int sh_addralign;             /**< Required memory address alignment boundary for the section. */
+    int sh_entsize;               /**< Entry size in bytes for sections containing fixed-size table entries. */
+    unsigned long sh_size;        /**< Final computed section size in bytes (used during output emission). */
+    addr_t sh_addr;               /**< Virtual memory address at which the section is loaded or relocated. */
+    unsigned long sh_offset;      /**< File offset in the generated output file where section data begins. */
+    int nb_hashed_syms;           /**< Number of hashed symbols (used to track and resize symbol hash tables). */
+    struct Section *link;         /**< Pointer to a linked ELF section (such as symbol table linking to string table). */
+    struct Section *reloc;        /**< Pointer to the corresponding relocation section for this section, if any. */
+    struct Section *hash;         /**< Hash table section for fast symbol lookup within symbol tables. */
+    struct Section *prev;         /**< Pointer to the previous section on the active section stack. */
+    char name[1];                 /**< Flexible array member holding the null-terminated section name string. */
 } Section;
 
+/**
+ * @brief Dynamic link library (DLL/shared library) reference descriptor.
+ */
 typedef struct DLLReference {
-    int level;
-    void *handle;
-    unsigned char found, index;
-    char name[1];
+    int level;                    /**< Dependency nesting depth level of the loaded dynamic library. */
+    void *handle;                 /**< Dynamic library loading handle returned by `dlopen` or `LoadLibrary`. */
+    unsigned char found;          /**< Flag indicating whether the library file was successfully found and opened. */
+    unsigned char index;          /**< Assigned internal library index number. */
+    char name[1];                 /**< Flexible array member storing the library filename or path string. */
 } DLLReference;
+
+/* -------------------------------------------------- */
 
 /* -------------------------------------------------- */
 
@@ -683,95 +704,108 @@ typedef struct DLLReference {
 
 #define IO_BUF_SIZE 8192 /**< `Input` file read buffer size */
 
+/**
+ * @brief Lexer input stream buffer descriptor for source files and included headers.
+ */
 typedef struct BufferedFile {
-    uint8_t *buf_ptr;
-    uint8_t *buf_end;
-    int fd;
-    struct BufferedFile *prev;
-    int line_num;    /* current line number - here to simplify code */
-    int line_ref;    /* tcc -E: last printed line */
-    int ifndef_macro;  /* #ifndef macro / #endif search */
-    int ifndef_macro_saved; /* saved `ifndef_macro` */
-    int *ifdef_stack_ptr; /* `ifdef_stack` value at the start of the file */
-    int include_next_index; /* next search path */
-    int prev_tok_flags; /* saved `tok_flags` */
-    char filename[1024];    /* filename */
-    char *true_filename; /* filename not modified by # line directive */
-    unsigned char unget[4];
-    unsigned char buffer[1]; /* extra size for `CH_EOB` char */
+    uint8_t *buf_ptr;             /**< Current read pointer position within the input text buffer. */
+    uint8_t *buf_end;             /**< Pointer to the end of valid data in the input buffer. */
+    int fd;                       /**< File descriptor of the opened source file (-1 if string buffer). */
+    struct BufferedFile *prev;    /**< Pointer to the enclosing outer include file buffer (include stack). */
+    int line_num;                 /**< Current source line number (tracked for error messages and debug info). */
+    int line_ref;                 /**< Last printed line number (used by preprocessor `-E` output formatting). */
+    int ifndef_macro;             /**< Preprocessor macro identifier for include guard detection (`#ifndef ... #endif`). */
+    int ifndef_macro_saved;       /**< Saved outer include guard macro identifier. */
+    int *ifdef_stack_ptr;         /**< Pointer into the conditional inclusion stack at file entry. */
+    int include_next_index;       /**< Next search path index for `#include_next` directives. */
+    int prev_tok_flags;           /**< Saved lexer token parsing flags from prior context. */
+    char filename[1024];          /**< Path string of the source file currently being parsed. */
+    char *true_filename;          /**< Unmodified source filename string (ignoring `#line` preprocessor directives). */
+    unsigned char unget[4];       /**< Pushback character buffer for lexer lookahead. */
+    unsigned char buffer[1];      /**< Flexible array buffer containing source text data with sentinel padding. */
 } BufferedFile;
 
 #define CH_EOB   '\\'       /**< end of buffer or '\0' char in file */
 #define CH_EOF   (-1)   /**< end of file */
 
-/* used to record tokens */
+/**
+ * @brief Recorded token string buffer for macros, inlines, and token streams.
+ */
 typedef struct TokenString {
-    int *str;
-    int len;
-    int need_spc;
-    int allocated_len;
-    int last_line_num;
-    int save_line_num;
-    /* used to chain token-strings with begin/`end_macro`() */
-    struct TokenString *prev;
-    const int *prev_ptr;
-    char alloc;
+    int *str;                     /**< Pointer to the dynamically allocated array of token integers. */
+    int len;                      /**< Number of tokens currently stored in the token stream. */
+    int need_spc;                 /**< Flag indicating whether whitespace separation is required before next token. */
+    int allocated_len;            /**< Total allocated capacity of the token array. */
+    int last_line_num;            /**< Source line number of the last recorded token. */
+    int save_line_num;            /**< Saved source line number during token stream manipulation. */
+    struct TokenString *prev;     /**< Pointer to previous token string for chaining macro expansions. */
+    const int *prev_ptr;          /**< Previous token pointer in expansion stream. */
+    char alloc;                   /**< Allocation type flag indicating memory ownership. */
 } TokenString;
 
-/** (`GNUC`) `Attribute` `Definition`.
-
-   `TODO`: `Should` this be reordered or compacted? */
+/**
+ * @brief Combined attribute definition container for declarations and symbols.
+ */
 typedef struct AttributeDef {
-    struct SymAttr a;
-    struct FuncAttr f;
-    struct Section *section;
-    Sym *cleanup_func;
-    int alias_target; /* token */
-    int asm_label; /* associated asm label */
-    char attr_mode; /* `__attribute__`((`__mode__`(...))) */
-    char new_section; /* section is new */
-    int noinit; /* @noinit. `TODO`: `Should` this be merged into? */
+    struct SymAttr a;             /**< Symbol attributes (alignment, packing, visibility, weak linkage). */
+    struct FuncAttr f;            /**< Function attributes (calling convention, purity, safety, noreturn). */
+    struct Section *section;      /**< Target section pointer specified via section attribute. */
+    Sym *cleanup_func;            /**< Cleanup function symbol pointer for variable cleanup attribute. */
+    int alias_target;             /**< Target symbol token identifier for alias attributes. */
+    int asm_label;                /**< Associated inline assembly label identifier. */
+    char attr_mode;               /**< Machine mode attribute value for type sizing (`__attribute__((__mode__(...)))`). */
+    char new_section;             /**< Flag indicating whether a new section was created. */
+    int noinit;                   /**< Non-zero if `@noinit` storage attribute is specified. */
 } AttributeDef;
 
-/* inline functions */
+/**
+ * @brief Inline function definition record for deferred compilation of inline functions.
+ */
 typedef struct InlineFunc {
-    TokenString *func_str;
-    Sym *sym;
-    char filename[1];
+    TokenString *func_str;        /**< Recorded token string of the inline function body. */
+    Sym *sym;                     /**< Symbol table entry corresponding to the inline function. */
+    char filename[1];             /**< Flexible array member storing the source filename where defined. */
 } InlineFunc;
 
-/* include file cache, used to find files faster and also to eliminate
-   inclusion if the include file is protected by #ifndef ... #endif */
+/**
+ * @brief Cached include file guard record to speed up header inclusion checks.
+ */
 typedef struct CachedInclude {
-    int ifndef_macro;
-    int once;
-    int hash_next; /* -1 if none */
-    char filename[1]; /* path specified in #include */
+    int ifndef_macro;             /**< Include guard preprocessor macro token identifier. */
+    int once;                     /**< Flag indicating whether `#pragma once` was specified in the header. */
+    int hash_next;                /**< Hash chain index pointing to the next cached include entry (-1 if none). */
+    char filename[1];             /**< Flexible array member storing the canonical include file path string. */
 } CachedInclude;
 
-#define CACHED_INCLUDES_HASH_SIZE 32 /**< `Hash` table size for included files (#pragma once) */
+#define CACHED_INCLUDES_HASH_SIZE 32 /**< Hash table size for included files (#pragma once) */
 
 #ifdef CONFIG_TCC_ASM
+/**
+ * @brief Evaluated constant expression value structure for assembler expressions.
+ */
 typedef struct ExprValue {
-    uint64_t v;
-    Sym *sym;
-    int pcrel;
+    uint64_t v;                   /**< Evaluated integer constant value offset. */
+    Sym *sym;                     /**< Optional base symbol associated with the expression. */
+    int pcrel;                    /**< Flag indicating whether the expression is PC-relative. */
 } ExprValue;
 
-#define MAX_ASM_OPERANDS 30 /**< `Maximum` number of inline assembly operands */
+#define MAX_ASM_OPERANDS 30 /**< Maximum number of inline assembly operands */
+/**
+ * @brief Inline assembly operand description structure for extended inline assembly (`__asm__`).
+ */
 typedef struct ASMOperand {
-    int id; /* `GCC` 3 optional identifier (0 if number only supported) */
-    char constraint[16];
-    char asm_str[16]; /* computed asm string for operand */
-    SValue *vt; /* C value of the expression */
-    int ref_index; /* if >= 0, gives reference to a output constraint */
-    int input_index; /* if >= 0, gives reference to an input constraint */
-    int priority; /* priority, used to assign registers */
-    int reg; /* if >= 0, register number used for this operand */
-    int is_llong; /* true if double register value */
-    int is_memory; /* true if memory operand */
-    int is_rw;     /* for '+' modifier */
-    int is_label;  /* for asm goto */
+    int id;                       /**< GCC 3 optional C identifier token (0 if only positional number supported). */
+    char constraint[16];          /**< Operand constraint string (e.g., "r", "m", "i"). */
+    char asm_str[16];             /**< Computed output assembler string representation for the operand. */
+    SValue *vt;                   /**< C value of the expression on evaluation stack. */
+    int ref_index;                /**< Reference index giving connection to output constraint if >= 0. */
+    int input_index;              /**< Reference index giving connection to input constraint if >= 0. */
+    int priority;                 /**< Register allocation priority used to assign hardware registers. */
+    int reg;                      /**< Hardware register number used for this operand if >= 0. */
+    int is_llong;                 /**< Flag indicating a 64-bit long long double register value. */
+    int is_memory;                /**< Flag indicating the operand resides in memory. */
+    int is_rw;                    /**< Flag indicating read-write modifier (`+`) is set. */
+    int is_label;                 /**< Flag indicating the operand is an asm goto label. */
 } ASMOperand;
 #endif
 
@@ -793,59 +827,59 @@ struct sym_attr {
 #define TCC_SLICE_MISMATCH_IGNORE 2 /**< copy nothing */
 
 struct TCCState {
-    unsigned char verbose; /* if true, display some information during compilation */
-    unsigned char nostdinc; /* if true, no standard headers are added */
-    unsigned char nostdlib; /* if true, no standard libraries are added */
-    unsigned char nostdlib_paths; /* if true, the default paths are not searched for libraries */
-    unsigned char nocommon; /* if true, do not use common symbols for .bss data */
-    unsigned char static_link; /* if true, static linking is performed */
-    unsigned char rdynamic; /* if true, all symbols are exported */
-    unsigned char symbolic; /* if true, resolve symbols in the current module first */
-    unsigned char znodelete; /* `Set` `DF_1_NODELETE` in dynamic section */
-    unsigned char filetype; /* file type for compilation (`NONE`,C,`ASM`) */
-    unsigned char optimize; /* only to #define `__OPTIMIZE__` */
-    unsigned char option_pthread; /* -pthread option */
-    unsigned char enable_new_dtags; /* -`Wl`,--enable-new-dtags */
-    unsigned int  cversion; /* supported C `ISO` version, 199901 (the default), 201112, ... */
+    unsigned char verbose; /**< Whether to display some information during compilation. */
+    unsigned char nostdinc; /**< Whether to skip adding the standard system include paths. */
+    unsigned char nostdlib; /**< Whether to skip adding the standard system libraries. */
+    unsigned char nostdlib_paths; /**< Whether to skip searching the default library paths. */
+    unsigned char nocommon; /**< Whether to use explicit data symbols instead of common (tentative) symbols for uninitialized globals. */
+    unsigned char static_link; /**< Whether static linking of the standard libraries is performed. */
+    unsigned char rdynamic; /**< Whether all global symbols are exported. */
+    unsigned char symbolic; /**< Whether symbols are resolved preferring the current module before external ones. */
+    unsigned char znodelete; /**< Whether to set the dynamic loader `DF_1_NODELETE` flag. */
+    unsigned char filetype; /**< File type of the compilation: `NONE`, C source or ASM source. */
+    unsigned char optimize; /**< Whether to define the `__OPTIMIZE__` macro. */
+    unsigned char option_pthread; /**< Whether the `-pthread` option was set. */
+    unsigned char enable_new_dtags; /**< Whether the `-Wl,--enable-new-dtags` option was set. */
+    unsigned int  cversion; /**< Supported C `ISO` version (199901 by default, 201112, ...). */
 
     /* C language options */
-    unsigned char char_is_unsigned;
-    unsigned char leading_underscore;
-    unsigned char ms_extensions; /* allow nested named struct w/o identifier behave like unnamed */
-    unsigned char dollars_in_identifiers;  /* allows '$' char in identifiers */
-    unsigned char ms_bitfields; /* if true, emulate `MS` algorithm for aligning bitfields */
-    unsigned char reverse_funcargs; /* if true, evaluate last function arg first */
-    unsigned char gnu89_inline; /* treat 'extern inline' like 'static inline' */
-    unsigned char unwind_tables; /* create `eh_frame` section */
-    unsigned char lang_d; /* -lang=d: enable extended D semantics */
+    unsigned char char_is_unsigned; /**< Whether plain `char` is treated as unsigned. */
+    unsigned char leading_underscore; /**< Whether identifiers may start with an underscore. */
+    unsigned char ms_extensions; /**< Whether MS extensions are allowed (e.g. nested named struct w/o identifier behaves like unnamed). */
+    unsigned char dollars_in_identifiers; /**< Whether the '$' character is allowed in identifiers. */
+    unsigned char ms_bitfields; /**< Whether the MS algorithm for aligning bitfields is emulated. */
+    unsigned char reverse_funcargs; /**< Whether arguments are evaluated last-first (reversed calling convention). */
+    unsigned char gnu89_inline; /**< Whether `extern inline` is treated like `static inline`. */
+    unsigned char unwind_tables; /**< Whether an `eh_frame` exception handling section is generated. */
+    unsigned char lang_d; /**< Whether extended D language semantics are enabled (`-lang=d`). */
     /* D conditional compilation (version and debug blocks).  */
-    char **d_version_ids;
-    int nb_d_version_ids;
-    char **d_debug_ids;
-    int nb_d_debug_ids;
-    int d_version_level;
-    int d_debug_level;
+    char **d_version_ids; /**< Array of D language version identifiers for conditional compilation. */
+    int nb_d_version_ids; /**< Number of D language version identifiers. */
+    char **d_debug_ids; /**< Array of D language debug identifiers for conditional compilation. */
+    int nb_d_debug_ids; /**< Number of D language debug identifiers. */
+    int d_version_level; /**< D language version conditional compilation level. */
+    int d_debug_level; /**< D language debug conditional compilation level. */
     /* `Runtime` policy for slice copies whose lengths differ.  */
-    unsigned char slice_len_mismatch;
+    unsigned char slice_len_mismatch; /**< Policy for slice assignments with mismatched lengths: abort, copy prefix, or ignore. */
     /* `Maximum` nesting of lexical scopes (-fscope-depth=N).  `Zero` means
        the built-in `MAX_SCOPE_DEPTH`.  */
-    int max_scope_depth;
+    int max_scope_depth; /**< Maximum lexical scope nesting depth (`MAX_SCOPE_DEPTH` when zero). */
 
     /* warning switches */
-    unsigned char warn_none;
-    unsigned char warn_all;
-    unsigned char warn_error;
-    unsigned char warn_write_strings;
-    unsigned char warn_unsupported;
-    unsigned char warn_implicit_function_declaration;
-    unsigned char warn_discarded_qualifiers;
-    unsigned char warn_uncovered;
-    unsigned char warn_unused;
-    unsigned char warn_unused_variable;
-    unsigned char warn_unused_parameter;
-    unsigned char warn_unused_alias;
+    unsigned char warn_none; /**< Whether all warnings are disabled. */
+    unsigned char warn_all; /**< Whether all warnings are enabled. */
+    unsigned char warn_error; /**< Whether warnings are treated as errors. */
+    unsigned char warn_write_strings; /**< Whether writing string literals to memory is warned against. */
+    unsigned char warn_unsupported; /**< Whether unsupported language features are warned about. */
+    unsigned char warn_implicit_function_declaration; /**< Whether implicit function declarations are warned about. */
+    unsigned char warn_discarded_qualifiers; /**< Whether discarded qualifiers (e.g. `const int` dropped) are warned about. */
+    unsigned char warn_uncovered; /**< Whether uncovered (unused) warnings are enabled. */
+    unsigned char warn_unused; /**< Whether unused symbols are warned about. */
+    unsigned char warn_unused_variable; /**< Whether unused local variables are warned about. */
+    unsigned char warn_unused_parameter; /**< Whether unused function parameters are warned about. */
+    unsigned char warn_unused_alias; /**< Whether unused type aliases are warned about. */
     #define WARN_ON  1 /**< warning is on (-`Woption`) */
-    unsigned char warn_num; /* temp var for `tcc_warning_c`() */
+    unsigned char warn_num; /**< Temporary variable holding the currently issued warning number (`tcc_warning_c()`). */
 
     unsigned char option_r; /* option -r */
     unsigned char do_bench; /* option -bench */
@@ -856,73 +890,73 @@ struct TCCState {
     unsigned char gen_phony_deps; /* option -`MP` */
 
     /* compile with debug symbol (and use them if error during execution) */
-    unsigned char do_debug;
-    unsigned char dwarf;
-    unsigned char do_backtrace;
+    unsigned char do_debug; /**< Whether debug information is generated for the compilation. */
+    unsigned char dwarf; /**< Whether `DWARF` debug information is emitted. */
+    unsigned char do_backtrace; /**< Whether stack backtraces are generated for runtime errors. */
 #ifdef CONFIG_TCC_BCHECK
     /* compile with built-in memory and bounds checker */
-    unsigned char do_bounds_check;
+    unsigned char do_bounds_check; /**< Whether the built-in memory and bounds checker is compiled in. */
 #endif
-    unsigned char test_coverage;  /* generate test coverage code */
-    unsigned char dump_types;
-    unsigned char dump_decls;
-    unsigned char dump_vstack;
+    unsigned char test_coverage; /**< Whether test coverage code is generated. */
+    unsigned char dump_types; /**< Whether type information is dumped during compilation. */
+    unsigned char dump_decls; /**< Whether declarations are dumped during compilation. */
+    unsigned char dump_vstack; /**< Whether the expression value stack is dumped during compilation. */
     /* use `GNU` C extensions */
-    unsigned char gnu_ext;
+    unsigned char gnu_ext; /**< Whether `GNU` C language extensions are enabled. */
     /* use `TinyPC` extensions */
-    unsigned char tcc_ext;
+    unsigned char tcc_ext; /**< Whether `TinyPC` language extensions are enabled. */
 
-    unsigned char dflag; /* -dX value */
-    unsigned char Pflag; /* -P switch (`LINE_MACRO_OUTPUT_FORMAT`) */
+    unsigned char dflag; /**< Debug information selector flag (`-dX` option). */
+    unsigned char Pflag; /**< Preprocessor line macro output format switch (`-P` option). */
 
 #ifdef TCC_TARGET_X86_64
-    unsigned char nosse; /* `For` -mno-sse support. */
+    unsigned char nosse; /**< Whether SSE (`-mno-sse`) support is disabled. */
 #endif
 #ifdef TCC_TARGET_ARM
-    unsigned char float_abi; /* float `ABI` of the generated code*/
+    unsigned char float_abi; /**< Floating point `ABI` of the generated code. */
 #endif
 
-    unsigned char has_text_addr;
-    addr_t text_addr; /* address of text section */
-    unsigned section_align; /* section alignment */
+    unsigned char has_text_addr; /**< Whether a fixed text address is set. */
+    addr_t text_addr; /**< Address of the text section in the output image. */
+    unsigned section_align; /**< Section alignment requirement. */
 #ifdef TCC_TARGET_I386
-    int seg_size; /* 32. `Can` be 16 with i386 assembler (.code16) */
+    int seg_size; /**< Size of the code segment (32, or 16 with i386 assembler `.code16`). */
 #endif
 
-    char *tcc_lib_path; /* `CONFIG_TCCDIR` or -B option */
-    char *soname; /* as specified on the command line (-soname) */
-    char *rpath; /* as specified on the command line (-`Wl`,-rpath=) */
-    char *elfint; /* -`Wl`,-I... on command line */
-    char *elf_entryname; /* "`_start`" unless set */
-    char *init_symbol; /* symbols to call at load-time (not used currently) */
-    char *fini_symbol; /* symbols to call at unload-time (not used currently) */
-    char *mapfile; /* create a mapfile (not used currently) */
+    char *tcc_lib_path; /**< Library path (`CONFIG_TCCDIR` or `-B` option). */
+    char *soname; /**< Shared object name specified on the command line (`-soname`). */
+    char *rpath; /**< Runtime library search path (`-Wl,-rpath=`). */
+    char *elfint; /**< ELF interpreter path (`-Wl,-I...` on command line). */
+    char *elf_entryname; /**< Entry symbol name (defaults to `_start`). */
+    char *init_symbol; /**< Symbol called at load time (not used currently). */
+    char *fini_symbol; /**< Symbol called at unload time (not used currently). */
+    char *mapfile; /**< Whether to create a map file (not used currently). */
 
     /* output type, see `TCC_OUTPUT_XXX` */
-    int output_type;
+    int output_type; /**< Output type: memory, executable, library, object or preprocessed. */
     /* output format, see `TCC_OUTPUT_FORMAT_xxx` */
-    int output_format;
+    int output_format; /**< Output file format (ELF, binary, COFF, ...). */
     /* nth test to run with -dt -run */
-    int run_test;
+    int run_test; /**< Index of the nth test to run with `-dt -run`. */
 
     /* array of all loaded dlls (including those referenced by loaded dlls) */
-    DLLReference **loaded_dlls;
-    int nb_loaded_dlls;
+    DLLReference **loaded_dlls; /**< Array of loaded dynamic library references. */
+    int nb_loaded_dlls; /**< Number of loaded dynamic libraries. */
 
     /* include paths */
-    char **include_paths;
-    int nb_include_paths;
+    char **include_paths; /**< Array of user include search paths. */
+    int nb_include_paths; /**< Number of user include paths. */
 
-    char **sysinclude_paths;
-    int nb_sysinclude_paths;
+    char **sysinclude_paths; /**< Array of system include search paths. */
+    int nb_sysinclude_paths; /**< Number of system include paths. */
 
     /* library paths */
-    char **library_paths;
-    int nb_library_paths;
+    char **library_paths; /**< Array of user library search paths. */
+    int nb_library_paths; /**< Number of user library paths. */
 
     /* crt?.o object path */
-    char **crt_paths;
-    int nb_crt_paths;
+    char **crt_paths; /**< Array of C runtime object file paths. */
+    int nb_crt_paths; /**< Number of C runtime object paths. */
 
     /* -D / -U options */
     CString cmdline_defs;
@@ -930,96 +964,96 @@ struct TCCState {
     CString cmdline_incl;
 
     /* error handling */
-    void *error_opaque;
-    void (*error_func)(void *opaque, const char *msg);
-    int error_set_jmp_enabled;
-    jmp_buf error_jmp_buf;
-    int nb_errors;
+    void *error_opaque; /**< Opaque context passed to the error/warning callback. */
+    void (*error_func)(void *opaque, const char *msg); /**< Error callback receiving the error context message. */
+    int error_set_jmp_enabled; /**< Whether error handling uses longjmp-based recovery. */
+    jmp_buf error_jmp_buf; /**< Long jump buffer used for error recovery. */
+    int nb_errors; /**< Number of errors encountered during compilation. */
 
     /* output file for preprocessing (-E) */
-    FILE *ppfp;
+    FILE *ppfp; /**< Output file for preprocessing (`-E`). */
 
     /* for -`MD`/-`MF`: collected dependencies for this compilation */
-    char **target_deps;
-    int nb_target_deps;
+    char **target_deps; /**< Array of source files collected as compilation dependencies (`-MD`/`-MF`). */
+    int nb_target_deps; /**< Number of collected dependency files. */
 
     /* compilation */
-    BufferedFile *include_stack[INCLUDE_STACK_SIZE];
-    BufferedFile **include_stack_ptr;
+    BufferedFile *include_stack[INCLUDE_STACK_SIZE]; /**< Stack of buffered input files (include nesting). */
+    BufferedFile **include_stack_ptr; /**< Pointer to the current top of the include stack. */
 
-    int ifdef_stack[IFDEF_STACK_SIZE];
-    int *ifdef_stack_ptr;
+    int ifdef_stack[IFDEF_STACK_SIZE]; /**< Stack of `#ifdef`/`#ifndef` conditional compilation states. */
+    int *ifdef_stack_ptr; /**< Pointer to the current position in the conditional stack. */
 
     /* included files enclosed with #ifndef `MACRO` */
-    int cached_includes_hash[CACHED_INCLUDES_HASH_SIZE];
-    CachedInclude **cached_includes;
-    int nb_cached_includes;
+    int cached_includes_hash[CACHED_INCLUDES_HASH_SIZE]; /**< Hash table of cached include guard states. */
+    CachedInclude **cached_includes; /**< Linked list of cached included files. */
+    int nb_cached_includes; /**< Number of cached included files. */
 
     /* #pragma pack stack */
-    int pack_stack[PACK_STACK_SIZE];
-    int *pack_stack_ptr;
-    char **pragma_libs;
-    int nb_pragma_libs;
+    int pack_stack[PACK_STACK_SIZE]; /**< Stack of `#pragma pack` alignment settings. */
+    int *pack_stack_ptr; /**< Pointer to the current position in the pack stack. */
+    char **pragma_libs; /**< Array of library names given via `#pragma lib`. */
+    int nb_pragma_libs; /**< Number of pragma libraries. */
 
     /* inline functions are stored as token lists and compiled last
        only if referenced */
-    struct InlineFunc **inline_fns;
-    int nb_inline_fns;
+    struct InlineFunc **inline_fns; /**< Array of deferred inline function definitions. */
+    int nb_inline_fns; /**< Number of deferred inline functions. */
 
     /* sections */
-    Section **sections;
-    int nb_sections; /* number of sections, including first dummy section */
+    Section **sections; /**< Array of section descriptors. */
+    int nb_sections; /**< Number of sections, including the first dummy section. */
 
-    Section **priv_sections;
-    int nb_priv_sections; /* number of private sections */
+    Section **priv_sections; /**< Array of private section descriptors. */
+    int nb_priv_sections; /**< Number of private sections. */
 
     /* predefined sections */
-    Section *text_section, *data_section, *rodata_section, *bss_section;
-    Section *common_section;
-    Section *cur_text_section; /* current section where function code is generated */
+    Section *text_section, *data_section, *rodata_section, *bss_section; /**< Predefined section pointers (text, data, read-only data, bss). */
+    Section *common_section; /**< Section holding common (tentative) symbols. */
+    Section *cur_text_section; /**< Current section where function code is generated. */
 #ifdef CONFIG_TCC_BCHECK
     /* bound check related sections */
-    Section *bounds_section; /* contains global data bound description */
-    Section *lbounds_section; /* contains local data bound description */
+    Section *bounds_section; /**< Section containing global data bound description. */
+    Section *lbounds_section; /**< Section containing local data bound description. */
 #endif
     /* symbol section */
-    union { Section *symtab_section, *symtab; }; /* historical alias */
+    union { Section *symtab_section, *symtab; }; /**< Historical alias for the symbol table section. */
     /* temporary dynamic symbol sections (for dll loading) */
-    Section *dynsymtab_section;
+    Section *dynsymtab_section; /**< Temporary dynamic symbol section (for dll loading). */
     /* exported dynamic symbol section */
-    Section *dynsym;
+    Section *dynsym; /**< Exported dynamic symbol section. */
     /* got & plt handling */
-    Section *got, *plt;
+    Section *got, *plt; /**< Global offset table and procedure linkage table sections. */
     /* exception handling */
-    Section *eh_frame_section;
-    Section *eh_frame_hdr_section;
-    unsigned long eh_start;
+    Section *eh_frame_section; /**< Exception handling frame section. */
+    Section *eh_frame_hdr_section; /**< Exception handling frame header section. */
+    unsigned long eh_start; /**< Start offset of the exception handling data. */
     /* debug sections */
-    Section *stab_section;
-    Section *dwarf_info_section;
-    Section *dwarf_abbrev_section;
-    Section *dwarf_line_section;
-    Section *dwarf_aranges_section;
-    Section *dwarf_str_section;
-    Section *dwarf_line_str_section;
-    int dwlo, dwhi; /* dwarf section range */
+    Section *stab_section; /**< Symbol table debug section. */
+    Section *dwarf_info_section; /**< `DWARF` debug info section. */
+    Section *dwarf_abbrev_section; /**< `DWARF` debug info abbrev section. */
+    Section *dwarf_line_section; /**< `DWARF` debug line section. */
+    Section *dwarf_aranges_section; /**< `DWARF` debug aranges section. */
+    Section *dwarf_str_section; /**< `DWARF` debug string table section. */
+    Section *dwarf_line_str_section; /**< `DWARF` debug line string table section. */
+    int dwlo, dwhi; /**< `DWARF` section range (low and high offsets). */
     /* test coverage */
-    Section *tcov_section;
+    Section *tcov_section; /**< Test coverage section. */
     /* debug state */
-    struct _tccdbg *dState;
+    struct _tccdbg *dState; /**< Pointer to the debug state structure. */
 
     /* extra attributes (eg. `GOT`/`PLT` value) for symtab symbols */
-    struct sym_attr *sym_attrs;
-    int nb_sym_attrs;
+    struct sym_attr *sym_attrs; /**< Array of extra symbol attributes. */
+    int nb_sym_attrs; /**< Number of extra symbol attributes. */
     /* ptr to next reloc entry reused */
-    ElfW_Rel *qrel;
+    ElfW_Rel *qrel; /**< Pointer to the next relocation entry to reuse. */
     #define qrel s1->qrel
 
-    addr_t tls_start, tls_end;
+    addr_t tls_start, tls_end; /**< Start and end addresses of the thread local storage. */
 
 #ifdef TCC_TARGET_RISCV64
-    struct pcrel_hi { addr_t addr, val; } **pcrel_hi_entries;
-    int nb_pcrel_hi_entries;
+    struct pcrel_hi { addr_t addr, val; } **pcrel_hi_entries; /**< Array of PC-relative high-part relocation entries. */
+    int nb_pcrel_hi_entries; /**< Number of PC-relative high-part relocation entries. */
 #endif
 
 #ifdef TCC_TARGET_PE
@@ -1099,9 +1133,12 @@ struct TCCState {
     int link_argc, link_optind;
 };
 
+/**
+ * @brief Command line input file specification (C source, library, object, ...).
+ */
 struct filespec {
-    char type;
-    char name[1];
+    char type; /**< File type classification of the input file. */
+    char name[1]; /**< Null-terminated file name of the input file. */
 };
 
 /* `The` current value can be: */
@@ -1341,18 +1378,57 @@ PUB_FUNC void _tcc_warning(const char *fmt, ...) PRINTF_LIKE(1,2);
     tcc_error("internal compiler error in %s:%d: %s", __FUNCTION__,__LINE__,msg)
 
 /* other utilities */
+/**
+ * @brief Growable pointer array used to track allocated resources for cleanup.
+ */
 ST_FUNC void dynarray_add(void *ptab, int *nb_ptr, void *data);
+/**
+ * @brief Reset the growable pointer array (freeing tracked entries if requested).
+ */
 ST_FUNC void dynarray_reset(void *pp, int *n);
+/**
+ * @brief Append a single character to a `CString` buffer.
+ */
 ST_INLN void cstr_ccat(CString *cstr, int ch);
+/**
+ * @brief Append a string to a `CString` buffer.
+ */
 ST_FUNC void cstr_cat(CString *cstr, const char *str, int len);
+/**
+ * @brief Append a wide character to a `CString` buffer.
+ */
 ST_FUNC void cstr_wccat(CString *cstr, int ch);
+/**
+ * @brief Initialize a `CString` buffer.
+ */
 ST_FUNC void cstr_new(CString *cstr);
+/**
+ * @brief Free a `CString` buffer.
+ */
 ST_FUNC void cstr_free(CString *cstr);
+/**
+ * @brief Format a string into a `CString` buffer.
+ */
 ST_FUNC int cstr_printf(CString *cs, const char *fmt, ...) PRINTF_LIKE(2,3);
+/**
+ * @brief Format a string from a varargs list into a `CString` buffer.
+ */
 ST_FUNC int cstr_vprintf(CString *cstr, const char *fmt, va_list ap);
+/**
+ * @brief Reset a `CString` buffer.
+ */
 ST_FUNC void cstr_reset(CString *cstr);
+/**
+ * @brief Open a buffered input file for the compiler.
+ */
 ST_FUNC void tcc_open_bf(TCCState *s1, const char *filename, int initlen);
+/**
+ * @brief Open and load a C source file into the compilation context.
+ */
 ST_FUNC int tcc_open(TCCState *s1, const char *filename);
+/**
+ * @brief Close the compiler buffered input state.
+ */
 ST_FUNC void tcc_close(void);
 
 /* mark a memory pointer on stack for cleanup after errors */
@@ -1362,6 +1438,10 @@ ST_FUNC void tcc_close(void);
 #define cstr_new_s(cstr) (cstr_new(cstr), stk_push(&(cstr)->data)) /**< `Initialize` scratch dynamic string buffer */
 #define cstr_free_s(cstr) (cstr_free(cstr), stk_pop()) /**< `Free` scratch dynamic string buffer */
 
+/**
+ * @brief Add a source, object, library or DLL file to the compilation context.
+ * @return `0` on success, `-1` on error, `FILE_NOT_FOUND` if the file does not exist.
+ */
 ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags);
 /* flags: */
 #define AFF_PRINT_ERROR     0x10 /**< print error if file not found */
@@ -1385,20 +1465,47 @@ ST_FUNC int tcc_add_file_internal(TCCState *s1, const char *filename, int flags)
 #define FILE_NOT_FOUND -2 /**< `Error` code indicating input file could not be found */
 #define FILE_NOT_RECOGNIZED -3 /**< unrecognized file type */
 
+/**
+ * @brief Add the C runtime startup object (`crt?.o`) to the compilation context.
+ */
 #ifndef ELF_OBJ_ONLY
 ST_FUNC int tcc_add_crt(TCCState *s, const char *filename);
 #endif
+/**
+ * @brief Add a dynamic library reference to the compilation context.
+ */
 ST_FUNC int tcc_add_dll(TCCState *s, const char *filename, int flags);
+/**
+ * @brief Add a support library or assembly support file to the compilation context.
+ */
 ST_FUNC int tcc_add_support(TCCState *s1, const char *filename);
 #ifdef CONFIG_TCC_BCHECK
+/**
+ * @brief Add the built-in memory and bounds checker runtime.
+ */
 ST_FUNC void tcc_add_bcheck(TCCState *s1);
 #endif
 #ifdef CONFIG_TCC_BACKTRACE
+/**
+ * @brief Add the stack backtrace runtime stub.
+ */
 ST_FUNC void tcc_add_btstub(TCCState *s1);
 #endif
+/**
+ * @brief Add libraries specified via `#pragma lib` to the compilation context.
+ */
 ST_FUNC void tcc_add_pragma_libs(TCCState *s1);
+/**
+ * @brief Add a library to the compilation context, returning an error code.
+ */
 PUB_FUNC int tcc_add_library_err(TCCState *s, const char *f);
+/**
+ * @brief Print compilation statistics for a finished compilation.
+ */
 PUB_FUNC void tcc_print_stats(TCCState *s, unsigned total_time);
+/**
+ * @brief Parse the compiler command line options into the compilation state.
+ */
 PUB_FUNC int tcc_parse_args(TCCState *s, int *argc, char ***argv);
 #ifdef _WIN32
 ST_FUNC char *normalize_slashes(char *path);
@@ -1458,6 +1565,9 @@ ST_DATA int pp_expr;
 #define IS_ID  2 /**< `Character` classification: identifier character */
 #define IS_NUM 4 /**< `Character` classification: numeric digit character */
 
+/**
+ * @brief Output format for line markers in preprocessed output (`-E`).
+ */
 enum line_macro_output_format {
     LINE_MACRO_OUTPUT_FORMAT_GCC,
     LINE_MACRO_OUTPUT_FORMAT_NONE,
@@ -1484,7 +1594,13 @@ ST_INLN Sym *define_find(int v);
 ST_FUNC void free_defines(Sym *b);
 ST_FUNC void parse_define(void);
 ST_FUNC void skip_to_eol(int warn);
+/**
+ * @brief Run the full preprocessor pass over the input.
+ */
 ST_FUNC void preprocess(int is_bof);
+/**
+ * @brief Fetch the next token, resolving macros as needed.
+ */
 ST_FUNC void next(void);
 ST_INLN void unget_tok(int last_tok);
 ST_FUNC void preprocess_start(TCCState *s1, int filetype);
@@ -1577,11 +1693,29 @@ ST_DATA char debug_modes;
 ST_DATA int nocode_wanted; /* true if no code generation wanted for an expression */
 ST_DATA int global_expr;  /* true if compound literals must be allocated globally (used during initializers parsing */
 
+/**
+ * @brief Initialize the code generator state for a compilation context.
+ */
 ST_FUNC void tccgen_init(TCCState *s1);
+/**
+ * @brief Compile the accumulated internal state into output code/objects.
+ */
 ST_FUNC int tccgen_compile(TCCState *s1);
+/**
+ * @brief Finalize the code generation and emit output sections.
+ */
 ST_FUNC void tccgen_finish(TCCState *s1);
+/**
+ * @brief Add a D language version identifier for conditional compilation.
+ */
 ST_FUNC void tcc_add_d_version(TCCState *s, const char *id);
+/**
+ * @brief Add a D language debug identifier for conditional compilation.
+ */
 ST_FUNC void tcc_add_d_debug(TCCState *s, const char *id);
+/**
+ * @brief Check that the expression value stack was not corrupted during code generation.
+ */
 ST_FUNC void check_vstack(void);
 
 ST_INLN int is_float(int t);
@@ -2063,6 +2197,9 @@ dwarf_read_sleb128(unsigned char **ln, unsigned char *end)
 /********************************************************/
 #if CONFIG_TCC_SEMLOCK
 #if defined _WIN32
+/**
+ * @brief Cross-platform counting semaphore used to serialize compiler state access.
+ */
 typedef struct { volatile LONG init; CRITICAL_SECTION cs; } TCCSem;
 static inline void wait_sem(TCCSem *p) {
     if (InterlockedCompareExchange(&p->init, 1, 0) == 0) {
