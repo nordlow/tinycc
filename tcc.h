@@ -474,6 +474,36 @@ typedef int nwchar_t;
 #endif
 
 /**
+ * @brief Non-owning immutable string slice view (pointer and length).
+ */
+typedef struct StringSlice {
+    const char *ptr;
+    size_t length;
+} StringSlice;
+
+static inline int slice_eq(StringSlice a, StringSlice b) {
+    return a.length == b.length && memcmp(a.ptr, b.ptr, a.length) == 0;
+}
+
+static inline const char *slice_memchr(StringSlice s, int c) {
+    return (const char *)memchr(s.ptr, c, s.length);
+}
+
+static inline const char *slice_memmem(StringSlice haystack, StringSlice needle) {
+    const char *p, *end;
+    if (needle.length == 0)
+        return haystack.ptr;
+    if (needle.length > haystack.length)
+        return NULL;
+    end = haystack.ptr + (haystack.length - needle.length);
+    for (p = haystack.ptr; p <= end; p++) {
+        if (p[0] == needle.ptr[0] && memcmp(p, needle.ptr, needle.length) == 0)
+            return p;
+    }
+    return NULL;
+}
+
+/**
  * @brief Dynamic string buffer descriptor used for preprocessor and identifier strings.
  */
 typedef struct CString {
