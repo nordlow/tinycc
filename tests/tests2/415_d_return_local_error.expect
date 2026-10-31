@@ -1,0 +1,1 @@
+415_d_return_local_error.c:3: error: returning address of local variable 'x'

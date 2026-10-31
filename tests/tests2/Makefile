@@ -235,6 +235,10 @@ endif
 412_d_final_variable.test : GEN = $(GEN-TCC)
 413_d_final_variable_error.test : FLAGS += -dt -lang=d
 413_d_final_variable_error.test : GEN = $(GEN-TCC)
+414_d_stack_assignment_error.test : FLAGS += -dt -lang=d
+414_d_stack_assignment_error.test : GEN = $(GEN-TCC)
+415_d_return_local_error.test : FLAGS += -dt -lang=d
+415_d_return_local_error.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
 

@@ -4116,6 +4116,22 @@ ST_FUNC void vstore(void)
     dbt = ft & VT_BTYPE;
     verify_assign_cast(&vtop[-1].type);
 
+    if (vtop >= vstack + 1 &&
+        (vtop[-1].r & VT_SYM || (vtop[-1].r & VT_VALMASK) == VT_LOCAL || (vtop[-1].r & VT_VALMASK) == VT_LLOCAL || (vtop[-1].r & VT_LVAL)) &&
+        vtop[-1].sym && vtop[-1].sym->sym_scope == 0 &&
+        (vtop->r & VT_SYM || (vtop->r & VT_VALMASK) == VT_LOCAL || (vtop->r & VT_VALMASK) == VT_LLOCAL || (vtop->r & VT_LVAL)) &&
+        vtop->sym && vtop->sym->sym_scope > 0 && !(vtop->sym->type.t & VT_STATIC) &&
+        sbt == VT_PTR) {
+        if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
+            tcc_error("assignment of address of stack variable '%s' to global/static storage", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
+        else {
+            if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+            if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+        }
+    }
+
     if ((vtop[-1].r & VT_LVAL) && vtop[-1].sym && vtop[-1].sym->a.final_var) {
         if (vtop[-1].sym->a.assigned)
             tcc_error("assignment to final variable '%s'", get_tok_str(vtop[-1].sym->v & ~SYM_FIELD, NULL));
@@ -9134,6 +9150,18 @@ again:
         if (tok != ';') {
             gexpr();
             if (b) {
+                if (vtop >= vstack && (func_vt.t & VT_BTYPE) == VT_PTR &&
+                    (vtop->r & VT_SYM || (vtop->r & VT_VALMASK) == VT_LOCAL || (vtop->r & VT_VALMASK) == VT_LLOCAL || (vtop->r & VT_LVAL)) &&
+                    vtop->sym && vtop->sym->sym_scope > 0 && !(vtop->sym->type.t & VT_STATIC)) {
+                    if (cur_scope->fn.safety == FUNC_SAFETY_SAFE)
+                        tcc_error("returning address of local variable '%s'", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
+                    else {
+                        if (cur_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                            cur_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                        if (root_scope->fn.safety == FUNC_SAFETY_UNKNOWN)
+                            root_scope->fn.safety = FUNC_SAFETY_INFERRED_SYSTEM;
+                    }
+                }
                 gen_assign_cast(&func_vt);
             } else {
                 if (vtop->type.t != VT_VOID)

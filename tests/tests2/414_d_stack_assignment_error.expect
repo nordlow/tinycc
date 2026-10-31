@@ -1,0 +1,1 @@
+414_d_stack_assignment_error.c:5: error: assignment of address of stack variable 'x' to global/static storage
