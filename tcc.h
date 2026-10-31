@@ -852,6 +852,7 @@ struct TCCState {
     unsigned char gnu89_inline; /**< Whether `extern inline` is treated like `static inline`. */
     unsigned char unwind_tables; /**< Whether an `eh_frame` exception handling section is generated. */
     unsigned char lang_d; /**< Whether extended D language semantics are enabled (`-lang=d`). */
+    unsigned char diagnostics_show_column; /**< Whether to display column numbers in diagnostics (-f[no-]diagnostics-show-column). */
     /* D conditional compilation (version and debug blocks).  */
     char **d_version_ids; /**< Array of D language version identifiers for conditional compilation. */
     int nb_d_version_ids; /**< Number of D language version identifiers. */

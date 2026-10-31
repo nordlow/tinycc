@@ -1,0 +1,1 @@
+411_d_diagnostics_column.c:8:13: error: cannot copy @nocopy instance 'f2'

@@ -667,7 +667,19 @@ static void error1(int mode, const char *fmt, va_list ap)
                 (*pf)->filename, (*pf)->line_num - 1);
         if (0 == line)
             line = f->line_num - ((tok_flags & TOK_FLAG_BOL) && !macro_ptr);
-        cstr_printf(&cs, "%s:%d: ", f->filename, line);
+        if (s1 && s1->diagnostics_show_column) {
+            int col = 1;
+            uint8_t *p = f->buf_ptr;
+            if (p) {
+                while (p > f->buffer && p[-1] != '\n' && p[-1] != '\r') {
+                    p--;
+                    col++;
+                }
+            }
+            cstr_printf(&cs, "%s:%d:%d: ", f->filename, line, col);
+        } else {
+            cstr_printf(&cs, "%s:%d: ", f->filename, line);
+        }
     } else if (s1->current_filename) {
         cstr_printf(&cs, "%s: ", s1->current_filename);
     } else {
@@ -1784,9 +1796,9 @@ static const FlagDef options_f[] = {
     { offsetof(TCCState, reverse_funcargs), 0, "reverse-funcargs" },
     { offsetof(TCCState, gnu89_inline), 0, "gnu89-inline" },
     { offsetof(TCCState, unwind_tables), 0, "asynchronous-unwind-tables" },
+    { offsetof(TCCState, diagnostics_show_column), 0, "diagnostics-show-column" },
     { 0, 0, NULL }
 };
-
 static const FlagDef options_m[] = {
     { offsetof(TCCState, ms_bitfields), 0, "ms-bitfields" },
 #ifdef TCC_TARGET_X86_64
