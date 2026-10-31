@@ -239,7 +239,8 @@ endif
 414_d_stack_assignment_error.test : GEN = $(GEN-TCC)
 415_d_return_local_error.test : FLAGS += -dt -lang=d
 415_d_return_local_error.test : GEN = $(GEN-TCC)
-104_inline.test : FLAGS += $(subst 104,104+,$1)
+416_d_stack_address_false_positives.test : FLAGS += -lang=d
+416_d_stack_address_false_positives.test : GEN = $(GEN-TCC)
 104_inline.test : GEN = $(GEN-TCC)
 
 

@@ -4112,7 +4112,8 @@ static void check_stack_address_escape(Sym *dest_sym, Sym *src_sym, int is_retur
     int is_warn = tcc_state->warn_stack_address_escape;
     if (is_return) {
         if (vtop >= vstack && (fn_vt->t & VT_BTYPE) == VT_PTR &&
-            src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC)) {
+            src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC) &&
+            ((src_sym->type.t & VT_ARRAY) || ((src_sym->type.t & VT_BTYPE) != VT_PTR))) {
             if (is_error)
                 tcc_error("returning address of local variable '%s'", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
             else if (is_warn)
@@ -4127,7 +4128,8 @@ static void check_stack_address_escape(Sym *dest_sym, Sym *src_sym, int is_retur
     } else {
         if (vtop >= vstack + 1 &&
             (dest_sym && dest_sym->sym_scope == 0) &&
-            (src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC))) {
+            (src_sym && src_sym->sym_scope > 0 && !(src_sym->type.t & VT_STATIC) &&
+             ((src_sym->type.t & VT_ARRAY) || ((src_sym->type.t & VT_BTYPE) != VT_PTR)))) {
             if (is_error)
                 tcc_error("assignment of address of stack variable '%s' to global/static storage", get_tok_str(src_sym->v & ~SYM_FIELD, NULL));
             else if (is_warn)
