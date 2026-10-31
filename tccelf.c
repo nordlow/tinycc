@@ -57,6 +57,9 @@ static const char rdata[] = ".data.ro";
 
 /* ------------------------------------------------------------------------- */
 
+/**
+ * @brief Create the standard ELF output sections and dynamic symbol tables.
+ */
 ST_FUNC void tccelf_new(TCCState *s)
 {
     TCCState *s1 = s;
@@ -183,6 +186,9 @@ static void update_relocs(TCCState *s1, Section *s, int *old_to_new_syms, int fi
 
 /* At the end of compilation, convert any UNDEF syms to global, and merge
    with previously existing symbols */
+/**
+ * @brief Close the current compilation file, resolve undefined symbols and finalize.
+ */
 ST_FUNC void tccelf_end_file(TCCState *s1)
 {
     Section *s = s1->symtab;
@@ -226,6 +232,9 @@ ST_FUNC void tccelf_end_file(TCCState *s1)
     }
 }
 
+/**
+ * @brief Create a new section in the compilation context.
+ */
 ST_FUNC Section *new_section(TCCState *s1, const char *name, int sh_type, int sh_flags)
 {
     Section *sec;
@@ -1824,6 +1833,9 @@ ST_FUNC void tccelf_add_crtend(TCCState *s1)
 
 #ifndef TCC_TARGET_PE
 /* add tcc runtime libraries */
+/**
+ * @brief Add the standard runtime support library to the compilation context.
+ */
 ST_FUNC void tcc_add_runtime(TCCState *s1)
 {
     s1->filetype = 0;
@@ -2684,6 +2696,9 @@ static void update_reloc_sections(TCCState *s1, struct dyn_inf *dyninf)
 
 /* Create an ELF file on disk.
    This function handle ELF specific layout requirements */
+/**
+ * @brief Write the final ELF output image to a file.
+ */
 static int tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr)
 {
     int i, shnum, offset, size, file_type;
@@ -2800,6 +2815,9 @@ static int tcc_output_elf(TCCState *s1, FILE *f, int phnum, ElfW(Phdr) *phdr)
     return 0;
 }
 
+/**
+ * @brief Write a raw binary output image to a file.
+ */
 static int tcc_output_binary(TCCState *s1, FILE *f)
 {
     Section *s;
@@ -3691,6 +3709,9 @@ static int tcc_load_alacarte(TCCState *s1, int fd, int size, int entrysize)
 }
 
 /* load a '.a' file */
+/**
+ * @brief Load an archive (alacarte or full) into the compilation context.
+ */
 ST_FUNC int tcc_load_archive(TCCState *s1, int fd, int alacarte)
 {
     ArchiveHeader hdr;
@@ -3863,6 +3884,9 @@ static void store_version(TCCState *s1, struct versym_info *v, char *dynstr)
 /* load a library / DLL
    'level = 0' means that the DLL is referenced by the user
    (so it should be added as DT_NEEDED in the generated ELF file) */
+/**
+ * @brief Load a dynamic library referenced by the compiled program.
+ */
 ST_FUNC int tcc_load_dll(TCCState *s1, int fd, const char *filename, int level)
 {
     ElfW(Ehdr) ehdr;
