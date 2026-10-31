@@ -97,6 +97,9 @@ static const unsigned char tok_two_chars[] =
     0
 };
 
+/**
+ * @brief Skip the expected token, reporting an error if it does not match.
+ */
 ST_FUNC void skip(int c)
 {
     if (tok != c) {
@@ -107,6 +110,9 @@ ST_FUNC void skip(int c)
     next();
 }
 
+/**
+ * @brief Report that the expected token was not found and abort.
+ */
 ST_FUNC void expect(const char *msg)
 {
     tcc_error("%s expected", msg);
@@ -460,6 +466,9 @@ static void add_char(CString *cstr, int c)
 
 /* ------------------------------------------------------------------------- */
 /* allocate a new token */
+/**
+ * @brief Allocate a new token symbol entry in the identifier hash table.
+ */
 static TokenSym *tok_alloc_new(TokenSym **pts, const char *str, int len)
 {
     TokenSym *ts, **ptable;
@@ -637,6 +646,9 @@ ST_FUNC const char *get_tok_str(int v, CValue *cv)
 
 /* return the current character, handling end of block if necessary
    (but not stray) */
+/**
+ * @brief Handle end-of-buffer detection, refilling or erroring the input.
+ */
 static int handle_eob(void)
 {
     BufferedFile *bf = file;
@@ -670,6 +682,9 @@ static int handle_eob(void)
 }
 
 /* read next char from current input file and handle end of input buffer */
+/**
+ * @brief Read the next character from the input buffer.
+ */
 static int next_c(void)
 {
     int ch = *++file->buf_ptr;
@@ -735,6 +750,9 @@ static int handle_stray(uint8_t **p)
         c = handle_stray(&p); \
 }
 
+/**
+ * @brief Skip whitespace characters in the input.
+ */
 static int skip_spaces(void)
 {
     int ch;
@@ -746,6 +764,9 @@ static int skip_spaces(void)
 }
 
 /* single line C++ comments */
+/**
+ * @brief Scan a line comment up to its end.
+ */
 static uint8_t *parse_line_comment(uint8_t *p)
 {
     size_t rem;
@@ -789,6 +810,9 @@ static uint8_t *parse_line_comment(uint8_t *p)
 }
 
 /* C comments */
+/**
+ * @brief Scan a C comment (line or block) up to its end.
+ */
 static uint8_t *parse_comment(uint8_t *p)
 {
     int c;
@@ -828,6 +852,9 @@ static uint8_t *parse_comment(uint8_t *p)
 }
 
 /* parse a string without interpreting escapes */
+/**
+ * @brief Scan a preprocessor string literal, decoding escapes into `str`.
+ */
 static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
 {
     int c;
@@ -911,6 +938,9 @@ static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
 
 /* skip block of text until #else, #elif or #endif. skip also pairs of
    #if/#endif */
+/**
+ * @brief Skip preprocessing tokens until the end of the current conditional block.
+ */
 static void preprocess_skip(void)
 {
     int a, start_of_line, c, in_warn_or_error;
@@ -1269,6 +1299,9 @@ static inline void tok_get(int *t, const int **pp, CValue *cv)
     } while (0)
 #endif
 
+/**
+ * @brief Check whether two macro token streams are equal.
+ */
 static int macro_is_equal(const int *a, const int *b)
 {
     CValue cv;
@@ -1332,6 +1365,9 @@ ST_FUNC void free_defines(Sym *b)
 }
 
 /* fake the nth "#if defined `test_`..." for tcc -dt -run */
+/**
+ * @brief Possibly run a `test_*` function after processing a file.
+ */
 static void maybe_run_test(TCCState *s)
 {
     const char *p;
@@ -1472,6 +1508,9 @@ static int parse_include(TCCState *s1, int do_next, int test)
 }
 
 /* eval an expression for #if/#elif */
+/**
+ * @brief Evaluate a preprocessor conditional expression and set the token state.
+ */
 static int expr_preprocess(TCCState *s1)
 {
     int c, t;
@@ -1691,6 +1730,9 @@ static CachedInclude *search_cached_include(TCCState *s1, const char *filename, 
     return e;
 }
 
+/**
+ * @brief Parse `#pragma` directives and handle macro/library pragmas.
+ */
 static int pragma_parse(TCCState *s1)
 {
     next_nomacro();
@@ -1806,6 +1848,9 @@ pragma_err:
 }
 
 /* put alternative filename */
+/**
+ * @brief Open and add a file to the preprocessor input stack.
+ */
 ST_FUNC void tccpp_putfile(const char *filename)
 {
     char buf[1024];
@@ -1829,6 +1874,9 @@ ST_FUNC void tccpp_putfile(const char *filename)
 }
 
 /* `is_bof` is true if first non space token at beginning of file */
+/**
+ * @brief Run the full preprocessing pass over the input file.
+ */
 ST_FUNC void preprocess(int is_bof)
 {
     TCCState *s1 = tcc_state;
