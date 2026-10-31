@@ -4013,10 +4013,10 @@ static void verify_assign_cast(CType *dt)
     st = &vtop->type; /* source type */
     dbt = dt->t & VT_BTYPE;
     sbt = st->t & VT_BTYPE;
+    if ((vtop->r & VT_LVAL) && vtop->sym && vtop->sym->a.nocopy)
+        tcc_error("cannot copy @nocopy instance '%s'", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
     if (sbt == VT_STRUCT && st->ref && st->ref->a.nocopy)
         tcc_error("rhs struct '%s' is not copyable (or aliasable)", get_tok_str(st->ref->v & ~SYM_STRUCT, NULL));
-    if (dbt == VT_STRUCT && dt->ref && dt->ref->a.nocopy)
-        tcc_error("struct '%s' is non-copyable", get_tok_str(dt->ref->v & ~SYM_STRUCT, NULL));
     if (dt->t & VT_CONSTANT)
         tcc_warning("assignment of read-only location");
     switch(dbt) {
@@ -5522,6 +5522,9 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                     ad->f.func_safety = FUNC_SAFETY_TRUSTED;
                     next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "nocopy")) {
+                    ad->a.nocopy = 1;
+                    next();
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "noinit")) {
                     ad->noinit = 1;
                     next();
@@ -5859,6 +5862,9 @@ static void parse_d_attributes(AttributeDef *ad)
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                 ad->f.func_safety = FUNC_SAFETY_TRUSTED;
+                next();
+            } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "nocopy")) {
+                ad->a.nocopy = 1;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "noinit")) {
                 ad->noinit = 1;
@@ -6361,9 +6367,10 @@ static void gfunc_param_typed(Sym *func, Sym *arg)
     int func_type;
     CType type;
 
+    if ((vtop->r & VT_LVAL) && vtop->sym && vtop->sym->a.nocopy)
+        tcc_error("cannot copy @nocopy instance '%s'", get_tok_str(vtop->sym->v & ~SYM_FIELD, NULL));
     if ((vtop->type.t & VT_BTYPE) == VT_STRUCT && vtop->type.ref && vtop->type.ref->a.nocopy)
         tcc_error("struct '%s' is non-copyable", get_tok_str(vtop->type.ref->v & ~SYM_STRUCT, NULL));
-
     func_type = func->f.func_type;
     if (func_type == FUNC_OLD ||
         (func_type == FUNC_ELLIPSIS && arg == NULL)) {
@@ -11576,7 +11583,7 @@ static int decl(int l)
     ElfSym *esym;
 
     while (1) {
-
+        memset(&adbase, 0, sizeof(adbase));
         oldint = 0;
         if (check_d_conditional(l, 0))
             continue;

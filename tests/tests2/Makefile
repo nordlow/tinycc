@@ -225,6 +225,10 @@ endif
 407_unused_warnings.test : FILTER = | sed -e 's,.*/,,g'
 408_d_scoped_enum.test : FLAGS += -lang=d
 408_d_scoped_enum.test : GEN = $(GEN-TCC)
+409_d_nocopy_instance.test : FLAGS += -lang=d
+409_d_nocopy_instance.test : GEN = $(GEN-TCC)
+410_d_nocopy_instance_error.test : FLAGS += -dt -lang=d
+410_d_nocopy_instance_error.test : GEN = $(GEN-TCC)
 104_inline.test : FLAGS += $(subst 104,104+,$1)
 104_inline.test : GEN = $(GEN-TCC)
 
