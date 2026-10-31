@@ -963,6 +963,9 @@ static void vcheck_cmp(void)
         gv(RC_INT);
 }
 
+/**
+ * @brief Push a value descriptor onto the expression value stack.
+ */
 static void vsetc(CType *type, int r, CValue *vc)
 {
     if (vtop >= vstack + (VSTACK_SIZE - 1))
@@ -977,6 +980,9 @@ static void vsetc(CType *type, int r, CValue *vc)
     dump_vstack("push");
 }
 
+/**
+ * @brief Swap the top two value stack entries.
+ */
 ST_FUNC void vswap(void)
 {
     SValue tmp;
@@ -988,7 +994,9 @@ ST_FUNC void vswap(void)
     dump_vstack("swap");
 }
 
-/* pop stack value */
+/**
+ * @brief Pop the top value stack entry, restoring CPU flags or jump state if needed.
+ */
 ST_FUNC void vpop(void)
 {
     int v;
@@ -1009,12 +1017,18 @@ ST_FUNC void vpop(void)
 }
 
 /* push constant of type "type" with useless value */
+/**
+ * @brief Push a type descriptor with an undefined constant value.
+ */
 static void vpush(CType *type)
 {
     vset(type, VT_CONST, 0);
 }
 
 /* push arbitrary 64bit constant */
+/**
+ * @brief Push a 64-bit integer constant onto the value stack.
+ */
 static void vpush64(int ty, unsigned long long v)
 {
     CValue cval;
@@ -1026,23 +1040,35 @@ static void vpush64(int ty, unsigned long long v)
 }
 
 /* push integer constant */
+/**
+ * @brief Push an integer constant onto the value stack.
+ */
 ST_FUNC void vpushi(int v)
 {
     vpush64(VT_INT, v);
 }
 
 /* push a pointer sized constant */
+/**
+ * @brief Push a pointer-sized constant onto the value stack.
+ */
 static void vpushs(addr_t v)
 {
     vpush64(VT_SIZE_T, v);
 }
 
 /* push long long constant */
+/**
+ * @brief Push a 64-bit `long long` constant onto the value stack.
+ */
 static inline void vpushll(long long v)
 {
     vpush64(VT_LLONG, v);
 }
 
+/**
+ * @brief Push an integer value onto the value stack with an explicit type.
+ */
 ST_FUNC void vset(CType *type, int r, int v)
 {
     CValue cval;
@@ -1050,6 +1076,9 @@ ST_FUNC void vset(CType *type, int r, int v)
     vsetc(type, r, &cval);
 }
 
+/**
+ * @brief Push an integer value onto the value stack with an `int` type.
+ */
 static void vseti(int r, int v)
 {
     CType type;
@@ -1058,6 +1087,9 @@ static void vseti(int r, int v)
     vset(&type, r, v);
 }
 
+/**
+ * @brief Push a value descriptor onto the value stack.
+ */
 ST_FUNC void vpushv(SValue *v)
 {
     if (vtop >= vstack + (VSTACK_SIZE - 1))
@@ -1067,12 +1099,18 @@ ST_FUNC void vpushv(SValue *v)
     dump_vstack("pushv");
 }
 
+/**
+ * @brief Push a copy of an existing value stack entry.
+ */
 static void vdup(void)
 {
     vpushv(vtop);
 }
 
 /* rotate the stack element at position n-1 to the top */
+/**
+ * @brief Rotate the stack element at position n-1 to the top.
+ */
 ST_FUNC void vrotb(int n)
 {
     SValue tmp;
@@ -1085,6 +1123,9 @@ ST_FUNC void vrotb(int n)
 }
 
 /* rotate the top stack element into position n-1 */
+/**
+ * @brief Rotate the top stack element into position n-1.
+ */
 ST_FUNC void vrott(int n)
 {
     SValue tmp;
@@ -1098,6 +1139,9 @@ ST_FUNC void vrott(int n)
 }
 
 /* reverse order of the the first n stack elements */
+/**
+ * @brief Reverse the order of the first n stack elements.
+ */
 ST_FUNC void vrev(int n)
 {
     int i;
@@ -1112,6 +1156,9 @@ ST_FUNC void vrev(int n)
 /* vtop->r = `VT_CMP` means `CPU`-flags have been set from comparison or test. */
 
 /* called from generators to set the result from relational ops  */
+/**
+ * @brief Set the value stack top to hold a pending comparison result (`VT_CMP`).
+ */
 ST_FUNC void vset_VT_CMP(int op)
 {
     vtop->r = VT_CMP;
@@ -1121,6 +1168,9 @@ ST_FUNC void vset_VT_CMP(int op)
 }
 
 /* called once before asking generators to load `VT_CMP` to a register */
+/**
+ * @brief Materialize the pending comparison (`VT_CMP`) into a jump decision.
+ */
 static void vset_VT_JMP(void)
 {
     int op = vtop->cmp_op;
