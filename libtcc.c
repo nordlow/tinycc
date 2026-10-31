@@ -1806,9 +1806,9 @@ static const FlagDef options_m[] = {
 #ifdef TCC_TARGET_X86_64
     { offsetof(TCCState, nosse), FD_INVERT, "sse" },
 #endif
+    { offsetof(TCCState, ms_bitfields), 0, "ms-bitfields" },
     { 0, 0, NULL }
 };
-
 static int set_flag(TCCState *s, const FlagDef *flags, const char *name)
 {
     int value, mask, ret, group_flags;
