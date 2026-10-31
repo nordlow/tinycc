@@ -1,46 +1,58 @@
-# `@scoped` Support on Instances
+# `@scoped` Support on Instances (Transitive by Default)
 
-Add `@scoped` support on instance declarations, similar to D's
-`scope` attribute for variables and instances.
+Add `@scoped` support on instance declarations, drawing inspiration from
+Pony's transitive reference guarantees rather than D's weaker,
+non-transitive `scope` semantics.
+
+## Design Decision: Transitivity
+
+**Should `@scoped` be transitive? Yes.**
+
+D's `scope` attribute has historically suffered from non-transitivity
+gaps (addressed piecemeal in later D language proposals like DIP1000),
+where an object itself is scoped but pointers or references stored
+inside its fields could escape.
+
+Taking inspiration from Pony's type system—where reference capabilities
+and isolation guarantees apply transitively across the entire object
+graph reachable through fields—`@scoped` in tinypc MUST be **transitive
+by default**:
+
+1. **Transitive Lifetime Bounds:** If an instance `x` is marked
+   `@scoped`, every pointer, reference, or aggregate field transitively
+   reachable from `x` inherits the scoped lifetime constraint.
+2. **Leak Prevention:** Extracting or assigning a pointer/reference field
+   from a `@scoped` instance to any destination with a broader
+   lifetime (global variables, heap allocations, or outer scopes) is a
+   compile-time error.
 
 ## Goal
 
 - Accept `@scoped` as a variable attribute/modifier (`@scoped T x;` or
   `T x @scoped;`) in D language mode (`-lang=d`).
-- Track scope boundaries and nesting levels for local variables and
-  instances.
-- Enforce escape analysis rules at compile time: prevent `@scoped`
-  instances or references from escaping their enclosing scope (e.g.
-  via assignment to outer/global variables, returning from a
-  function, or capturing in heap allocations).
+- Enforce **transitive** escape analysis at compile time: prevent
+  `@scoped` instances and any transitively nested references from
+  escaping their enclosing scope.
 - Issue precise diagnostic errors on scope violations.
-
-## Motivation
-
-In systems programming, ensuring that resources or objects do not
-escape their enclosing scope (preventing heap escape, dangling
-pointers, or reference leaks) is essential for memory safety and
-deterministic lifetime management. D's `scope` storage class ensures
-that references or instances cannot escape the scope in which they
-are defined, enabling stack allocation guarantees and preventing
-lifetime mismatches.
 
 ## Surface Syntax
 
 Gated on `-lang=d` mode:
 
 ```c
+struct Node {
+    int *ptr;
+};
+
 void foo() {
-    @scoped Buffer buf = allocate_buffer();
-    // global_buf = buf;    /* Error: @scoped instance escapes scope */
-    // return buf;          /* Error: returning @scoped instance */
-    use_buffer(&buf);       /* OK: remains within local scope */
+    int local_val = 42;
+    @scoped struct Node n;
+    n.ptr = &local_val;  /* OK: both scoped / local */
+
+    // global_ptr = n.ptr; /* Error: transitive escape of scoped reference */
+    // return n.ptr;       /* Error: returning pointer from scoped instance */
 }
 ```
-
-- `@scoped` is parsed by `parse_d_attributes()` (`tccgen.c`).
-- Supported both as a prefix attribute (`@scoped T x`) and suffix
-  modifier (`T x @scoped`).
 
 ## Implementation Plan
 
@@ -49,38 +61,36 @@ void foo() {
 1. **Token definition (`tcctok.h`):**
    - Register `TOK_scoped` or handle as a D attribute keyword.
 2. **Attribute structure (`tcc.h`):**
-   - Add `int scoped;` flag to `AttributeDef` and `Sym` structs to mark
-     variables and instances as scoped.
+   - Add `int scoped;` flag to `AttributeDef`, `Sym`, and `CType`
+     structs to mark types, variables, and instances as transitively
+     scoped.
 
-### Phase 2: Parsing & Scope Tracking
+### Phase 2: Parsing & Propagation
 
 1. **`parse_d_attributes()` (`tccgen.c`):**
    - Recognize `@scoped` in `parse_d_attributes()` and set
      `ad->scoped = 1`.
-2. **Scope Nesting Depth (`Scope` struct in `tcc.h` / `tccgen.c`):**
-   - Track block depth or scope level (`scope_level` / `local_stack`)
-     for each declared symbol.
-   - Record the scope depth at which a `@scoped` instance is declared.
+2. **Transitive Type Qualification (`CType`):**
+   - When a struct or pointer type contains or is qualified with
+     `@scoped`, propagate the scoped property transitively to member
+     accesses (`.` and `->`).
 
-### Phase 3: Escape Analysis & Semantic Checks
+### Phase 3: Transitive Escape Analysis & Checks
 
-1. **Assignment Checks (`gassign()` in `tccgen.c`):**
-   - Check assignments where a `@scoped` variable is assigned to a
-     target with a broader lifetime (global variables, static variables,
-     heap-allocated buffers, or variables declared at an outer scope
-     level with a smaller nesting depth).
-   - Emit compile error: `"@scoped instance '%s' cannot escape its scope"`
+1. **Assignment & Field Extraction Checks (`gassign()` & member access):**
+   - When accessing fields of a `@scoped` instance (`n.ptr`), ensure the
+     resulting expression retains the scoped/restricted provenance.
+   - Disallow assigning or copying such scoped references to targets
+     with wider lifetimes (globals, statics, outer scopes).
+   - Emit compile error: `"transitive escape of @scoped reference '%s'"`
      via `tcc_error_noabort()`.
 2. **Return Statement Checks (`parse_return()` in `tccgen.c`):**
-   - When returning an expression from a function, if the expression
-     references a `@scoped` variable or instance declared inside the
-     function scope, emit a compile error:
-     `"cannot return @scoped variable '%s'"` via
-     `tcc_error_noabort()`.
+   - Disallow returning any `@scoped` instance or any pointer/reference
+     extracted from a `@scoped` instance.
 
 ## Acceptance Criteria
 
-- Support for `@scoped` attribute on local instance definitions.
-- Compile-time escape analysis detecting assignments to wider scopes
-  and returns of scoped variables.
-- Successful building and regression test suite under `tests/tests2/`.
+- Transitive `@scoped` attribute enforcement on local instances and
+  their fields.
+- Compile-time error emission on transitive escape of scoped references.
+- Regression test suite under `tests/tests2/`.
