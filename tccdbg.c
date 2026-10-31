@@ -434,6 +434,9 @@ struct _tccdbg {
 static int put_stabs(TCCState *s1, const char *str, int type, int other,
     int desc, unsigned long value);
 
+/**
+ * @brief Initialize debug information sections for the compilation state.
+ */
 ST_FUNC void tcc_debug_new(TCCState *s1)
 {
     int shf = 0;
@@ -805,6 +808,9 @@ static void dwarf_sleb128_op (TCCState *s1, long long value)
 }
 
 #if TCC_EH_FRAME
+/**
+ * @brief Emit the `.eh_frame` unwind table header and start of the table.
+ */
 ST_FUNC void tcc_eh_frame_start(TCCState *s1)
 {
     if (!s1->unwind_tables)
@@ -997,6 +1003,9 @@ static void tcc_debug_frame_end(TCCState *s1, int size)
 	      eh_frame_section->data_offset - fde_start - 4);
 }
 
+/**
+ * @brief Finalize the `.eh_frame` unwind table, writing its total size.
+ */
 ST_FUNC void tcc_eh_frame_end(TCCState *s1)
 {
     if (!eh_frame_section)
@@ -1017,6 +1026,10 @@ static int sort_eh_table(const void *a, const void *b)
     return pc1 < pc2 ? -1 : pc1 > pc2 ? 1 : 0;
 }
 
+/**
+ * @brief Emit the unwind table header section of the `.eh_frame` output.
+ * @param final when non-zero, write the final section header entry.
+ */
 ST_FUNC void tcc_eh_frame_hdr(TCCState *s1, int final)
 {
     int count = 0, offset;
@@ -1099,6 +1112,9 @@ next:
 #endif
 
 /* start of translation unit info */
+/**
+ * @brief Start recording debug information for a new compilation unit.
+ */
 ST_FUNC void tcc_debug_start(TCCState *s1)
 {
     int i;
@@ -1291,6 +1307,9 @@ ST_FUNC void tcc_debug_start(TCCState *s1)
 static void fix_debug_forw_hash(TCCState *s1, int global, int start);
 
 /* put end of translation unit info */
+/**
+ * @brief Finalize and write out all accumulated debug information.
+ */
 ST_FUNC void tcc_debug_end(TCCState *s1)
 {
 
@@ -1435,6 +1454,9 @@ static BufferedFile* put_new_file(TCCState *s1)
 }
 
 /* put alternative filename */
+/**
+ * @brief Start recording debug information for a new input file.
+ */
 ST_FUNC void tcc_debug_newfile(TCCState *s1)
 {
     if (!s1->do_debug)
@@ -1445,6 +1467,9 @@ ST_FUNC void tcc_debug_newfile(TCCState *s1)
 }
 
 /* begin of #include */
+/**
+ * @brief Start a debug file entry for a `#include` directive.
+ */
 ST_FUNC void tcc_debug_bincl(TCCState *s1)
 {
     if (!s1->do_debug)
@@ -1457,6 +1482,9 @@ ST_FUNC void tcc_debug_bincl(TCCState *s1)
 }
 
 /* end of #include */
+/**
+ * @brief Finish a debug file entry for a `#include` directive.
+ */
 ST_FUNC void tcc_debug_eincl(TCCState *s1)
 {
     if (!s1->do_debug)
@@ -1469,6 +1497,9 @@ ST_FUNC void tcc_debug_eincl(TCCState *s1)
 }
 
 /* generate line number info */
+/**
+ * @brief Record the current source line in the debug line table.
+ */
 ST_FUNC void tcc_debug_line(TCCState *s1)
 {
     BufferedFile *f;
@@ -1591,6 +1622,11 @@ static void fix_debug_forw_hash(TCCState *s1, int global, int start)
     }
 }
 
+/**
+ * @brief Record a source line number in the debug line table.
+ * @param type the debug line entry type (e.g. `N_SLINE`).
+ * @param value the source line number.
+ */
 ST_FUNC void tcc_debug_stabn(TCCState *s1, int type, int value)
 {
     if (!s1->do_debug)
@@ -2273,6 +2309,11 @@ static void tcc_debug_finish (TCCState *s1, struct _debug_info *cur)
     }
 }
 
+/**
+ * @brief Record debug information for local variables and parameters of a function.
+ * @param s start symbol of the function scope.
+ * @param e end symbol of the function scope, or `NULL` for the whole function.
+ */
 ST_FUNC void tcc_add_debug_info(TCCState *s1, Sym *s, Sym *e)
 {
     CString debug_str;
@@ -2305,6 +2346,10 @@ ST_FUNC void tcc_add_debug_info(TCCState *s1, Sym *s, Sym *e)
 }
 
 /* put function symbol */
+/**
+ * @brief Start recording debug information for a function symbol.
+ * @param sym the function symbol being started.
+ */
 ST_FUNC void tcc_debug_funcstart(TCCState *s1, Sym *sym)
 {
     CString debug_str;
@@ -2345,6 +2390,10 @@ ST_FUNC void tcc_debug_funcstart(TCCState *s1, Sym *sym)
     }
 }
 
+/**
+ * @brief Record function prolog/epilog debug information.
+ * @param value non-zero when recording the function prolog/epilog.
+ */
 ST_FUNC void tcc_debug_prolog_epilog(TCCState *s1, int value)
 {
     if (!s1->do_debug)
@@ -2356,6 +2405,10 @@ ST_FUNC void tcc_debug_prolog_epilog(TCCState *s1, int value)
 }
 
 /* put function size */
+/**
+ * @brief Finalize the debug information of a function.
+ * @param size the function size in bytes when writing debug info, or `0` to free it.
+ */
 ST_FUNC void tcc_debug_funcend(TCCState *s1, int size)
 {
     /* lldb does not like function end and next function start at same pc */
@@ -2423,6 +2476,12 @@ ST_FUNC void tcc_debug_funcend(TCCState *s1, int size)
 }
 
 
+/**
+ * @brief Record debug information for an externally visible symbol.
+ * @param sh_num the section symbol number of the symbol.
+ * @param sym_bind the symbol binding (e.g. `STB_GLOBAL`).
+ * @param sym_type the symbol type (e.g. `STT_FUNC`).
+ */
 ST_FUNC void tcc_debug_extern_sym(TCCState *s1, Sym *sym, int sh_num, int sym_bind, int sym_type)
 {
     if (!(s1->do_debug & 2))
@@ -2477,6 +2536,10 @@ ST_FUNC void tcc_debug_extern_sym(TCCState *s1, Sym *sym, int sh_num, int sym_bi
     }
 }
 
+/**
+ * @brief Record debug information for a type definition (typedef).
+ * @param sym the symbol representing the type.
+ */
 ST_FUNC void tcc_debug_typedef(TCCState *s1, Sym *sym)
 {
     if (!(s1->do_debug & 2))
@@ -2511,6 +2574,9 @@ ST_FUNC void tcc_debug_typedef(TCCState *s1, Sym *sym)
 
 ST_FUNC void tcc_tcov_block_end(TCCState *s1, int line);
 
+/**
+ * @brief Begin a test coverage block for the current source line.
+ */
 ST_FUNC void tcc_tcov_block_begin(TCCState *s1)
 {
     SValue sv;
@@ -2594,6 +2660,10 @@ ST_FUNC void tcc_tcov_block_begin(TCCState *s1)
     }
 }
 
+/**
+ * @brief End a test coverage block and record the executed line.
+ * @param line the source line to record, or `NULL` for the current line.
+ */
 ST_FUNC void tcc_tcov_block_end(TCCState *s1, int line)
 {
     if (s1->test_coverage == 0)
@@ -2609,6 +2679,11 @@ ST_FUNC void tcc_tcov_block_end(TCCState *s1, int line)
     }
 }
 
+/**
+ * @brief Check whether the current source line falls inside a coverage block.
+ * @param start when non-zero, begin a new coverage block at this line.
+ * @return non-zero when a new coverage block was started.
+ */
 ST_FUNC void tcc_tcov_check_line(TCCState *s1, int start)
 {
     if (s1->test_coverage == 0)
@@ -2624,6 +2699,9 @@ ST_FUNC void tcc_tcov_check_line(TCCState *s1, int start)
     }
 }
 
+/**
+ * @brief Start recording test coverage data for the current translation unit.
+ */
 ST_FUNC void tcc_tcov_start(TCCState *s1)
 {
     if (s1->test_coverage == 0)
@@ -2638,6 +2716,9 @@ ST_FUNC void tcc_tcov_start(TCCState *s1)
     }
 }
 
+/**
+ * @brief Finish recording test coverage data for the current translation unit.
+ */
 ST_FUNC void tcc_tcov_end(TCCState *s1)
 {
     if (s1->test_coverage == 0)
@@ -2648,6 +2729,9 @@ ST_FUNC void tcc_tcov_end(TCCState *s1)
         section_ptr_add(tcov_section, 1);
 }
 
+/**
+ * @brief Reset the current test coverage source line tracking state.
+ */
 ST_FUNC void tcc_tcov_reset_ind(TCCState *s1)
 {
     tcov_data.ind = 0;
