@@ -4116,6 +4116,11 @@ ST_FUNC void vstore(void)
     dbt = ft & VT_BTYPE;
     verify_assign_cast(&vtop[-1].type);
 
+    if ((vtop[-1].r & VT_LVAL) && vtop[-1].sym && vtop[-1].sym->a.final_var) {
+        if (vtop[-1].sym->a.assigned)
+            tcc_error("assignment to final variable '%s'", get_tok_str(vtop[-1].sym->v & ~SYM_FIELD, NULL));
+        vtop[-1].sym->a.assigned = 1;
+    }
     if (sbt == VT_STRUCT) {
         /* if structure, only generate pointer */
         /* structure assignment : generate memcpy */
@@ -5522,6 +5527,9 @@ static int parse_btype(CType *type, AttributeDef *ad, int ignore_label)
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                     ad->f.func_safety = FUNC_SAFETY_TRUSTED;
                     next();
+                } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "final")) {
+                    ad->a.final_var = 1;
+                    next();
                 } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "nocopy")) {
                     ad->a.nocopy = 1;
                     next();
@@ -5862,6 +5870,9 @@ static void parse_d_attributes(AttributeDef *ad)
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "trusted")) {
                 ad->f.func_safety = FUNC_SAFETY_TRUSTED;
+                next();
+            } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "final")) {
+                ad->a.final_var = 1;
                 next();
             } else if (tok >= TOK_IDENT && !strcmp(get_tok_str(tok, &tokc), "nocopy")) {
                 ad->a.nocopy = 1;
@@ -10233,6 +10244,8 @@ static void decl_initializer_alloc(CType *type, AttributeDef *ad, int r,
         sym = sym_find(v);
         if (sym) {
             patch_storage(sym, ad, type);
+            if (sym->a.final_var && has_init)
+                sym->a.assigned = 1;
             /* we accept several definitions of the same global variable. */
             if (!has_init && sym->c && elfsym(sym)->st_shndx != SHN_UNDEF)
                 return;
@@ -10363,6 +10376,8 @@ static void decl_initializer_alloc(CType *type, AttributeDef *ad, int r,
 	    }
 
             sym->a = ad->a;
+            if (sym->a.final_var && has_init)
+                sym->a.assigned = 1;
         } else {
             /* push local reference */
             vset(type, r, addr);
@@ -10414,6 +10429,8 @@ static void decl_initializer_alloc(CType *type, AttributeDef *ad, int r,
             if (!sym) {
                 sym = sym_push(v, type, r | VT_SYM, 0);
                 patch_storage(sym, ad, NULL);
+                if (sym->a.final_var && has_init)
+                    sym->a.assigned = 1;
             }
             /* update symbol definition */
 	    put_extern_sym(sym, sec, addr, size);

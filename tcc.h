@@ -543,7 +543,9 @@ struct SymAttr {
     is_slice    : 1, /**< `Slice` type flag (indicates a synthesized struct generated for a D/`TPC` slice type T[..]). */
     str_lit     : 1, /**< `String` literal array flag (indicates an array created for a string literal including terminating null). */
     used        : 1, /**< `Symbol` used flag (tracks whether a variable or function symbol has been referenced in expressions or assignments). */
-    is_param    : 1; /**< `Function` parameter flag (indicates that the symbol represents a formal parameter of a function). */
+    is_param    : 1, /**< `Function` parameter flag (indicates that the symbol represents a formal parameter of a function). */
+    final_var   : 1, /**< Final variable attribute (prevents reassignment). */
+    assigned    : 1; /**< Whether a final variable has been assigned/initialized. */
 };
 /**
  * @brief `Function` purity level representing mathematical purity guarantees.
