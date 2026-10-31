@@ -772,6 +772,7 @@ static uint8_t *parse_line_comment(uint8_t *p)
     size_t rem;
     uint8_t *p_nl, *p_bs, *stop;
     int c, ch;
+    StringSlice slice;
     for(;;) {
         rem = file->buf_end - (p + 1);
         if (rem == 0) {
@@ -790,8 +791,10 @@ static uint8_t *parse_line_comment(uint8_t *p)
             }
             continue;
         }
-        p_nl = (uint8_t *)memchr(p + 1, '\n', rem);
-        p_bs = (uint8_t *)memchr(p + 1, '\\', rem);
+        slice.ptr = (const char *)(p + 1);
+        slice.length = rem;
+        p_nl = (uint8_t *)slice_memchr(slice, '\n');
+        p_bs = (uint8_t *)slice_memchr(slice, '\\');
         stop = p + 1 + rem;
         if (p_nl && p_nl < stop) stop = p_nl;
         if (p_bs && p_bs < stop) stop = p_bs;
@@ -861,12 +864,15 @@ static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
     size_t rem;
     uint8_t *p_sep, *p_bs, *p_nl, *next_special;
     size_t len;
+    StringSlice slice;
     for(;;) {
         rem = file->buf_end - (p + 1);
         if (rem > 0) {
-            p_sep = (uint8_t *)memchr(p + 1, sep, rem);
-            p_bs  = (uint8_t *)memchr(p + 1, '\\', rem);
-            p_nl  = (uint8_t *)memchr(p + 1, '\n', rem);
+            slice.ptr = (const char *)(p + 1);
+            slice.length = rem;
+            p_sep = (uint8_t *)slice_memchr(slice, sep);
+            p_bs  = (uint8_t *)slice_memchr(slice, '\\');
+            p_nl  = (uint8_t *)slice_memchr(slice, '\n');
             next_special = p + 1 + rem;
             if (p_sep && p_sep < next_special) next_special = p_sep;
             if (p_bs  && p_bs  < next_special) next_special = p_bs;
