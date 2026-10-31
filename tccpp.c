@@ -792,7 +792,7 @@ static uint8_t *parse_line_comment(uint8_t *p)
             continue;
         }
         slice.ptr = (const char *)(p + 1);
-        slice.length = rem;
+        slice.len = rem;
         p_nl = (uint8_t *)slice_memchr(slice, '\n');
         p_bs = (uint8_t *)slice_memchr(slice, '\\');
         stop = p + 1 + rem;
@@ -869,7 +869,7 @@ static uint8_t *parse_pp_string(uint8_t *p, int sep, CString *str)
         rem = file->buf_end - (p + 1);
         if (rem > 0) {
             slice.ptr = (const char *)(p + 1);
-            slice.length = rem;
+            slice.len = rem;
             p_sep = (uint8_t *)slice_memchr(slice, sep);
             p_bs  = (uint8_t *)slice_memchr(slice, '\\');
             p_nl  = (uint8_t *)slice_memchr(slice, '\n');

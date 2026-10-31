@@ -478,26 +478,26 @@ typedef int nwchar_t;
  */
 typedef struct StringSlice {
     const char *ptr;
-    size_t length;
+    size_t len;
 } StringSlice;
 
 static inline int slice_eq(StringSlice a, StringSlice b) {
-    return a.length == b.length && memcmp(a.ptr, b.ptr, a.length) == 0;
+    return a.len == b.len && memcmp(a.ptr, b.ptr, a.len) == 0;
 }
 
 static inline const char *slice_memchr(StringSlice s, int c) {
-    return (const char *)memchr(s.ptr, c, s.length);
+    return (const char *)memchr(s.ptr, c, s.len);
 }
 
 static inline const char *slice_memmem(StringSlice haystack, StringSlice needle) {
     const char *p, *end;
-    if (needle.length == 0)
+    if (needle.len == 0)
         return haystack.ptr;
-    if (needle.length > haystack.length)
+    if (needle.len > haystack.len)
         return NULL;
-    end = haystack.ptr + (haystack.length - needle.length);
+    end = haystack.ptr + (haystack.len - needle.len);
     for (p = haystack.ptr; p <= end; p++) {
-        if (p[0] == needle.ptr[0] && memcmp(p, needle.ptr, needle.length) == 0)
+        if (p[0] == needle.ptr[0] && memcmp(p, needle.ptr, needle.len) == 0)
             return p;
     }
     return NULL;
