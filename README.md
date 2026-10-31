@@ -660,6 +660,21 @@ K&R and variadic parameter lists), initialized by copy, or returned by
 value.  This makes it possible to model move-only resources such as
 file descriptors and locks.
 
+### `@nocopy` on Instance Declarations
+
+In D language mode (`-lang=d`), `@nocopy` can also be applied to individual instance declarations and variables (both struct and primitive types such as raw resource handles or `int fd`):
+
+```c
+@nocopy File f1 = open_file("log.txt");
+File f2 @nocopy = open_file("data.bin");
+
+// f1 = f2;        /* Error: cannot copy @nocopy instance 'f2' */
+// process(f1);    /* Error: cannot copy @nocopy instance 'f1' */
+process(&f1);      /* OK: passing pointer / address */
+```
+
+This allows developers to enforce non-copyability at the variable or instance level (useful for raw file descriptors, security nonces, or unique handles) without requiring a custom wrapper struct or disabling copying globally across all instances of a type. Moves, initial construction, and explicit address-taking (`&x`) are fully permitted.
+
 ## Tooling and diagnostics
 
 ### Debug dumps
